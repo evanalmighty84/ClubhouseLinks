@@ -1,0 +1,19 @@
+{
+	"name": "home_page_function",
+	"version": "1.0.0",
+	"main": "index.js",
+	"author": "evanligon7@gmail.com",
+	"dependencies": {
+		"@stripe/react-stripe-js": "^2.7.3",
+		"@stripe/stripe-js": "^4.1.0",
+		"axios": "^1.7.2",
+		"body-parser": "^1.20.2",
+		"cors": "^2.8.5",
+		"express": "^4.19.2",
+		"firebase-admin": "^12.2.0",
+		"google-auth-library": "^9.11.0",
+		"jsonwebtoken": "^9.0.2",
+		"stripe": "^16.2.0",
+		"zcatalyst-sdk-node": "latest"
+	}
+}

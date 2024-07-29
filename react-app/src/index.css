@@ -1,0 +1,31 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* Add this to your global CSS file (index.css or App.css) */
+
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: 1%; /* Scale the image to 30% of its original size */
+  background-image: url('../public/assets/images/ClubhouseLinksIcon.png'); /* Keeps the image at its original size */
+  background-repeat: repeat; /* Repeats the image across the background */
+  background-position: left top; /* Optional: Sets the initial position of the image */
+  opacity: 0.1; /* Adjust opacity */
+  z-index: -1; /* Make sure it's behind all content */
+}
+
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}

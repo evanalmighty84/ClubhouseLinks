@@ -1,0 +1,138 @@
+.headerSection{
+    background-color:steelblue;
+}
+/* Add this to your Header.css file */
+
+.hamburger-text {
+    display: none;
+    color: white;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+@media (max-width: 576px) {
+    .hamburger-text {
+        display: inline-block;
+    }
+}
+
+
+.navlink {
+    font-family: "sans-serif";
+}
+.navlinkText:hover {
+
+}
+
+.navLinkHover {
+    /* Your existing styles */
+    background-color: #2f2f2f;
+    transition: background-color 0.3s ease;
+}
+
+.navLinkHover:hover {
+    background-color: white;
+}
+.navlink a:before, div.brackets a:after {
+    position: absolute;
+    opacity: 0;
+    font-size: 35px;
+    top: 0px;
+    transition: all 0.3s;
+}
+
+.navlink a:before {
+    content: '(';
+    left: 0px;
+    transform: translateX(10px);
+}
+
+.navlink a:after {
+    content: ')';
+    right: 0px;
+    transform: translateX(-10px);
+
+
+}
+.custom-toggler .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='white' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 8h24M4 16h24M4 24h24'/%3E%3C/svg%3E");
+}
+
+.custom-toggler.navbar-toggler {
+
+}
+
+
+
+.navlinkText {
+    text-align: center;
+    font-size: .7em;
+
+}
+
+.navlinkText img {
+    width: 50%
+}
+
+/*@media only screen and (max-width: 600px) {
+    .navlinkText {
+        margin-top: 20px;
+    }
+}
+
+@media only screen and (max-width: 700px) and (max-height: 400px) {
+    a.evanston-tavern {
+        border-width: .1rem;
+    }
+
+    .navlinkText img {
+        width: 100%;
+
+    }
+}*/
+
+.custom-toggler .navbar-toggler-icon {
+    height: .5em;
+    width: .5em;
+
+}
+
+.custom-toggler.navbar-toggler {
+    width: 2em;
+
+
+}
+
+
+
+
+.menu-container.open {
+    background-color: steelblue;
+
+}
+
+
+
+
+
+
+
+a.evanston-tavern {
+
+    background-color: #2f2f2f;
+    border-style: outset;
+    line-height: .5em;
+    border-left-width: thin;
+    border-right-width: thin;
+    border-top-width: thick;
+    border-bottom-width: thick;
+    /* border-color: #D1B000; */
+    /*  border-color: #D1B000;*/
+
+}
+
+
+/* border-color: #D1B000; */
+
+/* border-bottom-width: thick; */
