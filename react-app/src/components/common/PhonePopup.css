@@ -1,0 +1,30 @@
+.custom-modal .modal-dialog {
+    animation: slide-in 0.5s forwards;
+}
+
+.phone-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #007bff;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes slide-in {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}

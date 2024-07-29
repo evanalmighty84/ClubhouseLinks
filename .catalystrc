@@ -1,0 +1,36 @@
+{
+  "defaults": {
+    "project": 1,
+    "env": 1
+  },
+  "actives": {
+    "project": 1,
+    "env": 1
+  },
+  "projects": [
+    {
+      "idx": 1,
+      "id": "17011000000004014",
+      "name": "HomePage",
+      "domain": {
+        "id": "10056826219",
+        "name": "homepage-809404625.development"
+      },
+      "timezone": "Pacific/Pitcairn",
+      "env": [
+        {
+          "idx": 1,
+          "id": "809404625",
+          "name": "Development",
+          "type": 3
+        },
+        {
+          "idx": 2,
+          "id": "10056829767",
+          "name": "Production",
+          "type": 1
+        }
+      ]
+    }
+  ]
+}
