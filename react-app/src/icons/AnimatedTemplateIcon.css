@@ -1,0 +1,38 @@
+/* Animation Styles for Template Icon - adjust colors if needed */
+
+@keyframes box1Move {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(1px, 2px); }
+}
+
+@keyframes box2Move {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(-1px, -2px); }
+}
+
+@keyframes imageMove {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(2px, -2px); }
+}
+
+@keyframes pencilMove {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(-2px, 1px); }
+}
+
+/* Assign animations to each element */
+.animated .box-1 {
+    animation: box1Move 1s ease-in-out infinite;
+}
+
+.animated .box-2 {
+    animation: box2Move 1s ease-in-out infinite;
+}
+
+.animated .image {
+    animation: imageMove 1s ease-in-out infinite;
+}
+
+.animated .pencil, .animated .pencil-lead {
+    animation: pencilMove 1s ease-in-out infinite;
+}

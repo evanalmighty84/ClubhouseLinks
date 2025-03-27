@@ -1,0 +1,13 @@
+/* Ensure that the content is pushed below the fixed topbar */
+.content {
+    padding-top: 80px !important;  /* Adjust this based on the height of your topbar */
+    padding: 20px;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+/* Prevent horizontal scrolling */
+body, html {
+    width: 100%;
+    overflow-x: hidden;
+}

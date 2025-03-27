@@ -416,7 +416,7 @@ strong {
 
 .carousel-control-next-icon, 
 .carousel-control-prev-icon {
-  background-color: var(--dark-color);
+  background-color: transparent!important;
   background-size: 50% 50%;
   border-radius: 100px;
   width: 3rem;

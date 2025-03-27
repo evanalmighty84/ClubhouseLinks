@@ -1,0 +1,26 @@
+.campaign-create-container {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.campaign-create-container h3, .campaign-create-container h4 {
+    margin-bottom: 20px;
+}
+
+.campaign-create-container .form-control {
+    border-radius: 5px;
+}
+
+.campaign-create-container .btn-primary {
+    margin-top: 20px;
+    width: 100%;
+}
+
+.campaign-create-container .btn-secondary {
+    width: 100%;
+}
+
+.campaign-create-container a {
+    color: #007bff;
+}

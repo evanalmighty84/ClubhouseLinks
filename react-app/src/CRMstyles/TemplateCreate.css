@@ -1,0 +1,155 @@
+/* Styling for description text areas */
+.template-create-container .form-control[as="textarea"] {
+    background-color: #4a4a8f;
+    color: white;
+    border: none;
+    resize: vertical; /* Allows users to resize vertically if needed */
+}
+
+.template-create-container .form-control[as="textarea"]::placeholder {
+    color: #c9c9f5;
+}
+/* General styling for the container */
+.template-create-container {
+    background-color: indigo;
+    color: white;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+/* Form and tab styling */
+.template-create-container .form-group {
+    margin-bottom: 1.5em;
+}
+
+.template-create-container .form-label {
+    color: white;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.template-create-container .form-control {
+    background-color: white;
+    border: none;
+    color: black;
+}
+
+.template-create-container .form-control::placeholder {
+    color: #c9c9f5;
+}
+
+/* File input styling */
+.template-create-container input[type="file"] {
+    color: white;
+    border: 1px solid #ffdd57;
+    padding: 5px;
+    background-color: #4682b4;
+}
+
+/* Button styling */
+.template-create-container .btn-primary,
+.template-create-container .btn-info,
+.template-create-container .btn-success {
+    color: white;
+    font-weight: bold;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    margin-top: 1em;
+    transition: background 0.3s ease;
+}
+
+.template-create-container .btn-primary {
+    background: linear-gradient(to right, #4CAF50, #81C784);
+}
+
+.template-create-container .btn-info {
+    background: linear-gradient(to right, #29b6f6, #4fc3f7);
+}
+
+.template-create-container .btn-success {
+    background: linear-gradient(to right, #66BB6A, #43A047);
+}
+
+.template-create-container .btn-primary:hover,
+.template-create-container .btn-info:hover,
+.template-create-container .btn-success:hover {
+    opacity: 0.9;
+}
+
+/* Styling for tabs */
+.template-create-container .nav-tabs .nav-link.active {
+    background-color:
+    #1e90ff!important;
+    color: white;
+    border-color: transparent;
+    font-weight: bold;
+}
+
+.template-create-container .nav-tabs .nav-link {
+    color: #c9c9f5;
+}
+
+.template-create-container .nav-tabs .nav-link:hover {
+    color: #ffdd57;
+}
+
+/* Additional spacing for content */
+.template-create-container .form-group {
+    padding: 10px;
+}
+
+/* Image upload field styling */
+.image-upload-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+}
+
+.image-upload-field .form-control {
+    width: 100%;
+    background-color: #3e3e7f;
+    color: white;
+}
+
+.image-upload-field input[type="file"] {
+    color: #c9c9f5;
+}
+
+/* Media query for smaller screens */
+@media (max-width: 768px) {
+    .template-create-container {
+        padding: 10px;
+    }
+
+    .template-create-container .btn-primary,
+    .template-create-container .btn-info,
+    .template-create-container .btn-success {
+        padding: 8px 15px;
+        font-size: 0.9em;
+    }
+}
+p {
+    color: black;
+}
+
+h2 {
+    color:white
+}
+/* Default layout (desktop/tablet): form and preview side by side */
+.template-create-container {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+}
+
+/* Mobile layout: form on top, preview below */
+@media (max-width: 768px) {
+    .template-create-container {
+        flex-direction: column;
+    }
+
+    .email-preview {
+        margin-top: 20px; /* Add some space between form and preview */
+    }
+}

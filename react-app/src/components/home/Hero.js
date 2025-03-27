@@ -54,6 +54,47 @@ const Hero = () => {
                 className="nameColumn"
             >
 
+              <a
+                  href="tel:2145565210"
+                  style={{
+                    color: "white", // Text color
+                    textDecoration: "none", // Remove underline for the link
+                    textAlign: "center",
+                    display: "block", // Center-align the text
+                    textShadow: `
+            0 0 10px rgba(255, 140, 0, 1), 
+            0 0 20px rgba(255, 69, 0, 1), 
+            0 0 30px rgba(255, 99, 71, 1), 
+            0 0 40px rgba(255, 99, 71, 1)`
+                  }}
+              >
+                <h1 style={{ margin: 0 }}>
+                  214-556-5210
+                </h1>
+              </a>
+              <style>
+                {`
+    @keyframes glowing {
+        0%, 100% {
+            text-shadow: 
+                0 0 10px rgba(255, 140, 0, 1), 
+                0 0 20px rgba(255, 69, 0, 1), 
+                0 0 30px rgba(255, 99, 71, 1), 
+                0 0 40px rgba(255, 99, 71, 1);
+        }
+        50% {
+            text-shadow: 
+                0 0 20px rgba(255, 99, 71, 1), 
+                0 0 30px rgba(255, 69, 0, 1), 
+                0 0 40px rgba(255, 140, 0, 1), 
+                0 0 50px rgba(255, 69, 0, 1);
+        }
+    }
+`}
+              </style>
+
+
+              <p style={{textIndent:'none'}}>Helping people with Websites and Applications for their businesses with a personal touch</p>
               <Typist
                   cursor={{ hideWhenDone: true }}
                   avgTypingDelay={30}

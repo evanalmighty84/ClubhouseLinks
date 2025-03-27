@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
-import { Form, Button, Container, Row, Col, Card } from 'react-bootstrap';
+import { Form, Button, Container, Row, Col, Card, Table } from 'react-bootstrap';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DesignImage1 from './components/OrderSummaryDesign1.png'
 import DesignImage2 from './components/OrderSummaryDesign2.png'
 import DesignImage3 from './components/OrderSummaryDesign3.png'
+import EmailMarketingImage from './components/CRM-ZOHO.jpeg'
 import SubscriptionImage from './components/Subscription.png'
 import PhonePopupComponent from './components/common/PhonePopupComponent1';
 import './components/common/PhonePopup.css'
@@ -17,7 +18,7 @@ const colors = [
     'white',
     'linear-gradient(to bottom right, #ffecb3, #ffd700)',
     'linear-gradient(to bottom right, #a9d8d8, cadetblue)',
-    'linear-gradient(to bottom right, #7fc87f, #008B00)',
+    'linear-gradient(to right bottom, #34eb92, #23ad6a)',
     'linear-gradient(to bottom right, #f5c2d5, #de4e7f)',
     'linear-gradient(to bottom right, #b0d4e3, steelblue)',
     'linear-gradient(to bottom right, #f7e0c4, brown)',
@@ -273,16 +274,55 @@ const Checkout = () => {
                     />
                 </Container>
                 <Row>
-                    <Col md="12" className="d-flex flex-column" style={{ background: colors[1], padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
+                    <Col md="12" className="d-flex flex-column" style={{  padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
                         <Card className="shadow-sm border-light flex-grow-1">
-                            <Card.Header style={{ background: 'linear-gradient(to bottom,  #ffd700, transparent)' }} className="text-white text-center">
+                            <Card.Header style={{ background: 'linear-gradient(to bottom, #ffd700, transparent)' }} className="text-white text-center">
                                 <h4>Subscriptions</h4>
                             </Card.Header>
                             <Card.Body className="d-flex flex-column">
                                 <Card.Text>
                                     Enjoy access to our premium features and Email and Chat support with flexible subscription plans.
                                 </Card.Text>
-                                <img src={SubscriptionImage}/>
+                                <img src={SubscriptionImage} alt="Subscription" style={{ maxWidth: '100%' }} />
+
+                                {/* Responsive Table */}
+                                <div className="table-responsive mt-4">
+                                    <Table striped bordered hover>
+                                        <thead>
+                                        <tr>
+                                            <th>Subscription</th>
+                                            <th style={{backgroundColor:'#CD7E42'}}>Bronze</th>
+                                            <th style={{background: 'linear-gradient(to right, #E8B690, #CD7E42, #995824)'}}>Bronze Plus</th>
+                                            <th style={{backgroundColor:'#C0C0C0'}}>Silver</th>
+                                            <th style={{background: 'linear-gradient(to right, #F0F0F0, #C0C0C0, #8C8C8C)'}}>Silver Plus</th>
+                                            <th style={{backgroundColor:'#FFAE01'}}>Gold</th>
+                                            <th style={{background: 'linear-gradient(to right, #FFE29C, #FFAE01, #D48800)'}}>Gold Plus</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr>
+                                            <td data-label="Subscription" style={{color:'black'}}>Monthly</td>
+                                            <td data-label="Bronze" style={{background: colors[5], color:'white'}}>Subscription to help guide you with Google Tag Manager, Campaign templates, and more solutions to target repeat customers, plus implementations to build a faster website without code for faster load times</td>
+                                            <td data-label="Bronze Plus" style={{background: colors[5], color:'white'}}>Bronze package + monthly custom personal web developer additions to your website upon request, including new color schemes, updates to Text and any pictures of your choosing</td>
+                                            <td data-label="Silver" style={{background: colors[3], color:'white'}}>Bronze Plus package + Google Business Page Setup + CMS integration</td>
+                                            <td data-label="Silver Plus" style={{background: colors[3], color:'white'}}>Silver package + Social Media Business Page Setup and Integration. Facebook, and Instagram + Web management for Social Media posts and updates monthly</td>
+                                            <td data-label="Gold" style={{background: colors[2], color:'white'}}>Silver Plus package + SEO custom optimization with code specifically matching your industry on your website</td>
+                                            <td data-label="Gold Plus" style={{background: colors[2], color:'white'}}>Gold package + Any website of any kind with additions like custom payment solutions, Database Integrations, Customer Portal, Rewards Programs, Internal Clubhouse Links CRM software</td>
+                                        </tr>
+                                        <tr>
+                                            <td data-label="Subscription">Yearly</td>
+                                            <td data-label="Bronze" style={{background: colors[5], color:'white'}}>Subscription to help your site every way possible to help you with Google Tag Manager, Campaign templates to target repeat customers, and insights into faster website code and faster load times</td>
+                                            <td data-label="Bronze Plus" style={{background: colors[5], color:'white'}}>Bronze package + monthly custom personal web developer additions to your website upon request, including new color schemes, updates to Text and any pictures of your choosing</td>
+                                            <td data-label="Silver" style={{background: colors[3], color:'white'}}>Bronze Plus package + Google Business Page Setup + CMS integration</td>
+                                            <td data-label="Silver Plus" style={{background: colors[3], color:'white'}}>Silver package + Social Media Business Page Setup and Integration. Facebook, and Instagram + Web management for Social Media posts and updates monthly</td>
+                                            <td data-label="Gold" style={{background: colors[2], color:'white'}}>Silver Plus package + SEO custom optimization with code specifically matching your industry on your website</td>
+                                            <td data-label="Gold Plus" style={{background: colors[2], color:'white'}}>Gold package + Any website of any kind with additions like custom payment solutions, Database Integrations, Customer Portal, Rewards Programs, Internal Clubhouse Links CRM software</td>
+                                        </tr>
+                                        </tbody>
+                                    </Table>
+                                </div>
+
+
                                 <Form.Group controlId="subscriptionsSelect" className="mb-3">
                                     <Form.Label>Select Subscription Plan</Form.Label>
                                     <Form.Control
@@ -290,28 +330,37 @@ const Checkout = () => {
                                         value={selectedOptions.Subscriptions}
                                         onChange={(e) => handleAddToCart('Subscriptions', e.target.value)}
                                     >
-                                        <option value="Monthly Plan - $0 (First Month Free)">Monthly Plan - $59.99 (First Month Free)</option>
-                                        <option value="Yearly Plan - $0 (First Month Free)">Yearly Plan - $599.99 (First Month Free)</option>
+
+                                        <option value="Bronze Monthly Plan - $59.99 (First Month Free)">Bronze Monthly Plan - $59.99 (First Month Free)</option>
+                                        <option value="Bronze Yearly Plan - $599.99 (First Month Free)">Bronze Yearly Plan - $599.99 (First Month Free)</option>
+                                        <option value="Bronze Plus Monthly Plan - $69.99 (First Month Free)">Bronze Plus Monthly Plan - $69.99 (First Month Free)</option>
+                                        <option value="Bronze Plus Yearly Plan - $699.99 (First Month Free)">Bronze Plus Yearly Plan - $699.99 (First Month Free)</option>
+                                        <option value="Silver Monthly Plan - $79.99 (First Month Free)">Silver Monthly Plan - $79.99 (First Month Free)</option>
+                                        <option value="Silver Yearly Plan - $799.99 (First Month Free)">Silver Yearly Plan - $799.99 (First Month Free)</option>
+                                        <option value="Silver Plus Monthly Plan - $89.99 (First Month Free)">Silver PlusMonthly Plan - $89.99 (First Month Free)</option>
+                                        <option value="Silver Plus Yearly Plan - $899.99 (First Month Free)">Silver Plus Yearly Plan - $899.99 (First Month Free)</option>
+                                        <option value="Gold Monthly Plan - $99.99 (First Month Free)">Gold Monthly Plan - $99.99 (First Month Free)</option>
+                                        <option value="Gold Yearly Plan - $999.99 (First Month Free)">Gold Yearly Plan - $999.99 (First Month Free)</option>
+                                        <option value="Gold Plus Monthly Plan - $199.99 (First Month Free)">Gold Plus Monthly Plan - $199.99 (First Month Free)</option>
+                                        <option value="Gold Plus Yearly Plan - $1999.99 (First Month Free)">Gold Plus Yearly Plan - $1999.99 (First Month Free)</option>
                                     </Form.Control>
                                 </Form.Group>
-                                <Button style={{backgroundColor:'steelblue'}} variant="primary" block className="mt-auto">
+                                <Button style={{ backgroundColor: 'steelblue' }} variant="primary" block className="mt-auto">
                                     Subscribe Now
                                 </Button>
                             </Card.Body>
                         </Card>
                     </Col>
-                    <Col md="12" className="d-flex flex-column" style={{ background: colors[3], padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
+                    <Col md="12" className="d-flex flex-column" style={{ padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
                         <Card className="shadow-sm border-light flex-grow-1">
                             <Card.Header style={{ background: 'linear-gradient(to bottom,  #7fc87f, transparent)' }} className="text-white text-center">
                                 <h4>Website Building</h4>
-
                             </Card.Header>
                             <Card.Body className="d-flex flex-column">
                                 <Card.Text>
                                     Build a stunning website with our professional website building services.
                                 </Card.Text>
-                                <img src={DesignImage2}/>
-
+                                <img src={DesignImage2} alt="Design" style={{ maxWidth: '100%' }} />
                                 <Form.Group controlId="WebsiteSelect" className="mb-3">
                                     <Form.Label>Select Website Building Package</Form.Label>
                                     <Form.Control
@@ -319,17 +368,18 @@ const Checkout = () => {
                                         value={selectedOptions.Website}
                                         onChange={(e) => handleAddToCart('Website', e.target.value)}
                                     >
+                                        <option value="No Website - $0">No Website - $0</option>
                                         <option value="Basic Package - $199.99">Basic Package - $199.99</option>
-                                        <option value="Advanced Package - $299.99">Advanced Package (Custom Design)  - $299.99</option>
+                                        <option value="Advanced Package - $299.99">Advanced Package (Custom Design) - $299.99</option>
                                     </Form.Control>
                                 </Form.Group>
-                                <Button style={{backgroundColor:'steelblue'}} variant="primary" block className="mt-auto">
+                                <Button style={{ backgroundColor: 'steelblue' }} variant="primary" block className="mt-auto">
                                     Choose Package
                                 </Button>
                             </Card.Body>
                         </Card>
                     </Col>
-                    <Col md="12" className="d-flex flex-column" style={{ background: colors[5], padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
+                    <Col md="12" className="d-flex flex-column" style={{padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
                         <Card className="shadow-sm border-light flex-grow-1">
                             <Card.Header style={{ background: 'linear-gradient(to bottom,  steelblue, transparent)' }} className="text-white text-center">
                                 <h4>CMS + CRM</h4>
@@ -356,17 +406,50 @@ const Checkout = () => {
                                         onChange={(e) => handleAddToCart('Systems', e.target.value)}
                                     >
                                         <option value="">Select an option</option>
-                                        <option value="Monthly Plan CMS - $49.99 ">Monthly Plan CMS  - $49.99</option>
-                                        <option value="Monthly Plan  CRM - $39.99">Monthly Plan CRM - $39.99</option>
-                                        <option value="Monthly Plan CMS + CRM - $59.99">Monthly PlanCMS + CRM - $59.99</option>
+                                        <option value="Monthly Plan CMS - $49.99">Monthly Plan CMS - $49.99</option>
+                                        <option value="Monthly Plan CRM - $39.99">Monthly Plan CRM - $39.99</option>
+                                        <option value="Monthly Plan CMS + CRM - $59.99">Monthly Plan CMS + CRM - $59.99</option>
                                     </Form.Control>
                                 </Form.Group>
-                                <Button style={{backgroundColor:'steelblue'}} variant="primary" block className="mt-auto">
+                                <Button style={{ backgroundColor: 'steelblue' }} variant="primary" block className="mt-auto">
                                     Select a System
                                 </Button>
                             </Card.Body>
                         </Card>
                     </Col>
+                    <Col md="12" className="d-flex flex-column" style={{padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
+                        <Card className="shadow-sm border-light flex-grow-1">
+                            <Card.Header style={{ background: 'linear-gradient(to right bottom, rgb(255, 218, 179), orange)' }} className="text-white text-center">
+                                <h4>Email and Social media Marketing</h4>
+                            </Card.Header>
+                            <Card.Body className="d-flex flex-column">
+                                <Card.Text>
+                                    Check out our special bundles and save more!
+                                </Card.Text>
+                                <img
+                                    className="video-fluid"
+                                src={EmailMarketingImage}
+                                />
+
+                                <Form.Group controlId="bundlesSelect" className="mb-3">
+                                    <Form.Label>Select Systems</Form.Label>
+                                    <Form.Control
+                                        as="select"
+                                        value={selectedOptions.Systems}
+                                        onChange={(e) => handleAddToCart('Systems', e.target.value)}
+                                    >
+                                        <option value="">Select an option</option>
+                                        <option value="Social Media and Email CRM Marketing- $749.99">3 Month Plan Email + Social Media - $749.99</option>
+                                        <option value="Social media and Email CRM Marketing- $2699.99">Annual Plan Email + Social Media  - $2699.99</option>
+                                    </Form.Control>
+                                </Form.Group>
+                                <Button style={{ backgroundColor: 'steelblue' }} variant="primary" block className="mt-auto">
+                                    Select a Marketing Solution
+                                </Button>
+                            </Card.Body>
+                        </Card>
+                    </Col>
+
                 </Row>
                 <Row className="justify-content-md-center">
                     <Col md="8">

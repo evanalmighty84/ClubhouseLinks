@@ -29,3 +29,8 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+
+.content-wrapper {
+  padding-top: 80px; /* Adjust according to the height of your Topbar */
+}

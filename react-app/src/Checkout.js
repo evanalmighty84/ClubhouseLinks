@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
-import { Form, Button, Container, Row, Col, Card } from 'react-bootstrap';
+import { Form, Button, Container, Row, Col, Card, Table } from 'react-bootstrap';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DesignImage1 from './components/OrderSummaryDesign1.png'
 import DesignImage2 from './components/OrderSummaryDesign2.png'
@@ -11,7 +11,7 @@ const colors = [
     'white',
     'linear-gradient(to bottom right, #ffecb3, #ffd700)',
     'linear-gradient(to bottom right, #a9d8d8, cadetblue)',
-    'linear-gradient(to bottom right, #7fc87f, #008B00)',
+    'linear-gradient(to bottom right, #34eb92, #23ad6a)',
     'linear-gradient(to bottom right, #f5c2d5, #de4e7f)',
     'linear-gradient(to bottom right, #b0d4e3, steelblue)',
     'linear-gradient(to bottom right, #f7e0c4, brown)',
@@ -218,7 +218,7 @@ const Checkout = () => {
                     </Col>
                 </Row>
                 <Row>
-                    <Col md="4" className="d-flex flex-column" style={{ background: colors[1], padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
+                    <Col md="4" className="d-flex flex-column" style={{ padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
                         <Card className="shadow-sm border-light flex-grow-1">
                             <Card.Header className="bg-primary text-white text-center">
                                 <h4>Subscriptions</h4>
@@ -227,6 +227,42 @@ const Checkout = () => {
                                 <Card.Text>
                                     Enjoy access to our premium features and Email and Chat support with flexible subscription plans.
                                 </Card.Text>
+                                <div className="table-responsive mt-4">
+                                    <Table striped bordered hover>
+                                        <thead>
+                                        <tr>
+                                            <th>Subscription</th>
+                                            <th style={{backgroundColor:'#CD7E42'}}>Bronze</th>
+                                            <th style={{background: 'linear-gradient(to right, #E8B690, #CD7E42, #995824)'}}>Bronze Plus</th>
+                                            <th style={{backgroundColor:'#C0C0C0'}}>Silver</th>
+                                            <th style={{background: 'linear-gradient(to right, #F0F0F0, #C0C0C0, #8C8C8C)'}}>Silver Plus</th>
+                                            <th style={{backgroundColor:'#FFAE01'}}>Gold</th>
+                                            <th style={{background: 'linear-gradient(to right, #FFE29C, #FFAE01, #D48800)'}}>Gold Plus</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr>
+                                            <td data-label="Subscription" style={{color:'black'}}>Monthly</td>
+                                            <td data-label="Bronze" style={{background: colors[5], color:'white'}}>Subscription to help guide you with Google Tag Manager, Campaign templates, and more solutions to target repeat customers, plus implementations to build a faster website without code for faster load times</td>
+                                            <td data-label="Bronze Plus" style={{background: colors[5], color:'white'}}>Bronze package + monthly custom personal web developer additions to your website upon request, including new color schemes, updates to Text and any pictures of your choosing</td>
+                                            <td data-label="Silver" style={{background: colors[3], color:'white'}}>Bronze Plus package + Google Business Page Setup + CMS integration</td>
+                                            <td data-label="Silver Plus" style={{background: colors[3], color:'white'}}>Silver package + Social Media Business Page Setup and Integration. Facebook, and Instagram + Web management for Social Media posts and updates monthly</td>
+                                            <td data-label="Gold" style={{background: colors[2], color:'white'}}>Silver Plus package + SEO custom optimization with code specifically matching your industry on your website</td>
+                                            <td data-label="Gold Plus" style={{background: colors[2], color:'white'}}>Gold package + Any website of any kind with additions like custom payment solutions, Database Integrations, Customer Portal, Rewards Programs, Internal Clubhouse Links CRM software</td>
+                                        </tr>
+                                        <tr>
+                                            <td data-label="Subscription">Yearly</td>
+                                            <td data-label="Bronze" style={{background: colors[5], color:'white'}}>Subscription to help your site every way possible to help you with Google Tag Manager, Campaign templates to target repeat customers, and insights into faster website code and faster load times</td>
+                                            <td data-label="Bronze Plus" style={{background: colors[5], color:'white'}}>Bronze package + monthly custom personal web developer additions to your website upon request, including new color schemes, updates to Text and any pictures of your choosing</td>
+                                            <td data-label="Silver" style={{background: colors[3], color:'white'}}>Bronze Plus package + Google Business Page Setup + CMS integration</td>
+                                            <td data-label="Silver Plus" style={{background: colors[3], color:'white'}}>Silver package + Social Media Business Page Setup and Integration. Facebook, and Instagram + Web management for Social Media posts and updates monthly</td>
+                                            <td data-label="Gold" style={{background: colors[2], color:'white'}}>Silver Plus package + SEO custom optimization with code specifically matching your industry on your website</td>
+                                            <td data-label="Gold Plus" style={{background: colors[2], color:'white'}}>Gold package + Any website of any kind with additions like custom payment solutions, Database Integrations, Customer Portal, Rewards Programs, Internal Clubhouse Links CRM software</td>
+                                        </tr>
+                                        </tbody>
+                                    </Table>
+                                </div>
+
                                 <Form.Group controlId="subscriptionsSelect" className="mb-3">
                                     <Form.Label>Select Subscription Plan</Form.Label>
                                     <Form.Control
@@ -244,7 +280,7 @@ const Checkout = () => {
                             </Card.Body>
                         </Card>
                     </Col>
-                    <Col md="4" className="d-flex flex-column" style={{ background: colors[5], padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
+                    <Col md="4" className="d-flex flex-column" style={{ padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
                         <Card className="shadow-sm border-light flex-grow-1">
                             <Card.Header className="bg-primary text-white text-center">
                                 <h4>Website Building</h4>
@@ -270,7 +306,7 @@ const Checkout = () => {
                             </Card.Body>
                         </Card>
                     </Col>
-                    <Col md="4" className="d-flex flex-column" style={{ background: colors[3], padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
+                    <Col md="4" className="d-flex flex-column" style={{ padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
                         <Card className="shadow-sm border-light flex-grow-1">
                             <Card.Header className="bg-primary text-white text-center">
                                 <h4>CMS + CRM</h4>
