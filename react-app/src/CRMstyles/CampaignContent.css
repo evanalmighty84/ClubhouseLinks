@@ -1,0 +1,52 @@
+.campaign-content-container {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.campaign-content-container h4 {
+    font-weight: bold;
+}
+
+.campaign-content-container .form-check-inline {
+    margin-right: 15px;
+}
+
+.campaign-content-container .ql-editor {
+    min-height: 300px;
+    font-size: 15px;
+}
+
+textarea {
+    font-family: monospace;
+    color: #333;
+}
+/* src/CRMstyles/CampaignContent.css */
+
+.campaign-create-container {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.template-preview {
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 5px;
+    background-color: #fff;
+}
+
+.template-preview img {
+    max-width: 100%;
+    height: auto;
+    margin-bottom: 10px;
+}
+
+.template-preview .highlight {
+    font-size: 20px;
+    font-weight: 300;
+    color: #717275;
+}
+p {
+    text-align:center;
+}

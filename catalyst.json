@@ -5,9 +5,17 @@
   },
   "functions": {
     "targets": [
-      "home_page_function"
+      "home_page_function",
+      "crm_function",
+      "hotlist_cron",
+      "warmlist_cron",
+      "topofmind_cron",
+      "sendemail_cron"
     ],
     "ignore": [],
     "source": "functions"
+  },
+  "apig": {
+    "enabled": false
   }
 }

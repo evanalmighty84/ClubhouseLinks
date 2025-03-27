@@ -29,7 +29,7 @@ const Header = () => {
             case '/app/samplePortfolios': return 'linear-gradient(to bottom right, #f7e0c4, brown)';
             case '/app/aiProjects': return 'linear-gradient(to bottom right, #b0d4e3, steelblue';
             case '/app/onlineReviews': return 'linear-gradient(to bottom right, #f5c2d5, #de4e7f)';
-            case '/app/eCommerce': return 'linear-gradient(to bottom right, #7fc87f, #008B00';
+            case '/app/eCommerce': return 'linear-gradient(to right bottom, #34eb92, #23ad6a';
             case '/app/clubhouseMarketing': return 'linear-gradient(to bottom right, #a9d8d8, cadetblue';
             case '/app/contactUs': return 'linear-gradient(to bottom right, #ffecb3, gold';
             case '/app/appstore': return 'linear-gradient(to bottom right, #ffdab3, orange';
@@ -65,7 +65,7 @@ const Header = () => {
                 style.color = "#de4e7f";
                 break;
             case '/app/eCommerce':
-                style.background = 'linear-gradient(to bottom right, #7fc87f, #008B00';
+                style.background = 'linear-gradient(to right bottom, #34eb92, #23ad6a';
                 style.color = 'white';
                 style.borderColor = 'white';
                 style.color = "#008B00";
@@ -97,7 +97,7 @@ const Header = () => {
     };
 
     const navItems = [
-        { path: '/app/samplePortfolios', label: 'Sample Portfolios', icon: samplePortfoliosEmoji, isDropdown: true, dropdownItems: [
+        { path: '/app/samplePortfolios', label: 'Website Builder', icon: samplePortfoliosEmoji, isDropdown: true, dropdownItems: [
                 { path: '/app/samplePortfolio1', label: 'Sample Portfolio 1' },
                 { path: '/app/samplePortfolio2', label: 'Sample Portfolio 2' },
                 { path: '/app/samplePortfolio3', label: 'Sample Portfolio 3' }

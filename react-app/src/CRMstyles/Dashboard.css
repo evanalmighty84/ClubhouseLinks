@@ -1,0 +1,39 @@
+.dashboard-card-row {
+    margin-bottom: 20px;
+}
+
+/* Ensure charts and cards are responsive */
+.dashboard-chart {
+    margin-top: 20px;
+}
+
+/* Add responsive CRMstyles for smaller devices */
+@media (max-width: 767px) {
+    .dashboard-card-row {
+        flex-direction: column;
+    }
+
+    .dashboard-chart {
+        margin-top: 10px;
+    }
+}
+
+/* Default text size */
+.responsive-text {
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+/* Adjust text size for mobile screens */
+@media (max-width: 768px) {
+    .responsive-text {
+        font-size: 0.75rem; /* Adjust as needed for smaller devices */
+    }
+}
+
+@media (max-width: 480px) {
+    .responsive-text {
+        font-size: 0.6rem; /* Even smaller for very narrow screens */
+    }
+}
+

@@ -1,0 +1,58 @@
+/* Make the calendar background stand out */
+.custom-calendar {
+    background-color: #fefcf8;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Style header row (day names) */
+.rbc-header {
+    background: linear-gradient(to right, #ffdab3, orange);
+    color: #333;
+    font-weight: bold;
+    text-align: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #ccc;
+    font-size: 14px;
+}
+
+/* Style individual day cells */
+.rbc-day-bg {
+    background-color: #fffaf3;
+    transition: background-color 0.3s;
+}
+
+.rbc-day-bg:hover {
+    background-color: #ffeccc;
+    cursor: pointer;
+}
+
+/* Highlight today */
+.rbc-today {
+    background-color: rgba(255, 240, 210, 0.6);
+    border: 2px solid orange !important;
+}
+
+/* Style event blocks (injected via JS styles too) */
+.rbc-event {
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Selected cell feedback */
+.rbc-selected-cell {
+    background-color: #ffe0b2 !important;
+    border-radius: 4px;
+}
+
+/* Change agenda view styling (optional) */
+.rbc-agenda-view table {
+    border-collapse: separate;
+    border-spacing: 0 8px;
+}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AOS from 'aos';
-import 'aos/dist/aos.css'; // Import AOS styles
+import 'aos/dist/aos.css'; // Import AOS CRMstyles
 
 import Component1 from './template2/sampleportfolios2'; // Import your components
 import Component2 from './templatemo_591_villa_agency/SamplePortfolios4';
@@ -12,7 +12,7 @@ const gradients = [
     'white',
     'linear-gradient(to bottom right, #ffecb3, #ffd700)',
     'linear-gradient(to bottom right, #a9d8d8, cadetblue)',
-    'linear-gradient(to bottom right, #7fc87f, #008B00)',
+    'linear-gradient(to right bottom, #34eb92, #23ad6a)',
     'linear-gradient(to bottom right, #f5c2d5, #de4e7f)',
     'linear-gradient(to bottom right, #ffdab3, orange)',
     'linear-gradient(to bottom right, #b0d4e3, steelblue)',
@@ -105,7 +105,7 @@ const SamplePortfolio = () => {
                                 </Form.Control>
                             </Form.Group>
                         </Form>
-                        <button style={{ background: 'linear-gradient(to bottom right, #7fc87f, #008B00)', borderColor: 'white' }} className="btn btn-primary mt-3" onClick={handleAddToCart}>Add to Cart</button>
+                        <button style={{ background: 'linear-gradient(to right bottom, #34eb92, #23ad6a)', borderColor: 'white' }} className="btn btn-primary mt-3" onClick={handleAddToCart}>Add to Cart</button>
                     </div>
                     <hr />
                     <div style={{ background: gradients[selectedGradientIndex], minHeight: '100vh', padding: '20px' }} className="container">

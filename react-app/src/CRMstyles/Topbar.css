@@ -1,0 +1,46 @@
+/* Ensure the background-color is applied properly, overriding any Bootstrap CRMstyles */
+.navbar.topbar {
+    background-color: #4682b4 !important; /* Steel Blue */
+    color: white !important;
+    z-index: 1000;
+    padding: 10px 20px;
+    width: 100%;
+    position: fixed;
+    top: 0;
+}
+
+/* Ensure navbar-brand has the right color */
+.navbar-brand {
+    color: white !important;
+    font-size: 1.5rem;
+}
+
+/* Ensure nav links inside the topbar are white */
+.navbar-nav .nav-link {
+    color: white !important;
+    margin-left: 15px;
+}
+
+/* Hover state for nav links */
+.navbar-nav .nav-link:hover {
+    color: #ddd !important;
+}
+
+/* Make sure the navbar-toggler (hamburger menu) is visible and styled correctly */
+.navbar-toggler {
+    border-color: white !important;
+    padding-right: 2em  !important; /* Ensure padding-right is consistent */
+}
+/* Style for the collapsed navbar-toggler */
+.navbar-toggler.collapsed {
+    padding-right: 2em !important; /* Apply padding-right to the collapsed state */
+}
+
+/* Maintain the same padding for the navbar-toggler overall */
+
+
+
+
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='rgba%28255, 255, 255, 1%29' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E") !important;
+}

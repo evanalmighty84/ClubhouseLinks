@@ -1,0 +1,22 @@
+.subtle-glow-text {
+    color: black; /* Set text color to black */
+    text-align: center; /* Center-align the text */
+    text-shadow:
+            0 0 5px rgba(255, 140, 0, 0.7), /* Subtle orange glow */
+            0 0 10px rgba(255, 69, 0, 0.5); /* Slight red glow for depth */
+    animation: subtle-glow 2s infinite; /* Soft animation for glowing effect */
+}
+
+/* Subtle animation for the glow effect */
+@keyframes subtle-glow {
+    0%, 100% {
+        text-shadow:
+                0 0 2px gold,
+                0 0 5px rgba(255, 69, 0, 0.5);
+    }
+    50% {
+        text-shadow:
+                0 0 5px rgba(255, 140, 0, 1),
+                0 0 6px rgba(255, 69, 0, 0.7);
+    }
+}

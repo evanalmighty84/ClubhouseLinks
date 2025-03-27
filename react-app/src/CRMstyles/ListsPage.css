@@ -1,0 +1,25 @@
+.lists-page h2 {
+    font-size: 24px;
+}
+
+.lists-page .table {
+    margin-top: 20px;
+}
+
+.lists-page .text-right {
+    text-align: right;
+}
+.btn-info {
+    color: white !important;
+    background-color:rgb(290, 115, 89) !important;
+    border-color:steelblue !important;
+}
+
+.btn-danger {
+    background-color: rgb(290, 90, 89)!important;;
+}
+
+
+.btn-primary {
+    background-color: dodgerblue!important;;
+}
