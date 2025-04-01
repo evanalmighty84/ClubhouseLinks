@@ -3,9 +3,6 @@
 	"version": "1.0.0",
 	"main": "index.js",
 	"author": "evanligon7@gmail.com",
-	"scripts": {
-		"start": "node worker.js"
-	},
 	"dependencies": {
 		"bcrypt": "^5.1.1",
 		"bcryptjs": "^2.4.3",

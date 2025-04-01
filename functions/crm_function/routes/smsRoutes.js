@@ -8,4 +8,11 @@ router.post('/send', smsController.sendSMS);
 // ✅ NEW route
 router.get('/scheduled/:userId', smsController.getScheduledSMS);
 
+// smsRoutes.js (add this to the bottom)
+
+router.post('/status-callback', smsController.twilioStatusCallback);
+
+
 module.exports = router;
+
+

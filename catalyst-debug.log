@@ -1079,3 +1079,42 @@ change of worker.js in crm_function detected. Preparing your function, please wa
 change of worker.js in crm_function detected. Preparing your function, please wait...
 [info] [2025-04-01T22:33:37.262Z] : ℹ AdvancedIO[crm_function]: ready!
 [info] [2025-04-01T22:33:37.262Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T22:38:38.468Z] : 
+change of package.json in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T22:38:46.088Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T22:38:46.089Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T23:07:53.097Z] : 
+change of controllers/smsController.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T23:08:02.168Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T23:08:02.168Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T23:08:33.822Z] : 
+change of routes/smsRoutes.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T23:08:42.459Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T23:08:42.459Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[debug] [2025-04-01T23:14:37.520Z] : > refreshing access token <
+[debug] [2025-04-01T23:14:37.526Z] : >>>> HTTP REQUEST : POST https://accounts.zoho.com/oauth/v2/token 
+<request body omitted>
+
+[debug] [2025-04-01T23:14:37.803Z] : <<<< HTTP RESPONSE : 200
+Response Headers: {"server":"ZGS","date":"Tue, 01 Apr 2025 23:14:37 GMT","content-type":"application/json;charset=UTF-8","content-length":"1945","connection":"close","set-cookie":["zalb_b266a5bf57=9f371135a524e2d1f51eb9f41fa26c60; Path=/; Secure; HttpOnly","iamcsr=f1a5d467-6857-4705-8223-52eb48366b63;path=/;SameSite=None;Secure;priority=high","_zcsr_tmp=f1a5d467-6857-4705-8223-52eb48366b63;path=/;SameSite=Strict;Secure;priority=high"],"cache-control":"no-store","x-content-type-options":"nosniff","pragma":"no-cache","x-frame-options":"SAMEORIGIN","vary":"accept-encoding","content-language":"en-US","strict-transport-security":"max-age=64072000; includeSubDomains; preload"}
+
+[info] [2025-04-01T23:16:19.234Z] : 
+change of package.json in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T23:16:28.973Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T23:16:28.974Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T23:21:05.409Z] : 
+change of utils/twilioClient.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T23:21:13.959Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T23:21:13.960Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T23:21:37.543Z] : 
+change of worker.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T23:21:44.882Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T23:21:44.882Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T23:21:52.009Z] : 
+change of worker.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T23:22:01.042Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T23:22:01.043Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T23:23:04.477Z] : 
+change of package.json in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T23:23:11.441Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T23:23:11.441Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
