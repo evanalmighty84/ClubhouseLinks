@@ -350,11 +350,11 @@ Search for the keywords to learn more about each warning.
 [info] [2025-04-01T19:22:33.182Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
 
 [info] [2025-04-01T19:40:19.375Z] : 
-add of woker.js in crm_function detected. Preparing your function, please wait...
+add of worker.js in crm_function detected. Preparing your function, please wait...
 [info] [2025-04-01T19:40:29.640Z] : ℹ AdvancedIO[crm_function]: ready!
 [info] [2025-04-01T19:40:29.640Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
 [info] [2025-04-01T19:40:42.974Z] : 
-change of woker.js in crm_function detected. Preparing your function, please wait...
+change of worker.js in crm_function detected. Preparing your function, please wait...
 [info] [2025-04-01T19:40:51.616Z] : ℹ AdvancedIO[crm_function]: ready!
 [info] [2025-04-01T19:40:51.617Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
 [info] [2025-04-01T19:41:50.658Z] : 
@@ -365,3 +365,11 @@ add of Procfile in crm_function detected. Preparing your function, please wait..
 change of Procfile in crm_function detected. Preparing your function, please wait...
 [info] [2025-04-01T19:42:29.077Z] : ℹ AdvancedIO[crm_function]: ready!
 [info] [2025-04-01T19:42:29.077Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T20:17:06.771Z] : 
+change of package.json in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T20:17:14.809Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T20:17:14.809Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T20:23:30.816Z] : 
+change of Procfile in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T20:23:40.700Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T20:23:40.701Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
