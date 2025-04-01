@@ -65,7 +65,7 @@ app.use('/api/upload', uploadRoutes);
 
 app.use('/api/smtp', smtpRoutes);
 
-app.use('/api/sms', smsRoutes);
+app.use('/api/smsqueue', smsRoutes);
 
 
 // Use tracking routes

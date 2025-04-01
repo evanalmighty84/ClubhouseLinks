@@ -39,24 +39,33 @@ exports.scheduleSubscribers = async (req, res) => {
     }
 
     const client = await pool.connect();
+    const failedSubscribers = [];
+
     try {
         await client.query('BEGIN');
 
         for (const id of subscriberIds) {
-            // Fetch subscriber info
             const { rows } = await client.query('SELECT * FROM subscribers WHERE id = $1', [id]);
             const subscriber = rows[0];
             if (!subscriber) continue;
 
+            const formattedDate = moment(date).format('YYYY-MM-DD HH:mm:ss'); // <-- LOCAL TIME without Z
+
             if (type === 'text') {
-                // Schedule an SMS
+                const phone_number = subscriber.phone_number;
+                const user_id = subscriber.user_id;
+
+                if (!phone_number) {
+                    failedSubscribers.push(subscriber.name || `Subscriber ${id}`);
+                    continue;
+                }
+
                 await client.query(
                     `INSERT INTO smsqueue (subscriber_id, user_id, message, phone_number, scheduled_time, status)
                      VALUES ($1, $2, $3, $4, $5, 'pending')`,
-                    [subscriber.id, subscriber.user_id, notes, subscriber.phone_number, date]
+                    [id, user_id, notes, phone_number, formattedDate]
                 );
             } else {
-                // Schedule other types in subscribers table
                 const columnMap = {
                     email: 'scheduled_email',
                     phone_call: 'scheduled_phone_call',
@@ -70,13 +79,18 @@ exports.scheduleSubscribers = async (req, res) => {
                     `UPDATE subscribers
                      SET ${columnName} = $1, notes = COALESCE(notes, '') || $2, updated_at = NOW()
                      WHERE id = $3`,
-                    [date, `\n[${type.toUpperCase()} on ${date}]: ${notes}`, id]
+                    [formattedDate, `\n[${type.toUpperCase()} on ${moment(date).format('MMMM Do YYYY, h:mm A')}]: ${notes}`, id]
                 );
             }
         }
 
         await client.query('COMMIT');
-        res.status(200).json({ message: 'Subscribers scheduled successfully' });
+
+        return res.status(200).json({
+            message: 'Subscribers scheduled successfully',
+            failed: failedSubscribers
+        });
+
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error scheduling:', error);
@@ -85,6 +99,8 @@ exports.scheduleSubscribers = async (req, res) => {
         client.release();
     }
 };
+
+
 
 // In subscribersController.js
 exports.unscheduleEvent = async (req, res) => {

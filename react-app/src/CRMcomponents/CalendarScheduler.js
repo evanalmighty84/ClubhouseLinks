@@ -23,6 +23,8 @@ const CalendarScheduler = ({ guestMode = false })  => {
     const [eventDetails, setEventDetails] = useState(null);
     const [queuedEmails, setQueuedEmails] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const [queuedSMS, setQueuedSMS] = useState([]);
+
     const mockSubscribers = [
         { id: 1, name: 'Jane Doe', email: 'jane@example.com', scheduled_email: moment().add(1, 'days').toISOString(), notes: 'Follow-up', template_name: 'Welcome' },
         { id: 2, name: 'John Smith', email: 'john@example.com', scheduled_meeting: moment().add(2, 'days').toISOString(), notes: 'Demo Call', template_name: '' },
@@ -75,6 +77,24 @@ const CalendarScheduler = ({ guestMode = false })  => {
             console.error('Error fetching subscribers:', error);
         }
     };
+
+    const fetchQueuedSMS = async () => {
+        try {
+            const user = JSON.parse(localStorage.getItem('user'));
+            const response = await fetch(`/server/crm_function/api/smsqueue/scheduled/${user.id}`);
+            const data = await response.json();
+            if (response.ok) {
+                setQueuedSMS(data);
+            } else {
+                setQueuedSMS([]);
+                console.error('Failed to load queued SMS', data);
+            }
+        } catch (error) {
+            console.error('Error fetching queued SMS:', error);
+            setQueuedSMS([]);
+        }
+    };
+
 
     const fetchLists = async () => {
         try {
@@ -167,7 +187,8 @@ const CalendarScheduler = ({ guestMode = false })  => {
                 return `[${type} on ${formatted}]`;
             }
         );
-    };
+
+    }
 
 
 
@@ -180,21 +201,24 @@ const CalendarScheduler = ({ guestMode = false })  => {
                 body: JSON.stringify({
                     subscriberIds: selectedSubscribers,
                     type: actionType,
-                    date: selectedDate,
-                    notes: note, // this is used as SMS message when type === 'text'
+                    date: selectedDate.toISOString(), // ✅ Ensures the backend gets UTC timestamp
+                    notes: note,
                 }),
             });
 
-            if (!response.ok) throw new Error('Failed to schedule');
+            const result = await response.json();
 
-            if (actionType === 'text') {
-                toast.success('Text message scheduled successfully!');
-            } else {
-                toast.success('Event scheduled successfully!');
+            if (!response.ok) throw new Error(result.error || 'Unknown error');
+
+            toast.success('Subscribers scheduled successfully!');
+
+            if (result.failed?.length) {
+                toast.warning(`The following subscribers were skipped due to missing phone numbers:\n${result.failed.join(', ')}`);
             }
 
             setShowModal(false);
             fetchSubscribers();
+            fetchQueuedSMS();
         } catch (error) {
             console.error('Error scheduling:', error);
             toast.error('Error scheduling');
@@ -203,6 +227,9 @@ const CalendarScheduler = ({ guestMode = false })  => {
 
 
 
+
+
+    // ✅ Will handle only subscriber events (email, call, meeting, other)
     const convertSubscribersToEvents = () => {
         return subscribers.flatMap(sub => {
             const events = [];
@@ -211,7 +238,6 @@ const CalendarScheduler = ({ guestMode = false })  => {
                 phone_call: 'event-call',
                 meeting: 'event-meeting',
                 other: 'event-other',
-                text: 'event-text',
             };
 
             const formatDate = (date) => moment(date).format('MMMM Do YYYY, h:mm A');
@@ -222,26 +248,12 @@ const CalendarScheduler = ({ guestMode = false })  => {
                     title: `Email - ${sub.name}`,
                     start: date,
                     end: date,
-                    formattedDate: moment(date).format('MMMM Do YYYY, h:mm A'),
+                    formattedDate: formatDate(date),
                     notes: sub.notes,
                     templateName: sub.template_name,
                     className: styleMap.email
                 });
             }
-
-            if (sub.scheduled_text) {
-                const date = moment(sub.scheduled_text).toDate();
-                events.push({
-                    title: `Text - ${sub.name}`,
-                    start: date,
-                    end: date,
-                    formattedDate: formatDate(date),
-                    notes: sub.notes,
-                    className: styleMap.text // you will also need to define this
-                });
-            }
-
-
 
             if (sub.scheduled_phone_call) {
                 const date = moment(sub.scheduled_phone_call).toDate();
@@ -283,6 +295,22 @@ const CalendarScheduler = ({ guestMode = false })  => {
         });
     };
 
+// ✅ New Function: Handles SMS Queue events
+    const convertScheduledSMSToEvents = () => {
+        return queuedSMS.map(sms => {
+            const subscriber = subscribers.find(sub => sub.id === sms.subscriber_id);
+            return {
+                title: `Text - ${subscriber ? subscriber.name : 'Unknown Subscriber'}`,
+                start: new Date(sms.scheduled_time),
+                end: new Date(sms.scheduled_time),
+                notes: subscriber?.notes || '', // <-- grab notes from subscribers table
+                className: 'event-text',
+            };
+        });
+    };
+
+
+
 
 
     const eventPropGetter = (event) => {
@@ -313,11 +341,17 @@ const CalendarScheduler = ({ guestMode = false })  => {
         fetchSubscribers();
         fetchLists();
         fetchTemplates();
+        fetchQueuedSMS();
     }, []);
 
     useEffect(() => {
-        setEvents(convertSubscribersToEvents());
-    }, [subscribers]);
+        const combinedEvents = [
+            ...convertSubscribersToEvents(),
+            ...convertScheduledSMSToEvents()
+        ];
+        setEvents(combinedEvents);
+    }, [subscribers, queuedSMS]);
+
 
     return (
         <div>
@@ -364,6 +398,41 @@ const CalendarScheduler = ({ guestMode = false })  => {
                             </Table>
                         </div>
                     )}
+                    {eventDetails && (
+                        <>
+                            {(() => {
+                                const subscriberName = eventDetails.title?.split(" - ")[1];
+                                const subscriber = subscribers.find(sub => sub.name === subscriberName);
+                                const relevantSMS = queuedSMS.filter(sms => sms.subscriber_id === subscriber?.id);
+                                return (
+                                    relevantSMS.length > 0 && (
+                                        <div className="mb-3">
+                                            <h5>Queued Text Messages</h5>
+                                            <Table striped bordered hover responsive>
+                                                <thead>
+                                                <tr>
+                                                    <th>Send Time</th>
+                                                    <th>Message</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                {relevantSMS.map((sms) => (
+                                                    <tr key={sms.id}>
+                                                        <td>{moment(sms.scheduled_time).format('MMMM Do YYYY, h:mm A')}</td>
+                                                        <td>{sms.message}</td>
+                                                        <td>{sms.status}</td>
+                                                    </tr>
+                                                ))}
+                                                </tbody>
+                                            </Table>
+                                        </div>
+                                    )
+                                );
+                            })()}
+                        </>
+                    )}
+
 
                     {eventDetails ? (
                         <>

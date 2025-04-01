@@ -373,3 +373,709 @@ change of package.json in crm_function detected. Preparing your function, please
 change of Procfile in crm_function detected. Preparing your function, please wait...
 [info] [2025-04-01T20:23:40.700Z] : ℹ AdvancedIO[crm_function]: ready!
 [info] [2025-04-01T20:23:40.701Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[debug] [2025-04-01T20:40:43.390Z] : > refreshing access token <
+[debug] [2025-04-01T20:40:43.403Z] : >>>> HTTP REQUEST : POST https://accounts.zoho.com/oauth/v2/token 
+<request body omitted>
+
+[debug] [2025-04-01T20:40:43.900Z] : <<<< HTTP RESPONSE : 200
+Response Headers: {"server":"ZGS","date":"Tue, 01 Apr 2025 20:40:43 GMT","content-type":"application/json;charset=UTF-8","content-length":"1945","connection":"close","set-cookie":["zalb_b266a5bf57=a7f15cb1555106de5ac96d088b72e7c8; Path=/; Secure; HttpOnly","iamcsr=e108bbd7-71f2-410f-963c-1a3f050f3d1f;path=/;SameSite=None;Secure;priority=high","_zcsr_tmp=e108bbd7-71f2-410f-963c-1a3f050f3d1f;path=/;SameSite=Strict;Secure;priority=high"],"cache-control":"no-store","x-content-type-options":"nosniff","pragma":"no-cache","x-frame-options":"SAMEORIGIN","vary":"accept-encoding","content-language":"en-US","strict-transport-security":"max-age=64072000; includeSubDomains; preload"}
+
+[info] [2025-04-01T20:47:43.408Z] : 
+change of controllers/subscriberController.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T20:47:55.831Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T20:47:55.831Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T20:50:20.674Z] : 
+change of controllers/subscriberController.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T20:50:29.875Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T20:50:29.875Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T20:58:40.503Z] : 
+change of controllers/smsController.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T20:58:49.117Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T20:58:49.117Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T20:59:17.909Z] : 
+change of routes/smsRoutes.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T20:59:24.636Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T20:59:24.636Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T21:00:21.507Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T21:00:23.695Z] : [react-plugin]: Failed to compile.
+
+[info] [2025-04-01T21:00:23.695Z] : [react-plugin]: [eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 274:16:  'queuedSMS' is not defined  no-undef
+
+Search for the keywords to learn more about each error.
+[info] [2025-04-01T21:01:09.388Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T21:01:10.653Z] : [react-plugin]: Failed to compile.
+
+[info] [2025-04-01T21:01:10.653Z] : [react-plugin]: [eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 274:16:  'queuedSMS' is not defined  no-undef
+  Line 322:22:  'queuedSMS' is not defined  no-undef
+
+Search for the keywords to learn more about each error.
+[info] [2025-04-01T21:01:47.057Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T21:01:48.464Z] : [react-plugin]: Compiled with warnings.
+
+[info] [2025-04-01T21:01:48.465Z] : [react-plugin]: Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map'
+
+Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map'
+
+[eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 2:37:   'Views' is defined but never used                                                                                                                                  no-unused-vars
+  Line 16:12:  'lists' is assigned a value but never used                                                                                                                         no-unused-vars
+  Line 26:23:  'setQueuedSMS' is assigned a value but never used                                                                                                                  no-unused-vars
+  Line 33:11:  'mockTemplates' is assigned a value but never used                                                                                                                 no-unused-vars
+  Line 316:8:  React Hook useEffect has a missing dependency: 'fetchSubscribers'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+  Line 324:8:  React Hook useEffect has missing dependencies: 'convertScheduledSMSToEvents' and 'convertSubscribersToEvents'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+[info] [2025-04-01T21:01:48.465Z] : [react-plugin]: 
+Search for the keywords to learn more about each warning.
+[info] [2025-04-01T21:01:48.465Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
+
+[info] [2025-04-01T21:02:02.793Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T21:02:04.037Z] : [react-plugin]: Compiled with warnings.
+
+[info] [2025-04-01T21:02:04.038Z] : [react-plugin]: Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map'
+
+Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map'
+
+[eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 2:37:   'Views' is defined but never used                                                                                                                                  no-unused-vars
+  Line 16:12:  'lists' is assigned a value but never used                                                                                                                         no-unused-vars
+  Line 33:11:  'mockTemplates' is assigned a value but never used                                                                                                                 no-unused-vars
+  Line 81:11:  'fetchQueuedSMS' is assigned a value but never used                                                                                                                no-unused-vars
+  Line 334:8:  React Hook useEffect has a missing dependency: 'fetchSubscribers'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+  Line 342:8:  React Hook useEffect has missing dependencies: 'convertScheduledSMSToEvents' and 'convertSubscribersToEvents'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+[info] [2025-04-01T21:02:04.038Z] : [react-plugin]: 
+Search for the keywords to learn more about each warning.
+[info] [2025-04-01T21:02:04.038Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
+
+[info] [2025-04-01T21:02:16.996Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T21:02:18.303Z] : [react-plugin]: Compiled with warnings.
+
+[info] [2025-04-01T21:02:18.303Z] : [react-plugin]: Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map'
+
+Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map'
+
+[eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 2:37:   'Views' is defined but never used                                                                                                                                  no-unused-vars
+  Line 16:12:  'lists' is assigned a value but never used                                                                                                                         no-unused-vars
+  Line 33:11:  'mockTemplates' is assigned a value but never used                                                                                                                 no-unused-vars
+  Line 335:8:  React Hook useEffect has a missing dependency: 'fetchSubscribers'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+  Line 343:8:  React Hook useEffect has missing dependencies: 'convertScheduledSMSToEvents' and 'convertSubscribersToEvents'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+[info] [2025-04-01T21:02:18.303Z] : [react-plugin]: 
+Search for the keywords to learn more about each warning.
+[info] [2025-04-01T21:02:18.303Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
+
+[info] [2025-04-01T21:24:26.607Z] : 
+change of controllers/subscriberController.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T21:24:36.269Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T21:24:36.269Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T21:25:31.600Z] : 
+change of controllers/subscriberController.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T21:25:44.507Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T21:25:44.507Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T21:27:27.672Z] : 
+change of controllers/subscriberController.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T21:27:38.452Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T21:27:38.452Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T21:27:51.585Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T21:27:52.701Z] : [react-plugin]: Failed to compile.
+
+[info] [2025-04-01T21:27:52.701Z] : [react-plugin]: SyntaxError: /Users/administrator/WebstormProjects/untitled7/react-app/src/CRMcomponents/CalendarScheduler.js: Unexpected token (197:96)
+  195 |     const handleSchedule = async () => {
+  196 |         try {
+> 197 |             const response = await fetch('/server/crm_function/api/subscribers/schedule', { ... });
+      |                                                                                                 ^
+  198 |             const result = await response.json();
+  199 |
+  200 |             if (!response.ok) throw new Error(result.error || 'Unknown error');
+[info] [2025-04-01T21:28:10.299Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T21:28:11.230Z] : [react-plugin]: Compiled with warnings.
+
+[info] [2025-04-01T21:28:11.231Z] : [react-plugin]: Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map'
+
+Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map'
+
+[eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 2:37:   'Views' is defined but never used                                                                                                                                  no-unused-vars
+  Line 16:12:  'lists' is assigned a value but never used                                                                                                                         no-unused-vars
+  Line 33:11:  'mockTemplates' is assigned a value but never used                                                                                                                 no-unused-vars
+  Line 335:8:  React Hook useEffect has a missing dependency: 'fetchSubscribers'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+  Line 343:8:  React Hook useEffect has missing dependencies: 'convertScheduledSMSToEvents' and 'convertSubscribersToEvents'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+[info] [2025-04-01T21:28:11.231Z] : [react-plugin]: 
+Search for the keywords to learn more about each warning.
+[info] [2025-04-01T21:28:11.231Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
+
+[info] [2025-04-01T21:28:28.633Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T21:28:29.314Z] : [react-plugin]: Failed to compile.
+
+[info] [2025-04-01T21:28:29.314Z] : [react-plugin]: SyntaxError: /Users/administrator/WebstormProjects/untitled7/react-app/src/CRMcomponents/CalendarScheduler.js: Unexpected token (197:96)
+  195 |     const handleSchedule = async () => {
+  196 |         try {
+> 197 |             const response = await fetch('/server/crm_function/api/subscribers/schedule', { ... });
+      |                                                                                                 ^
+  198 |             const result = await response.json();
+  199 |
+  200 |             if (!response.ok) throw new Error(result.error || 'Unknown error');
+[info] [2025-04-01T21:29:33.982Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T21:29:36.454Z] : [react-plugin]: Compiled with warnings.
+
+[info] [2025-04-01T21:29:36.455Z] : [react-plugin]: Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map'
+
+Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map'
+
+[eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 2:37:   'Views' is defined but never used                                                                                                                                  no-unused-vars
+  Line 16:12:  'lists' is assigned a value but never used                                                                                                                         no-unused-vars
+  Line 33:11:  'mockTemplates' is assigned a value but never used                                                                                                                 no-unused-vars
+  Line 338:8:  React Hook useEffect has a missing dependency: 'fetchSubscribers'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+  Line 346:8:  React Hook useEffect has missing dependencies: 'convertScheduledSMSToEvents' and 'convertSubscribersToEvents'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+[info] [2025-04-01T21:29:36.455Z] : [react-plugin]: 
+Search for the keywords to learn more about each warning.
+[info] [2025-04-01T21:29:36.455Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
+
+[info] [2025-04-01T21:32:10.643Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T21:32:12.316Z] : [react-plugin]: Compiled with warnings.
+
+[info] [2025-04-01T21:32:12.317Z] : [react-plugin]: Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map'
+
+Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map'
+
+[eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 2:37:   'Views' is defined but never used                                                                                                                                  no-unused-vars
+  Line 16:12:  'lists' is assigned a value but never used                                                                                                                         no-unused-vars
+  Line 33:11:  'mockTemplates' is assigned a value but never used                                                                                                                 no-unused-vars
+  Line 339:8:  React Hook useEffect has a missing dependency: 'fetchSubscribers'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+  Line 347:8:  React Hook useEffect has missing dependencies: 'convertScheduledSMSToEvents' and 'convertSubscribersToEvents'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+[info] [2025-04-01T21:32:12.317Z] : [react-plugin]: 
+Search for the keywords to learn more about each warning.
+[info] [2025-04-01T21:32:12.317Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
+
+[info] [2025-04-01T21:34:01.643Z] : 
+change of index.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T21:34:11.585Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T21:34:11.585Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T21:40:11.997Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T21:40:13.156Z] : [react-plugin]: Compiled with warnings.
+
+[info] [2025-04-01T21:40:13.156Z] : [react-plugin]: Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map'
+
+Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map'
+
+[eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 2:37:   'Views' is defined but never used                                                                                                                                  no-unused-vars
+  Line 16:12:  'lists' is assigned a value but never used                                                                                                                         no-unused-vars
+  Line 33:11:  'mockTemplates' is assigned a value but never used                                                                                                                 no-unused-vars
+  Line 343:8:  React Hook useEffect has a missing dependency: 'fetchSubscribers'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+  Line 351:8:  React Hook useEffect has missing dependencies: 'convertScheduledSMSToEvents' and 'convertSubscribersToEvents'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+[info] [2025-04-01T21:40:13.156Z] : [react-plugin]: 
+Search for the keywords to learn more about each warning.
+[info] [2025-04-01T21:40:13.156Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
+
+[info] [2025-04-01T21:42:12.857Z] : 
+change of controllers/smsController.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T21:42:20.930Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T21:42:20.931Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[debug] [2025-04-01T21:42:25.460Z] : > refreshing access token <
+[debug] [2025-04-01T21:42:25.467Z] : >>>> HTTP REQUEST : POST https://accounts.zoho.com/oauth/v2/token 
+<request body omitted>
+
+[debug] [2025-04-01T21:42:26.841Z] : <<<< HTTP RESPONSE : 200
+Response Headers: {"server":"ZGS","date":"Tue, 01 Apr 2025 21:42:26 GMT","content-type":"application/json;charset=UTF-8","content-length":"1945","connection":"close","set-cookie":["zalb_b266a5bf57=9f371135a524e2d1f51eb9f41fa26c60; Path=/; Secure; HttpOnly","iamcsr=c6b01bd4-ac43-478e-8528-cb6b47c186ed;path=/;SameSite=None;Secure;priority=high","_zcsr_tmp=c6b01bd4-ac43-478e-8528-cb6b47c186ed;path=/;SameSite=Strict;Secure;priority=high"],"cache-control":"no-store","x-content-type-options":"nosniff","pragma":"no-cache","x-frame-options":"SAMEORIGIN","vary":"accept-encoding","content-language":"en-US","strict-transport-security":"max-age=64072000; includeSubDomains; preload"}
+
+[info] [2025-04-01T21:46:09.471Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T21:46:11.495Z] : [react-plugin]: Compiled with warnings.
+
+[info] [2025-04-01T21:46:11.496Z] : [react-plugin]: Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map'
+
+Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map'
+
+[eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 2:37:   'Views' is defined but never used                                                                                                                                  no-unused-vars
+  Line 16:12:  'lists' is assigned a value but never used                                                                                                                         no-unused-vars
+  Line 33:11:  'mockTemplates' is assigned a value but never used                                                                                                                 no-unused-vars
+  Line 343:8:  React Hook useEffect has a missing dependency: 'fetchSubscribers'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+  Line 351:8:  React Hook useEffect has missing dependencies: 'convertScheduledSMSToEvents' and 'convertSubscribersToEvents'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+[info] [2025-04-01T21:46:11.497Z] : [react-plugin]: 
+Search for the keywords to learn more about each warning.
+[info] [2025-04-01T21:46:11.497Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
+
+[info] [2025-04-01T21:48:37.219Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T21:48:39.289Z] : [react-plugin]: Compiled with warnings.
+
+[info] [2025-04-01T21:48:39.290Z] : [react-plugin]: Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map'
+
+Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map'
+
+[eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 2:37:   'Views' is defined but never used                                                                                                                                  no-unused-vars
+  Line 16:12:  'lists' is assigned a value but never used                                                                                                                         no-unused-vars
+  Line 33:11:  'mockTemplates' is assigned a value but never used                                                                                                                 no-unused-vars
+  Line 343:8:  React Hook useEffect has a missing dependency: 'fetchSubscribers'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+  Line 351:8:  React Hook useEffect has missing dependencies: 'convertScheduledSMSToEvents' and 'convertSubscribersToEvents'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+[info] [2025-04-01T21:48:39.291Z] : [react-plugin]: 
+Search for the keywords to learn more about each warning.
+[info] [2025-04-01T21:48:39.291Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
+
+[info] [2025-04-01T21:50:01.207Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T21:50:02.588Z] : [react-plugin]: Compiled with warnings.
+
+[info] [2025-04-01T21:50:02.588Z] : [react-plugin]: Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map'
+
+Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map'
+
+[eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 2:37:   'Views' is defined but never used                                                                                                                                  no-unused-vars
+  Line 16:12:  'lists' is assigned a value but never used                                                                                                                         no-unused-vars
+  Line 33:11:  'mockTemplates' is assigned a value but never used                                                                                                                 no-unused-vars
+  Line 343:8:  React Hook useEffect has a missing dependency: 'fetchSubscribers'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+  Line 351:8:  React Hook useEffect has missing dependencies: 'convertScheduledSMSToEvents' and 'convertSubscribersToEvents'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+[info] [2025-04-01T21:50:02.589Z] : [react-plugin]: 
+Search for the keywords to learn more about each warning.
+[info] [2025-04-01T21:50:02.589Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
+
+[info] [2025-04-01T21:55:37.992Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T21:55:39.563Z] : [react-plugin]: Compiled with warnings.
+
+[info] [2025-04-01T21:55:39.566Z] : [react-plugin]: Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map'
+
+Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map'
+
+[eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 2:37:   'Views' is defined but never used                                                                                                                                  no-unused-vars
+  Line 16:12:  'lists' is assigned a value but never used                                                                                                                         no-unused-vars
+  Line 33:11:  'mockTemplates' is assigned a value but never used                                                                                                                 no-unused-vars
+  Line 344:8:  React Hook useEffect has a missing dependency: 'fetchSubscribers'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+  Line 352:8:  React Hook useEffect has missing dependencies: 'convertScheduledSMSToEvents' and 'convertSubscribersToEvents'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+[info] [2025-04-01T21:55:39.566Z] : [react-plugin]: 
+Search for the keywords to learn more about each warning.
+[info] [2025-04-01T21:55:39.566Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
+
+[info] [2025-04-01T21:58:17.612Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T21:58:19.018Z] : [react-plugin]: Compiled with warnings.
+
+[info] [2025-04-01T21:58:19.023Z] : [react-plugin]: Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map'
+
+Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map'
+
+[eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 2:37:   'Views' is defined but never used                                                                                                                                  no-unused-vars
+  Line 16:12:  'lists' is assigned a value but never used                                                                                                                         no-unused-vars
+  Line 33:11:  'mockTemplates' is assigned a value but never used                                                                                                                 no-unused-vars
+  Line 343:8:  React Hook useEffect has a missing dependency: 'fetchSubscribers'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+  Line 351:8:  React Hook useEffect has missing dependencies: 'convertScheduledSMSToEvents' and 'convertSubscribersToEvents'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+[info] [2025-04-01T21:58:19.023Z] : [react-plugin]: 
+Search for the keywords to learn more about each warning.
+[info] [2025-04-01T21:58:19.023Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
+
+[info] [2025-04-01T21:59:17.456Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T21:59:18.476Z] : [react-plugin]: Failed to compile.
+
+[info] [2025-04-01T21:59:18.476Z] : [react-plugin]: SyntaxError: /Users/administrator/WebstormProjects/untitled7/react-app/src/CRMcomponents/CalendarScheduler.js: Missing catch or finally clause. (196:8)
+  194 |
+  195 |     const handleSchedule = async () => {
+> 196 |         try {
+      |         ^
+  197 |             const response = await fetch('/server/crm_function/api/subscribers/schedule', {
+  198 |                 method: 'POST',
+  199 |                 headers: { 'Content-Type': 'application/json' },
+[info] [2025-04-01T21:59:50.905Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T21:59:51.530Z] : [react-plugin]: Failed to compile.
+
+[info] [2025-04-01T21:59:51.532Z] : [react-plugin]: SyntaxError: /Users/administrator/WebstormProjects/untitled7/react-app/src/CRMcomponents/CalendarScheduler.js: Missing catch or finally clause. (196:8)
+  194 |
+  195 |     const handleSchedule = async () => {
+> 196 |         try {
+      |         ^
+  197 |             const response = await fetch('/server/crm_function/api/subscribers/schedule', {
+  198 |                 method: 'POST',
+  199 |                 headers: {'Content-Type': 'application/json'},
+[info] [2025-04-01T22:00:10.268Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T22:00:11.308Z] : [react-plugin]: Compiled with warnings.
+
+[info] [2025-04-01T22:00:11.309Z] : [react-plugin]: Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map'
+
+Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map'
+
+[eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 2:37:   'Views' is defined but never used                                                                                                                                  no-unused-vars
+  Line 16:12:  'lists' is assigned a value but never used                                                                                                                         no-unused-vars
+  Line 33:11:  'mockTemplates' is assigned a value but never used                                                                                                                 no-unused-vars
+  Line 343:8:  React Hook useEffect has a missing dependency: 'fetchSubscribers'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+  Line 351:8:  React Hook useEffect has missing dependencies: 'convertScheduledSMSToEvents' and 'convertSubscribersToEvents'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+[info] [2025-04-01T22:00:11.309Z] : [react-plugin]: 
+Search for the keywords to learn more about each warning.
+[info] [2025-04-01T22:00:11.309Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
+
+[info] [2025-04-01T22:00:33.941Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T22:00:34.630Z] : [react-plugin]: Failed to compile.
+
+[info] [2025-04-01T22:00:34.631Z] : [react-plugin]: SyntaxError: /Users/administrator/WebstormProjects/untitled7/react-app/src/CRMcomponents/CalendarScheduler.js: Unexpected token, expected "," (210:5)
+  208 |             toast.error('Error scheduling');
+  209 |         }
+> 210 |     };
+      |      ^
+  211 |
+  212 |
+  213 |
+[info] [2025-04-01T22:00:44.330Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T22:00:44.962Z] : [react-plugin]: Failed to compile.
+
+[info] [2025-04-01T22:00:44.962Z] : [react-plugin]: SyntaxError: /Users/administrator/WebstormProjects/untitled7/react-app/src/CRMcomponents/CalendarScheduler.js: Unexpected token, expected "," (206:13)
+  204 |                     notes: note,
+  205 |                 })
+> 206 |              catch (error) {
+      |              ^
+  207 |             console.error('Error scheduling:', error);
+  208 |             toast.error('Error scheduling');
+  209 |         }
+[info] [2025-04-01T22:01:08.926Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T22:01:09.969Z] : [react-plugin]: Failed to compile.
+
+[info] [2025-04-01T22:01:09.970Z] : [react-plugin]: SyntaxError: /Users/administrator/WebstormProjects/untitled7/react-app/src/CRMcomponents/CalendarScheduler.js: Unexpected token, expected "," (529:1)
+  527 |         </div>
+  528 |     );
+> 529 | };
+      |  ^
+  530 |
+  531 | export default CalendarScheduler;
+  532 |
+[info] [2025-04-01T22:01:24.860Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T22:01:25.755Z] : [react-plugin]: Compiled with warnings.
+
+[info] [2025-04-01T22:01:25.755Z] : [react-plugin]: Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map'
+
+Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map'
+
+[eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 2:37:   'Views' is defined but never used                                                                                                                                  no-unused-vars
+  Line 16:12:  'lists' is assigned a value but never used                                                                                                                         no-unused-vars
+  Line 33:11:  'mockTemplates' is assigned a value but never used                                                                                                                 no-unused-vars
+  Line 343:8:  React Hook useEffect has a missing dependency: 'fetchSubscribers'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+  Line 351:8:  React Hook useEffect has missing dependencies: 'convertScheduledSMSToEvents' and 'convertSubscribersToEvents'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+[info] [2025-04-01T22:01:25.756Z] : [react-plugin]: 
+Search for the keywords to learn more about each warning.
+[info] [2025-04-01T22:01:25.756Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
+
+[info] [2025-04-01T22:02:15.948Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T22:02:17.397Z] : [react-plugin]: Compiled with warnings.
+
+[info] [2025-04-01T22:02:17.397Z] : [react-plugin]: Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map'
+
+Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map'
+
+[eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 2:37:   'Views' is defined but never used                                                                                                                                  no-unused-vars
+  Line 16:12:  'lists' is assigned a value but never used                                                                                                                         no-unused-vars
+  Line 33:11:  'mockTemplates' is assigned a value but never used                                                                                                                 no-unused-vars
+  Line 344:8:  React Hook useEffect has a missing dependency: 'fetchSubscribers'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+  Line 352:8:  React Hook useEffect has missing dependencies: 'convertScheduledSMSToEvents' and 'convertSubscribersToEvents'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+[info] [2025-04-01T22:02:17.397Z] : [react-plugin]: 
+Search for the keywords to learn more about each warning.
+[info] [2025-04-01T22:02:17.397Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
+
+[info] [2025-04-01T22:08:20.334Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T22:08:22.092Z] : [react-plugin]: Compiled with warnings.
+
+[info] [2025-04-01T22:08:22.093Z] : [react-plugin]: Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map'
+
+Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map'
+
+[eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 2:37:   'Views' is defined but never used                                                                                                                                  no-unused-vars
+  Line 16:12:  'lists' is assigned a value but never used                                                                                                                         no-unused-vars
+  Line 33:11:  'mockTemplates' is assigned a value but never used                                                                                                                 no-unused-vars
+  Line 344:8:  React Hook useEffect has a missing dependency: 'fetchSubscribers'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+  Line 352:8:  React Hook useEffect has missing dependencies: 'convertScheduledSMSToEvents' and 'convertSubscribersToEvents'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+[info] [2025-04-01T22:08:22.093Z] : [react-plugin]: 
+Search for the keywords to learn more about each warning.
+[info] [2025-04-01T22:08:22.093Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
+
+[info] [2025-04-01T22:10:26.358Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T22:10:27.348Z] : [react-plugin]: Compiled with warnings.
+
+[info] [2025-04-01T22:10:27.348Z] : [react-plugin]: Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map'
+
+Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map'
+
+[eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 2:37:   'Views' is defined but never used                                                                                              no-unused-vars
+  Line 16:12:  'lists' is assigned a value but never used                                                                                     no-unused-vars
+  Line 31:11:  'mockTemplates' is assigned a value but never used                                                                             no-unused-vars
+  Line 316:8:  React Hook useEffect has a missing dependency: 'fetchSubscribers'. Either include it or remove the dependency array            react-hooks/exhaustive-deps
+  Line 320:8:  React Hook useEffect has a missing dependency: 'convertSubscribersToEvents'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+[info] [2025-04-01T22:10:27.349Z] : [react-plugin]: 
+Search for the keywords to learn more about each warning.
+[info] [2025-04-01T22:10:27.349Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
+
+[info] [2025-04-01T22:10:32.251Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T22:10:33.203Z] : [react-plugin]: Compiled with warnings.
+
+[info] [2025-04-01T22:10:33.203Z] : [react-plugin]: Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map'
+
+Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map'
+
+[eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 2:37:   'Views' is defined but never used                                                                                              no-unused-vars
+  Line 15:12:  'lists' is assigned a value but never used                                                                                     no-unused-vars
+  Line 30:11:  'mockTemplates' is assigned a value but never used                                                                             no-unused-vars
+  Line 291:8:  React Hook useEffect has a missing dependency: 'fetchSubscribers'. Either include it or remove the dependency array            react-hooks/exhaustive-deps
+  Line 295:8:  React Hook useEffect has a missing dependency: 'convertSubscribersToEvents'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+[info] [2025-04-01T22:10:33.204Z] : [react-plugin]: 
+Search for the keywords to learn more about each warning.
+[info] [2025-04-01T22:10:33.204Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
+
+[info] [2025-04-01T22:12:00.543Z] : 
+change of controllers/subscriberController.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T22:12:10.841Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T22:12:10.842Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T22:12:11.844Z] : 
+change of controllers/subscriberController.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T22:12:19.616Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T22:12:19.617Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T22:13:24.900Z] : 
+change of controllers/subscriberController.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T22:13:32.486Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T22:13:32.486Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T22:13:33.539Z] : 
+change of controllers/subscriberController.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T22:13:40.587Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T22:13:40.587Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T22:14:03.057Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T22:14:04.252Z] : [react-plugin]: Compiled with warnings.
+
+[info] [2025-04-01T22:14:04.253Z] : [react-plugin]: Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map'
+
+Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map'
+
+[eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 2:37:   'Views' is defined but never used                                                                                              no-unused-vars
+  Line 16:12:  'lists' is assigned a value but never used                                                                                     no-unused-vars
+  Line 31:11:  'mockTemplates' is assigned a value but never used                                                                             no-unused-vars
+  Line 316:8:  React Hook useEffect has a missing dependency: 'fetchSubscribers'. Either include it or remove the dependency array            react-hooks/exhaustive-deps
+  Line 320:8:  React Hook useEffect has a missing dependency: 'convertSubscribersToEvents'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+[info] [2025-04-01T22:14:04.253Z] : [react-plugin]: 
+Search for the keywords to learn more about each warning.
+[info] [2025-04-01T22:14:04.253Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
+
+[info] [2025-04-01T22:14:10.595Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T22:14:11.704Z] : [react-plugin]: Compiled with warnings.
+
+[info] [2025-04-01T22:14:11.706Z] : [react-plugin]: Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map'
+
+Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map'
+
+[eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 2:37:   'Views' is defined but never used                                                                                                                                  no-unused-vars
+  Line 16:12:  'lists' is assigned a value but never used                                                                                                                         no-unused-vars
+  Line 33:11:  'mockTemplates' is assigned a value but never used                                                                                                                 no-unused-vars
+  Line 344:8:  React Hook useEffect has a missing dependency: 'fetchSubscribers'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+  Line 352:8:  React Hook useEffect has missing dependencies: 'convertScheduledSMSToEvents' and 'convertSubscribersToEvents'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+[info] [2025-04-01T22:14:11.706Z] : [react-plugin]: 
+Search for the keywords to learn more about each warning.
+[info] [2025-04-01T22:14:11.706Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
+
+[info] [2025-04-01T22:14:44.548Z] : 
+change of controllers/subscriberController.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T22:14:53.249Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T22:14:53.250Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T22:17:56.550Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T22:17:57.648Z] : [react-plugin]: Failed to compile.
+
+[info] [2025-04-01T22:17:57.648Z] : [react-plugin]: SyntaxError: /Users/administrator/WebstormProjects/untitled7/react-app/src/CRMcomponents/CalendarScheduler.js: Unexpected token, expected "," (187:29)
+  185 |                  (match, type, rawDate) => {
+  186 |                      const formatted = moment.utc(rawDate).local().format('MMMM Do YYYY, h:mm A');
+> 187 |                     return [${type} on ${formatted}];
+      |                              ^
+  188 |                  }
+  189 |
+  190 |
+[info] [2025-04-01T22:18:19.687Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T22:18:20.451Z] : [react-plugin]: Failed to compile.
+
+[info] [2025-04-01T22:18:20.451Z] : [react-plugin]: SyntaxError: /Users/administrator/WebstormProjects/untitled7/react-app/src/CRMcomponents/CalendarScheduler.js: 'import' and 'export' may only appear at the top level. (546:0)
+  544 | };
+  545 |
+> 546 | export default CalendarScheduler;
+      | ^
+  547 |
+    at parser.next (<anonymous>)
+    at normalizeFile.next (<anonymous>)
+    at run.next (<anonymous>)
+    at transform.next (<anonymous>)
+[info] [2025-04-01T22:18:52.723Z] : [react-plugin]: Compiling...
+[info] [2025-04-01T22:18:54.006Z] : [react-plugin]: Compiled with warnings.
+
+[info] [2025-04-01T22:18:54.007Z] : [react-plugin]: Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/home/css/bootstrap.min.css.map'
+
+Warning
+(6:27575) autoprefixer: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+
+Failed to parse source map from '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map' file: Error: ENOENT: no such file or directory, open '/Users/administrator/WebstormProjects/untitled7/react-app/src/components/samplePortfolios/template1/css/bootstrap.min.css.map'
+
+[eslint] 
+src/CRMcomponents/CalendarScheduler.js
+  Line 2:37:   'Views' is defined but never used                                                                                                                                  no-unused-vars
+  Line 16:12:  'lists' is assigned a value but never used                                                                                                                         no-unused-vars
+  Line 33:11:  'mockTemplates' is assigned a value but never used                                                                                                                 no-unused-vars
+  Line 345:8:  React Hook useEffect has a missing dependency: 'fetchSubscribers'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+  Line 353:8:  React Hook useEffect has missing dependencies: 'convertScheduledSMSToEvents' and 'convertSubscribersToEvents'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+[info] [2025-04-01T22:18:54.007Z] : [react-plugin]: 
+Search for the keywords to learn more about each warning.
+[info] [2025-04-01T22:18:54.007Z] : [react-plugin]: To ignore, add // eslint-disable-next-line to the line before.
+
+[info] [2025-04-01T22:27:09.796Z] : 
+change of worker.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T22:27:16.988Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T22:27:16.988Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T22:27:57.022Z] : 
+change of worker.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T22:28:03.569Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T22:28:03.570Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
+[info] [2025-04-01T22:33:30.109Z] : 
+change of worker.js in crm_function detected. Preparing your function, please wait...
+[info] [2025-04-01T22:33:37.262Z] : ℹ AdvancedIO[crm_function]: ready!
+[info] [2025-04-01T22:33:37.262Z] : ℹ AdvancedIO[crm_function]: http://localhost:3000/server/crm_function/
