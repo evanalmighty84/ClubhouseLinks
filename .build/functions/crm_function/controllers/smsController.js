@@ -47,3 +47,27 @@ exports.getScheduledSMS = async (req, res) => {
     }
 };
 
+
+// smsController.js (append to existing file)
+
+exports.twilioStatusCallback = async (req, res) => {
+    try {
+        const { MessageSid, MessageStatus } = req.body;
+
+        if (!MessageSid || !MessageStatus) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        // Optionally log it
+        console.log(`Twilio Status Update - SID: ${MessageSid}, Status: ${MessageStatus}`);
+
+        // Optional: If you later store sid in your smsqueue you could update by sid
+        // For now, you might want to just log these or enhance later when you store sid
+
+        res.status(200).send('Status received');
+    } catch (error) {
+        console.error('Error handling Twilio status callback:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+

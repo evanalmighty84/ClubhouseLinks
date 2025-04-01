@@ -1,7 +1,7 @@
 // worker.js
 require('dotenv').config();
 const { Pool } = require('pg');
-const client = require('./utils/twilioClient');
+const { client, messagingServiceSid } = require('./utils/twilioClient');
 const moment = require('moment');
 
 // Setup Postgres using individual env variables like the rest of your app
@@ -37,9 +37,10 @@ const processQueue = async () => {
             try {
                 await client.messages.create({
                     body: sms.message,
-                    messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
+                    messagingServiceSid,  // <--- this will now work
                     to: sms.phone_number,
                 });
+
 
                 await pool.query(
                     `UPDATE smsqueue SET status = 'sent', updated_at = NOW() WHERE id = $1`,
