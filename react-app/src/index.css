@@ -16,10 +16,6 @@ body::before {
   left: 0;
   width: 100%;
   height: 100%;
-  background-size: 1%; /* Scale the image to 30% of its original size */
-  background-image: url('../public/assets/images/ClubhouseLinksIcon.png'); /* Keeps the image at its original size */
-  background-repeat: repeat; /* Repeats the image across the background */
-  background-position: left top; /* Optional: Sets the initial position of the image */
   opacity: 0.1; /* Adjust opacity */
   z-index: -1; /* Make sure it's behind all content */
 }

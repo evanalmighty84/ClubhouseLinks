@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, momentLocalizer, Views } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { Modal, Button, Form, Table } from 'react-bootstrap';
+import { Modal, Button, Form, Table,  } from 'react-bootstrap';
+import { toast } from 'react-toastify';
 import axios from 'axios';
 import './CalendarScheduler.css';
 
 const localizer = momentLocalizer(moment);
 
-const CalendarScheduler = () => {
+const CalendarScheduler = ({ guestMode = false })  => {
     const [events, setEvents] = useState([]);
     const [subscribers, setSubscribers] = useState([]);
     const [filteredSubscribers, setFilteredSubscribers] = useState([]);
@@ -22,6 +23,15 @@ const CalendarScheduler = () => {
     const [eventDetails, setEventDetails] = useState(null);
     const [queuedEmails, setQueuedEmails] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const mockSubscribers = [
+        { id: 1, name: 'Jane Doe', email: 'jane@example.com', scheduled_email: moment().add(1, 'days').toISOString(), notes: 'Follow-up', template_name: 'Welcome' },
+        { id: 2, name: 'John Smith', email: 'john@example.com', scheduled_meeting: moment().add(2, 'days').toISOString(), notes: 'Demo Call', template_name: '' },
+    ];
+
+    const mockTemplates = [
+        { id: 1, name: 'Welcome', category: 'Onboarding', content: '<h1>Welcome!</h1>' },
+        { id: 2, name: 'Follow-up', category: 'Engagement', content: '<h1>Follow Up</h1>' }
+    ];
 
     const fetchQueuedEmails = async (subscriberId) => {
         try {
@@ -48,6 +58,11 @@ const CalendarScheduler = () => {
     };
 
     const fetchSubscribers = async () => {
+        if (guestMode) {
+            setSubscribers(mockSubscribers);
+            setFilteredSubscribers(mockSubscribers);
+            return;
+        }
         try {
             const user = JSON.parse(localStorage.getItem('user'));
             const response = await fetch(`/server/crm_function/api/subscribers/user/${user.id}`);
@@ -142,6 +157,20 @@ const CalendarScheduler = () => {
         newWindow.document.write(html);
         newWindow.document.close();
     };
+    const formatNoteWithDate = (note) => {
+        if (!note) return 'No notes available.';
+
+        return note.replace(
+            /\[([A-Z_]+)\s+on\s+([\d\-T:.Z]+)\]/g,
+            (match, type, rawDate) => {
+                const formatted = moment.utc(rawDate).local().format('MMMM Do YYYY, h:mm A');
+                return `[${type} on ${formatted}]`;
+            }
+        );
+    };
+
+
+
 
     const handleSchedule = async () => {
         try {
@@ -152,17 +181,27 @@ const CalendarScheduler = () => {
                     subscriberIds: selectedSubscribers,
                     type: actionType,
                     date: selectedDate,
-                    notes: note,
-                })
+                    notes: note, // this is used as SMS message when type === 'text'
+                }),
             });
-            if (response.ok) {
-                setShowModal(false);
-                fetchSubscribers();
+
+            if (!response.ok) throw new Error('Failed to schedule');
+
+            if (actionType === 'text') {
+                toast.success('Text message scheduled successfully!');
+            } else {
+                toast.success('Event scheduled successfully!');
             }
+
+            setShowModal(false);
+            fetchSubscribers();
         } catch (error) {
-            console.error('Error scheduling event:', error);
+            console.error('Error scheduling:', error);
+            toast.error('Error scheduling');
         }
     };
+
+
 
     const convertSubscribersToEvents = () => {
         return subscribers.flatMap(sub => {
@@ -172,47 +211,79 @@ const CalendarScheduler = () => {
                 phone_call: 'event-call',
                 meeting: 'event-meeting',
                 other: 'event-other',
+                text: 'event-text',
             };
+
+            const formatDate = (date) => moment(date).format('MMMM Do YYYY, h:mm A');
+
             if (sub.scheduled_email) {
+                const date = moment(sub.scheduled_email).toDate();
                 events.push({
                     title: `Email - ${sub.name}`,
-                    start: new Date(sub.scheduled_email),
-                    end: new Date(sub.scheduled_email),
+                    start: date,
+                    end: date,
+                    formattedDate: moment(date).format('MMMM Do YYYY, h:mm A'),
                     notes: sub.notes,
                     templateName: sub.template_name,
                     className: styleMap.email
                 });
             }
+
+            if (sub.scheduled_text) {
+                const date = moment(sub.scheduled_text).toDate();
+                events.push({
+                    title: `Text - ${sub.name}`,
+                    start: date,
+                    end: date,
+                    formattedDate: formatDate(date),
+                    notes: sub.notes,
+                    className: styleMap.text // you will also need to define this
+                });
+            }
+
+
+
             if (sub.scheduled_phone_call) {
+                const date = moment(sub.scheduled_phone_call).toDate();
                 events.push({
                     title: `Call - ${sub.name}`,
-                    start: new Date(sub.scheduled_phone_call),
-                    end: new Date(sub.scheduled_phone_call),
+                    start: date,
+                    end: date,
+                    formattedDate: formatDate(date),
                     notes: sub.notes,
                     className: styleMap.phone_call
                 });
             }
+
             if (sub.scheduled_meeting) {
+                const date = moment(sub.scheduled_meeting).toDate();
                 events.push({
                     title: `Meeting - ${sub.name}`,
-                    start: new Date(sub.scheduled_meeting),
-                    end: new Date(sub.scheduled_meeting),
+                    start: date,
+                    end: date,
+                    formattedDate: formatDate(date),
                     notes: sub.notes,
                     className: styleMap.meeting
                 });
             }
+
             if (sub.scheduled_other) {
+                const date = moment(sub.scheduled_other).toDate();
                 events.push({
                     title: `Other - ${sub.name}`,
-                    start: new Date(sub.scheduled_other),
-                    end: new Date(sub.scheduled_other),
+                    start: date,
+                    end: date,
+                    formattedDate: formatDate(date),
                     notes: sub.notes,
                     className: styleMap.other
                 });
             }
+
             return events;
         });
     };
+
+
 
     const eventPropGetter = (event) => {
         const styles = {
@@ -311,8 +382,12 @@ const CalendarScheduler = () => {
                                 </div>
                             )}
                             <p><strong>Notes:</strong></p>
-                            <pre style={{ whiteSpace: 'pre-wrap' }}>{eventDetails.notes || 'No notes available.'}</pre>
-                            <p><strong>Scheduled Time:</strong> {eventDetails.start.toLocaleString()}</p>
+                            <pre style={{ whiteSpace: 'pre-wrap' }}>{formatNoteWithDate(eventDetails.notes)}</pre>
+                            <p>
+                                <strong>Scheduled {eventDetails.title?.split(' - ')[0] || 'Event'} Time:</strong>{' '}
+                                {moment(eventDetails.start).format('MMMM Do YYYY, h:mm A')}
+                            </p>
+
                         </>
                     ) : (
                         <>
@@ -342,8 +417,10 @@ const CalendarScheduler = () => {
                                     <option value="phone_call">Phone Call</option>
                                     <option value="meeting">Meeting</option>
                                     <option value="other">Other</option>
+                                    <option value="text">Text Message</option> {/* <-- Add this */}
                                 </Form.Select>
                             </Form.Group>
+
 
                             <Form.Group className="mt-3">
                                 <Form.Label>Notes</Form.Label>

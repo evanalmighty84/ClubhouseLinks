@@ -41,9 +41,11 @@ const SignUp = () => {
     return (
         <div>
             {/* Sign-Up Form */}
-            <VideoOverlay />
-            <Form onSubmit={handleSignUp} className="p-4 rounded shadow bg-white" style={{ margin: 'auto', maxWidth: '1000px', width: '100%' }}>
-                <h3 className="text-center mb-4">Sign Up</h3>
+
+            <Form onSubmit={handleSignUp} className="p-4 rounded bg-white" style={{ margin: 'auto', maxWidth: '1000px', width: '100%', boxShadow: '0 0 20px orange'}}>
+                <Button disabled={true} style={{ background: 'linear-gradient(to right bottom, #34eb92, #23ad6a', opacity:'1.0' }} variant="primary" type="submit" className="w-100">
+                    <h2 style={{padding:'20px'}}>Clubhouse Links CRM Sign Up</h2>
+                </Button>
 
                 {/* Name Field */}
                 <Form.Group className="mb-3" controlId="formBasicName">
@@ -113,6 +115,7 @@ const SignUp = () => {
                     </Button>
                 </Modal.Footer>
             </Modal>
+            <VideoOverlay />
         </div>
     );
 };

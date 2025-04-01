@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Table, Button, Pagination, Dropdown, Modal, Container, Row, Col } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 
-const EmailQueueList = () => {
+const EmailQueueList = ({ guestMode = false }) => {
     const [emails, setEmails] = useState([]);
     const [recentEvents, setRecentEvents] = useState([]);
     const [totalPages, setTotalPages] = useState(1);
@@ -15,12 +15,54 @@ const EmailQueueList = () => {
     const [userId, setUserId] = useState(null);
     const navigate = useNavigate();
 
+    // --- Mock Data ---
+    const sampleEmails = [
+        {
+            id: 1,
+            subscriber_name: "Jane Doe",
+            subscriber_email: "jane@example.com",
+            send_time: new Date().toISOString(),
+            status: "pending",
+            template_preview: "<p>Sample template preview for Jane</p>"
+        },
+        {
+            id: 2,
+            subscriber_name: "John Smith",
+            subscriber_email: "john@example.com",
+            send_time: new Date(Date.now() - 86400000).toISOString(),
+            status: "sent",
+            template_preview: "<p>Sample template preview for John</p>"
+        }
+    ];
+
+    const sampleRecentEvents = [
+        {
+            name: "Jane Doe",
+            email: "jane@example.com",
+            opened_at: new Date().toISOString(),
+            time_period: "2 hours ago"
+        },
+        {
+            name: "John Smith",
+            email: "john@example.com",
+            opened_at: new Date(Date.now() - 7200000).toISOString(),
+            time_period: "5 hours ago"
+        }
+    ];
+
     useEffect(() => {
+        if (guestMode) {
+            setEmails(sampleEmails);
+            setRecentEvents(sampleRecentEvents);
+            setTotalPages(1);
+            setLoading(false);
+            return;
+        }
+
         const user = localStorage.getItem('user');
         try {
             if (user) {
                 const parsedUser = JSON.parse(user);
-
                 if (parsedUser && parsedUser.id) {
                     setUserId(parsedUser.id);
                     fetchEmails(parsedUser.id);
@@ -34,7 +76,7 @@ const EmailQueueList = () => {
             console.error('Error parsing user data:', error);
             navigate('/app/signin');
         }
-    }, [navigate, currentPage, statusFilter]);
+    }, [navigate, currentPage, statusFilter, guestMode]);
 
     const fetchEmails = async (id) => {
         setLoading(true);
@@ -72,27 +114,31 @@ const EmailQueueList = () => {
     };
 
     return (
-        <Container fluid style={{backgroundColor:'white'}}>
+        <Container fluid style={{ backgroundColor: 'white' }}>
             <Row>
                 <Col>
-                    <h3 style={{ textAlign: 'center', color: 'rgb(255, 112, 67)' }}>Email Queue</h3>
+                    <h3 style={{ textAlign: 'center', color: 'rgb(255, 112, 67)' }}>
+                        Email Queue {guestMode && ''}
+                    </h3>
                 </Col>
             </Row>
 
-            <Row className="justify-content-center mb-3">
-                <Col xs={12} sm={8} md={6}>
-                    <Dropdown onSelect={handleStatusChange}>
-                        <Dropdown.Toggle variant="secondary" id="dropdown-basic" className="w-100">
-                            {statusFilter === 'all' ? 'All Emails' : `${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)} Emails`}
-                        </Dropdown.Toggle>
-                        <Dropdown.Menu>
-                            <Dropdown.Item eventKey="all">All</Dropdown.Item>
-                            <Dropdown.Item eventKey="pending">Pending</Dropdown.Item>
-                            <Dropdown.Item eventKey="sent">Sent</Dropdown.Item>
-                        </Dropdown.Menu>
-                    </Dropdown>
-                </Col>
-            </Row>
+            {!guestMode && (
+                <Row className="justify-content-center mb-3">
+                    <Col xs={12} sm={8} md={6}>
+                        <Dropdown onSelect={handleStatusChange}>
+                            <Dropdown.Toggle variant="secondary" id="dropdown-basic" className="w-100">
+                                {statusFilter === 'all' ? 'All Emails' : `${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)} Emails`}
+                            </Dropdown.Toggle>
+                            <Dropdown.Menu>
+                                <Dropdown.Item eventKey="all">All</Dropdown.Item>
+                                <Dropdown.Item eventKey="pending">Pending</Dropdown.Item>
+                                <Dropdown.Item eventKey="sent">Sent</Dropdown.Item>
+                            </Dropdown.Menu>
+                        </Dropdown>
+                    </Col>
+                </Row>
+            )}
 
             {loading ? (
                 <p className="text-center">Loading...</p>
@@ -154,17 +200,19 @@ const EmailQueueList = () => {
                         </tbody>
                     </Table>
 
-                    <Pagination className="justify-content-center">
-                        {[...Array(totalPages).keys()].map((page) => (
-                            <Pagination.Item
-                                key={page + 1}
-                                active={page + 1 === currentPage}
-                                onClick={() => handlePageChange(page + 1)}
-                            >
-                                {page + 1}
-                            </Pagination.Item>
-                        ))}
-                    </Pagination>
+                    {!guestMode && (
+                        <Pagination className="justify-content-center">
+                            {[...Array(totalPages).keys()].map((page) => (
+                                <Pagination.Item
+                                    key={page + 1}
+                                    active={page + 1 === currentPage}
+                                    onClick={() => handlePageChange(page + 1)}
+                                >
+                                    {page + 1}
+                                </Pagination.Item>
+                            ))}
+                        </Pagination>
+                    )}
                 </>
             )}
 

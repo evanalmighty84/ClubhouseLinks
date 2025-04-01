@@ -22,6 +22,7 @@
 		"pg-query-stream": "^4.8.1",
 		"react-chartjs-2": "^5.2.0",
 		"streamifier": "^0.1.1",
+		"twilio": "^5.5.1",
 		"xlsx": "^0.18.5",
 		"zcatalyst-sdk-node": "latest"
 	}

@@ -5,18 +5,28 @@ import 'react-toastify/dist/ReactToastify.css';
 import ListForm from './ListForm';
 import '../../CRMstyles/ListsPage.css'; // Custom CRMstyles
 
-const ListsPage = () => {
+const ListsPage = ({ guestMode = false }) => {
     const [lists, setLists] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [selectedList, setSelectedList] = useState(null);
     const [userId, setUserId] = useState(null); // Store the userId here
 
+    const mockLists = [
+        { id: 1, name: 'Sample List A', subscriber_count: 15, created_at: new Date(), updated_at: new Date() },
+        { id: 2, name: 'Sample List B', subscriber_count: 42, created_at: new Date(), updated_at: new Date() },
+        { id: 3, name: 'Demo List', subscriber_count: 8, created_at: new Date(), updated_at: new Date() },
+    ];
+
     useEffect(() => {
+        if (guestMode) {
+            setLists(mockLists);
+            return;
+        }
         const user = localStorage.getItem('user');
         if (user) {
             const { id } = JSON.parse(user);
-            setUserId(id); // Set the userId
-            fetchLists(id); // Fetch the lists for this user
+            setUserId(id);
+            fetchLists(id);
         }
     }, []);
 
@@ -32,23 +42,23 @@ const ListsPage = () => {
     };
 
     const handleViewClick = (list) => {
-        setSelectedList(list); // Set the list being edited
+        setSelectedList(list);
         setShowModal(true);
     };
 
     const handleCloseModal = () => {
-        setSelectedList(null); // Clear selected list
-        setShowModal(false); // Close modal
+        setSelectedList(null);
+        setShowModal(false);
     };
 
     const handleSaveSuccess = () => {
-        fetchLists(userId); // Fetch lists after saving
+        if (!guestMode) fetchLists(userId);
         toast.success('List saved successfully!');
         handleCloseModal();
     };
 
     const handleDeleteList = async (listId) => {
-        if (!listId) return;
+        if (!listId || guestMode) return;
 
         try {
             const response = await fetch(`/server/crm_function/api/lists/${listId}`, {
@@ -56,7 +66,7 @@ const ListsPage = () => {
             });
             if (response.ok) {
                 toast.success('List deleted successfully!');
-                fetchLists(userId); // Refresh lists after deletion
+                fetchLists(userId);
             } else {
                 throw new Error('Failed to delete list');
             }
@@ -69,18 +79,13 @@ const ListsPage = () => {
     return (
         <Card className="" style={{ height: '100%', backgroundColor: 'white', marginBottom: '0px' }}>
             <div className="lists-page p-4">
-                <h3 style={{ textAlign: 'center',color:'rgb(255, 112, 67)' }}>Lists</h3>
+                <h3 style={{ textAlign: 'center', color: 'rgb(255, 112, 67)' }}>Lists {guestMode && ''}</h3>
 
-                {/* + New Button for Mobile */}
                 <div className="d-flex justify-content-end mb-3">
                     <Button
                         variant="primary"
                         onClick={() => handleViewClick(null)}
-                        style={{
-                            fontSize: '1rem',
-                            padding: '10px 20px',
-                        }}
-                        className="d-block d-md-none" // Show only on small screens
+                        style={{ fontSize: '1rem', padding: '10px 20px' }}
                     >
                         + New
                     </Button>
@@ -93,18 +98,7 @@ const ListsPage = () => {
                         <th>Subscribers</th>
                         <th>Created</th>
                         <th>Updated</th>
-                        <th>
-                            Actions{' '}
-                            <span style={{ paddingLeft: '2px' }}>
-                                    <Button
-                                        variant="primary"
-                                        onClick={() => handleViewClick(null)}
-                                        className="d-none d-md-block" // Hide on small screens
-                                    >
-                                        + New
-                                    </Button>
-                                </span>
-                        </th>
+                        <th>Actions</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -119,15 +113,17 @@ const ListsPage = () => {
                                     <Button variant="info" onClick={() => handleViewClick(list)}>
                                         View
                                     </Button>{' '}
-                                    <Button variant="danger" onClick={() => handleDeleteList(list.id)}>
-                                        Delete
-                                    </Button>
+                                    {!guestMode && (
+                                        <Button variant="danger" onClick={() => handleDeleteList(list.id)}>
+                                            Delete
+                                        </Button>
+                                    )}
                                 </td>
                             </tr>
                         ))
                     ) : (
                         <tr>
-                            <td colSpan="6">No lists available.</td>
+                            <td colSpan="5">No lists available.</td>
                         </tr>
                     )}
                     </tbody>
@@ -138,8 +134,11 @@ const ListsPage = () => {
                         <Modal.Title>{selectedList ? 'Edit List' : 'Create New List'}</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
-                        {/* Pass userId to ListForm */}
-                        <ListForm initialList={selectedList || {}} onSaveSuccess={handleSaveSuccess} userId={userId} />
+                        {!guestMode ? (
+                            <ListForm initialList={selectedList || {}} onSaveSuccess={handleSaveSuccess} userId={userId} />
+                        ) : (
+                            <p>Guest mode: This is a demo.</p>
+                        )}
                     </Modal.Body>
                     <Modal.Footer>
                         <Button variant="secondary" onClick={handleCloseModal}>

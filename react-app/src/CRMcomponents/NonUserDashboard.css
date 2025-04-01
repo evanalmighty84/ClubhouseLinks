@@ -1,0 +1,28 @@
+.flipper-container {
+    perspective: 1200px;
+    width: 100%;
+    height: 700px; /* adjust to fit nicely */
+    position: relative;
+    overflow: hidden; /* prevent overflow */
+    margin-bottom: 10px;
+}
+
+.flipper {
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 1s;
+    position: relative;
+}
+
+.flipper-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    overflow-y: auto; /* enables scrolling if content is too large */
+    border-radius: 8px;
+    box-sizing: border-box;
+    padding: 0px;
+    background: white; /* optional */
+}
