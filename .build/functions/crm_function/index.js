@@ -17,6 +17,8 @@ const userRoutes = require('./routes/userRoutes')
 const templatesRoutes = require('./routes/templatesRoutes')
 const workflowRoutes = require('./routes/workflowRoutes')
 const emailQueuedRoutes = require('./routes/emailQueuedRoutes')
+const smsRoutes = require('./routes/smsRoutes')
+
 const path = require('path');
 
 // Initialize express app
@@ -63,11 +65,13 @@ app.use('/api/upload', uploadRoutes);
 
 app.use('/api/smtp', smtpRoutes);
 
+app.use('/api/sms', smsRoutes);
+
 
 // Use tracking routes
 app.use('/api/track', trackingRoutes);
 
-app.use('/api/user', userRoutes)
+app.use('/api/users', userRoutes)
 
 app.use('/api/unsubscribe', unSubscribeRoutes);
 

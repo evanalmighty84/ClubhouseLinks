@@ -158,14 +158,15 @@ const SubscribersPage = () => {
 
 
     const handleSave = async () => {
-        const previousCustomer = selectedSubscriber?.customer;
+
 
 
         try {
             const updatedSubscriber = {
                 email,
-                name: selectedSubscriber?.name, // Ensure name is included in the payload
-                customer, // Include the updated customer
+                name: selectedSubscriber?.name,
+                phone_number: selectedSubscriber?.phone_number,
+                physical_address: selectedSubscriber?.physical_address,
                 lists: listIds,
                 tags: tags.split(',').map((tag) => tag.trim()),
             };
@@ -278,16 +279,23 @@ const SubscribersPage = () => {
                                 required
                             />
                         </Form.Group>
-                        <Form.Group controlId="customer" className="mt-3">
-                            <Form.Label>Customer</Form.Label>
+                        <Form.Group controlId="phoneNumber" className="mt-3">
+                            <Form.Label>Phone Number</Form.Label>
                             <Form.Control
-                                as="select"
-                                value={customer}
-                                onChange={(e) => setCustomer(e.target.value)}
-                            >
-                                <option value="unconfirmed">Unconfirmed</option>
-                                <option value="confirmed">Confirmed</option>
-                            </Form.Control>
+                                type="text"
+                                value={selectedSubscriber?.phone_number || ''}
+                                onChange={(e) => setSelectedSubscriber({ ...selectedSubscriber, phone_number: e.target.value })}
+                            />
+                        </Form.Group>
+
+                        <Form.Group controlId="physicalAddress" className="mt-3">
+                            <Form.Label>Physical Address</Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={2}
+                                value={selectedSubscriber?.physical_address || ''}
+                                onChange={(e) => setSelectedSubscriber({ ...selectedSubscriber, physical_address: e.target.value })}
+                            />
                         </Form.Group>
                         <Form.Group controlId="listSubscriptions" className="mt-3">
                             <Form.Label>Lists Subscribed To</Form.Label>

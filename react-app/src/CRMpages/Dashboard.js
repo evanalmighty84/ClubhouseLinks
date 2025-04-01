@@ -7,7 +7,7 @@ import CalendarScheduler from '../CRMcomponents/CalendarScheduler';
 import axios from 'axios';
 import '../CRMstyles/Dashboard.css';
 
-const Dashboard = () => {
+const NonUserDashboard = () => {
     const [userName, setUserName] = useState('');
     const [userIndustry, setUserIndustry] = useState('');
     const [dashboardData, setDashboardData] = useState({
@@ -103,64 +103,10 @@ const Dashboard = () => {
                     <VideoOverlay />
 
                     {/* Second Card Section */}
-                    <div className="d-flex flex-row text-center" style={{ gap: '10px', width: '100%', overflow: 'hidden' }}>
-                        {/* Subscribers Section */}
-                        <div style={{ background: 'linear-gradient(to bottom right, #f5c2d5, #de4e7f)', padding: '20px', color: 'white', flex: '1', borderRadius: '5px' }}>
-                            <img
-                                src="https://res.cloudinary.com/duz4vhtcn/image/upload/v1733514628/subscribers.001_kwwld0.jpg"
-                                alt="Subscribers"
-                                style={{ width: '100%', borderRadius: '5px 5px 0 0' }}
-                            />
-                            <p className="responsive-text" style={{ color: 'white', margin: '5px 0' }}>
-                                Subscribers
-                            </p>
-                            {dashboardData.subscribers}
-                        </div>
-
-                        {/* Lists Section */}
-                        <div style={{ background: 'linear-gradient(to right bottom, #34eb92, #23ad6a)', padding: '20px', color: 'white', flex: '1', borderRadius: '5px' }}>
-                            <img
-                                src="https://res.cloudinary.com/duz4vhtcn/image/upload/v1733517271/Lists.001_yozwhy.jpg"
-                                alt="Lists"
-                                style={{ width: '100%', borderRadius: '5px 5px 0 0' }}
-                            />
-                            <p className="responsive-text" style={{ color: 'white', margin: '5px 0' }}>
-                                Lists
-                            </p>
-                            {dashboardData.lists}
-                        </div>
-
-                        {/* Campaigns Section */}
-                        <div style={{ background: 'linear-gradient(to bottom right, #ffdab3, orange)', padding: '20px', color: 'white', flex: '1', borderRadius: '5px' }}>
-                            <img
-                                src="https://res.cloudinary.com/duz4vhtcn/image/upload/v1733520655/Campaigns.001_pslyjv.jpg"
-                                alt="Campaigns"
-                                style={{ width: '100%', borderRadius: '5px 5px 0 0' }}
-                            />
-                            <p className="responsive-text" style={{ color: 'white', margin: '5px 0' }}>
-                                Campaigns
-                            </p>
-                            {dashboardData.campaigns}
-                        </div>
-
-                        {/* Email Opens Section */}
-                        <div style={{ background: 'linear-gradient(to bottom right, #a9d8d8, cadetblue)', padding: '20px', color: 'white', flex: '1', borderRadius: '5px' }}>
-                            <img
-                                src="https://res.cloudinary.com/duz4vhtcn/image/upload/v1733521783/Recent_Events.001_nhf0sk.jpg"
-                                alt="Email Opens"
-                                style={{ width: '100%', borderRadius: '5px 5px 0 0' }}
-                            />
-                            <p className="responsive-text" style={{ color: 'white', margin: '5px 0' }}>
-                                Email Opens
-                            </p>
-                            {dashboardData.opens}
-                        </div>
-                    </div>
-
                 </div>
             </div>
         </Card>
     );
 };
 
-export default Dashboard;
+export default NonUserDashboard;

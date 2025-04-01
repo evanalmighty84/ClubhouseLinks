@@ -10,7 +10,7 @@ const VideoOverlay = () => {
     };
 
     return (
-        <div id="video-container" style={{ position: "relative", overflow: "hidden" }}>
+        <div id="video-container" style={{ position: "relative", overflow: "hidden", marginTop:"30px" }}>
             {/* Overlay */}
             <div
                 className="video-overlay"
@@ -70,7 +70,7 @@ const VideoOverlay = () => {
                 loop
                 className="videobgframe"
                 poster="./droneposter.jpeg"
-                src="https://res.cloudinary.com/duz4vhtcn/video/upload/v1735896124/123appsfinished-invideo-ai-1080_Boost_Your_Email_Campaigns_with_A.I._Mag_2024-12-29_1_online-video-cutter.com_2_nx1eqt.mp4"
+                src="https://res.cloudinary.com/duz4vhtcn/video/upload/f_auto:video,q_auto/v1735896124/123appsfinished-invideo-ai-1080_Boost_Your_Email_Campaigns_with_A.I._Mag_2024-12-29_1_online-video-cutter.com_2_nx1eqt.mp4"
                 style={{
                     objectFit: "cover",
                     width: "100%",

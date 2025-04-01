@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Form, Button, Col, Row, Tab, Nav, Card } from 'react-bootstrap';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import '../CRMstyles/Settings.css'; // Ensure custom styles if needed
+import '../CRMstyles/Settings.css'; // Custom styles
 
 const Settings = () => {
     const [smtpSettings, setSmtpSettings] = useState({
@@ -13,6 +13,10 @@ const Settings = () => {
         tls_enabled: true,
     });
 
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [industry, setIndustry] = useState('');
+
     const userId = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).id : null;
 
     useEffect(() => {
@@ -21,7 +25,6 @@ const Settings = () => {
         }
     }, [userId]);
 
-    // Fetch the user's existing SMTP settings
     const fetchSmtpSettings = async (userId) => {
         try {
             const response = await axios.get(`/server/crm_function/api/smtp/smtp-settings/${userId}`);
@@ -34,7 +37,6 @@ const Settings = () => {
         }
     };
 
-    // Handle SMTP input changes
     const handleSmtpChange = (e) => {
         setSmtpSettings({
             ...smtpSettings,
@@ -42,7 +44,6 @@ const Settings = () => {
         });
     };
 
-    // Handle TLS toggle
     const handleTlsToggle = () => {
         setSmtpSettings({
             ...smtpSettings,
@@ -50,7 +51,6 @@ const Settings = () => {
         });
     };
 
-    // Submit the SMTP settings
     const handleSmtpSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -65,9 +65,27 @@ const Settings = () => {
         }
     };
 
+    const handlePasswordSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.post('/server/crm_function/api/users/update-settings', {
+                userId,
+                currentPassword,
+                newPassword,
+                industry // optional if you want to allow updating the industry
+            });
+            toast.success('Password updated successfully!');
+            setCurrentPassword('');
+            setNewPassword('');
+        } catch (error) {
+            console.error('Error updating password:', error);
+            toast.error('Failed to update password');
+        }
+    };
+
     return (
         <div className="settings-page p-4">
-            <h2>SMTP Settings</h2>
+            <h2>Settings</h2>
             <Tab.Container defaultActiveKey="overview">
                 <Row>
                     <Col sm={3}>
@@ -81,6 +99,9 @@ const Settings = () => {
                             <Nav.Item>
                                 <Nav.Link eventKey="form">Update SMTP Settings</Nav.Link>
                             </Nav.Item>
+                            <Nav.Item>
+                                <Nav.Link eventKey="password">User Password Settings</Nav.Link>
+                            </Nav.Item>
                         </Nav>
                     </Col>
                     <Col sm={9}>
@@ -92,10 +113,10 @@ const Settings = () => {
                                         By updating your SMTP settings, you can send emails from your personalized or company email address, ensuring better recognition and trust among your clients.
                                     </p>
                                     <p>
-                                        If you don't update, emails will be sent from the default "Clubhouse Links" email address, which might not resonate with your audience.
+                                        If you don't update, emails will be sent from the default "Clubhouse Links" email address.
                                     </p>
                                     <p>
-                                        Services like Gmail, Apple, Outlook, and Yahoo allow app-specific passwords for added security. Follow the setup instructions in the next tab to configure your SMTP settings.
+                                        Services like Gmail, Apple, Outlook, and Yahoo allow app-specific passwords for added security. Follow the setup instructions in the next tab.
                                     </p>
                                 </Card>
                             </Tab.Pane>
@@ -106,7 +127,7 @@ const Settings = () => {
                                     <div className="video-container">
                                         <video width="100%" controls>
                                             <source
-                                                src="https://res.cloudinary.com/duz4vhtcn/video/upload/v1735896237/Gmail_Settings_Setup_za609r.mp4"
+                                                src="https://res.cloudinary.com/duz4vhtcn/video/upload/f_auto:video,q_auto/v1735896237/Gmail_Settings_Setup_za609r.mp4"
                                                 type="video/mp4"
                                             />
                                             Your browser does not support the video tag.
@@ -115,9 +136,9 @@ const Settings = () => {
                                     <h5>Steps to Configure Gmail SMTP:</h5>
                                     <ol>
                                         <li>Open your Gmail account and navigate to <b>Account Settings</b>.</li>
-                                        <li>Go to the <b>Security</b> tab and enable <b>2-Step Verification</b>.</li>
+                                        <li>Enable <b>2-Step Verification</b> in the Security tab.</li>
                                         <li>Generate an <b>App Password</b> under the "App Passwords" section.</li>
-                                        <li>Copy the generated password and paste it into the <b>SMTP Password</b> field in the form below.</li>
+                                        <li>Copy and paste the generated password into the <b>SMTP Password</b> field.</li>
                                     </ol>
                                 </Card>
                             </Tab.Pane>
@@ -195,6 +216,38 @@ const Settings = () => {
                                         Save SMTP Settings
                                     </Button>
                                 </Form>
+                            </Tab.Pane>
+
+                            {/* --------- User Password Settings Tab --------- */}
+                            <Tab.Pane eventKey="password">
+                                <Card className="p-3">
+                                    <h4>Change Password</h4>
+                                    <Form onSubmit={handlePasswordSubmit}>
+                                        <Form.Group controlId="currentPassword" className="mt-2">
+                                            <Form.Label>Current Password</Form.Label>
+                                            <Form.Control
+                                                type="password"
+                                                value={currentPassword}
+                                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                                required
+                                            />
+                                        </Form.Group>
+
+                                        <Form.Group controlId="newPassword" className="mt-2">
+                                            <Form.Label>New Password</Form.Label>
+                                            <Form.Control
+                                                type="password"
+                                                value={newPassword}
+                                                onChange={(e) => setNewPassword(e.target.value)}
+                                                required
+                                            />
+                                        </Form.Group>
+
+                                        <Button className="mt-3" variant="primary" type="submit">
+                                            Update Password
+                                        </Button>
+                                    </Form>
+                                </Card>
                             </Tab.Pane>
                         </Tab.Content>
                     </Col>

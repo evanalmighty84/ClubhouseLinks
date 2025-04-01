@@ -1,4 +1,5 @@
 const pool = require('../db/db');
+const moment = require('moment');
 
 // Get all subscribers for a specific user with their associated lists
 // Get all subscribers for a specific user with their associated lists and tags
@@ -32,38 +33,59 @@ exports.scheduleSubscribers = async (req, res) => {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const validTypes = ['email', 'phone_call', 'meeting', 'other'];
+    const validTypes = ['email', 'phone_call', 'meeting', 'other', 'text'];
     if (!validTypes.includes(type)) {
         return res.status(400).json({ error: 'Invalid action type' });
     }
 
-    const columnMap = {
-        email: 'scheduled_email',
-        phone_call: 'scheduled_phone_call',
-        meeting: 'scheduled_meeting',
-        other: 'scheduled_other',
-    };
-
-    const columnName = columnMap[type];
-
+    const client = await pool.connect();
     try {
-        const updatePromises = subscriberIds.map(async (id) => {
-            await pool.query(
-                `UPDATE subscribers
-                 SET ${columnName} = $1, notes = COALESCE(notes, '') || $2
-                 WHERE id = $3`,
-                [date, `\n[${type.toUpperCase()} on ${date}]: ${notes}`, id]
-            );
-        });
+        await client.query('BEGIN');
 
-        await Promise.all(updatePromises);
+        for (const id of subscriberIds) {
+            // Fetch subscriber info
+            const { rows } = await client.query('SELECT * FROM subscribers WHERE id = $1', [id]);
+            const subscriber = rows[0];
+            if (!subscriber) continue;
 
+            if (type === 'text') {
+                // Schedule an SMS
+                await client.query(
+                    `INSERT INTO smsqueue (subscriber_id, user_id, message, phone_number, scheduled_time, status)
+                     VALUES ($1, $2, $3, $4, $5, 'pending')`,
+                    [subscriber.id, subscriber.user_id, notes, subscriber.phone_number, date]
+                );
+            } else {
+                // Schedule other types in subscribers table
+                const columnMap = {
+                    email: 'scheduled_email',
+                    phone_call: 'scheduled_phone_call',
+                    meeting: 'scheduled_meeting',
+                    other: 'scheduled_other',
+                };
+
+                const columnName = columnMap[type];
+
+                await client.query(
+                    `UPDATE subscribers
+                     SET ${columnName} = $1, notes = COALESCE(notes, '') || $2, updated_at = NOW()
+                     WHERE id = $3`,
+                    [date, `\n[${type.toUpperCase()} on ${date}]: ${notes}`, id]
+                );
+            }
+        }
+
+        await client.query('COMMIT');
         res.status(200).json({ message: 'Subscribers scheduled successfully' });
     } catch (error) {
-        console.error('Error scheduling subscribers:', error);
+        await client.query('ROLLBACK');
+        console.error('Error scheduling:', error);
         res.status(500).json({ error: 'Failed to schedule subscribers' });
+    } finally {
+        client.release();
     }
 };
+
 // In subscribersController.js
 exports.unscheduleEvent = async (req, res) => {
     const { id } = req.params;
@@ -197,16 +219,18 @@ exports.getSubscriberLists = async (req, res) => {
 
 // Create a new subscriber for a specific user and associate with lists
 exports.createSubscriber = async (req, res) => {
-    const { name, email, lists = [], user_id } = req.body;  // Updated to match frontend
+    const { name, email, phone_number, physical_address, lists = [], user_id } = req.body;
     const client = await pool.connect();
 
     try {
         await client.query('BEGIN');
 
-        // Insert the new subscriber with user_id
+        // Insert the new subscriber including phone_number and physical_address
         const result = await client.query(
-            'INSERT INTO subscribers (name, email, user_id, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW()) RETURNING *',
-            [name, email, user_id]
+            `INSERT INTO subscribers (name, email, phone_number, physical_address, user_id, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+             RETURNING *`,
+            [name, email, phone_number, physical_address, user_id]
         );
         const subscriberId = result.rows[0].id;
 
@@ -221,6 +245,7 @@ exports.createSubscriber = async (req, res) => {
         }
 
         await client.query('COMMIT');
+        console.log('here is what is being created' + name,email,phone_number,physical_address)
         res.status(201).json({ message: 'Subscriber created successfully', subscriber: result.rows[0] });
     } catch (error) {
         await client.query('ROLLBACK');
@@ -230,6 +255,7 @@ exports.createSubscriber = async (req, res) => {
         client.release();
     }
 };
+
 
 
 exports.deleteSubscriber = async (req, res) => {
@@ -264,56 +290,33 @@ exports.deleteSubscriber = async (req, res) => {
         const lists = listResult.rows;
         console.log(`Lists found for subscriber ${id}:`, lists);
 
-        // Step 3: Verify that each list_id exists in the lists table before inserting into unsubscribes
-        for (const list of lists) {
-            const listCheck = await client.query(
-                'SELECT * FROM lists WHERE id = $1',
-                [list.list_id]
+        // ✅ Step 3 (Modified): Always insert into unsubscribes even if lists is empty
+        const unsubscribeResult = await client.query(
+            `SELECT * FROM unsubscribes WHERE subscriber_id = $1`,
+            [id]
+        );
+
+        if (unsubscribeResult.rows.length === 0) {
+            console.log(`Inserting into unsubscribes: subscriber_id=${id}, email=${subscriber.email}`);
+            await client.query(
+                `INSERT INTO unsubscribes (subscriber_id, email, unsubscribe_reason, created_at, user_id)
+                 VALUES ($1, $2, 'Deleted by user', NOW(), $3)`,
+                [id, subscriber.email, userId]
             );
-            if (listCheck.rows.length === 0) {
-                console.error(`List ID ${list.list_id} does not exist, skipping...`);
-                continue;  // Skip to the next iteration if the list_id doesn't exist
-            }
+            console.log(`Insert successful: subscriber_id=${id}`);
 
-            console.log(`List ID ${list.list_id} is valid.`);
-
-            // Insert into unsubscribes
-
-
-            const unsubscribeResult = await client.query(
+            const checkInsertedRow = await client.query(
                 `SELECT * FROM unsubscribes WHERE subscriber_id = $1`,
                 [id]
             );
-
-
-
-            if (unsubscribeResult.rows.length === 0) {
-                console.log(`Inserting into unsubscribes: subscriber_id=${id}, email=${subscriber.email}`);
-
-                // Insert only subscriber_id, email, and user_id
-                await client.query(
-                    `INSERT INTO unsubscribes (subscriber_id, email, unsubscribe_reason, created_at, user_id)
-                     VALUES ($1, $2, 'Deleted by user', NOW(), $3)`,
-                    [id, subscriber.email, userId]
-                );
-                console.log(`Insert successful: subscriber_id=${id}`);
-
-                // Fetch the inserted row manually to confirm it's in the table
-                const checkInsertedRow = await client.query(
-                    `SELECT * FROM unsubscribes WHERE subscriber_id = $1`,
-                    [id]
-                );
-                console.log('Inserted row:', checkInsertedRow.rows);
-            }
-
-
+            console.log('Inserted row:', checkInsertedRow.rows);
         }
 
-        // Step 4: Delete the subscriber from all lists
+        // ✅ Step 4 (unchanged): Delete the subscriber from all lists
         await client.query('DELETE FROM list_subscribers WHERE subscriber_id = $1', [id]);
         console.log(`Deleted subscriber ${id} from all lists.`);
 
-        // Step 5: Pre-commit check to ensure all inserts were successful before deleting the subscriber
+        // ✅ Step 5 (unchanged): Pre-commit check to ensure unsubscribes exists
         const unsubscribesCheckBeforeCommit = await client.query('SELECT * FROM unsubscribes WHERE subscriber_id = $1', [id]);
         if (unsubscribesCheckBeforeCommit.rows.length === 0) {
             console.error(`Pre-commit check failed: No unsubscribes found for subscriber ${id}. Rolling back...`);
@@ -322,7 +325,7 @@ exports.deleteSubscriber = async (req, res) => {
         }
         console.log(`Pre-commit check successful: Found ${unsubscribesCheckBeforeCommit.rows.length} unsubscribes for subscriber ${id}`);
 
-        // Step 6: Delete the subscriber from the subscribers table
+        // ✅ Step 6 (unchanged): Delete subscriber
         const deleteResult = await client.query(
             'DELETE FROM subscribers WHERE id = $1 AND user_id = $2 RETURNING *',
             [id, userId]
@@ -330,22 +333,22 @@ exports.deleteSubscriber = async (req, res) => {
 
         if (deleteResult.rows.length === 0) {
             console.error(`Subscriber with ID ${id} not found for deletion.`);
-            // No rollback here, just return an error
             return res.status(404).json({ message: 'Subscriber not found for deletion' });
         }
 
         console.log(`Subscriber with ID ${id} deleted.`);
 
-        // Step 7: Commit the transaction
+        // ✅ Step 7 (unchanged): Commit transaction
         console.log(`About to commit transaction for subscriber ${id}`);
         await client.query('COMMIT');
         console.log(`Transaction committed for subscriber ${id}`);
 
-        // After commit, double-check unsubscribes table
+        // ✅ Step 8 (unchanged): Post-commit check
         const unsubscribesCheckAfterCommit = await client.query('SELECT * FROM unsubscribes WHERE subscriber_id = $1', [id]);
         console.log(`Unsubscribes for subscriber ${id} after commit:`, unsubscribesCheckAfterCommit.rows);
 
         res.status(200).json({ message: 'Subscriber deleted and unsubscribed successfully' });
+
     } catch (error) {
         // Rollback the transaction only for critical issues
         console.error('Error detected, rolling back transaction:', error);
@@ -358,18 +361,33 @@ exports.deleteSubscriber = async (req, res) => {
 
 
 
+
 // Update a subscriber and their associated lists for a specific user
 exports.updateSubscriber = async (req, res) => {
     const { id } = req.params;  // Subscriber ID from the route
-    const { email, name, customer, lists, tags } = req.body;  // Extract updated fields from request body
+    const {
+        email,
+        name,
+        customer,
+        phone_number,
+        physical_address,
+        lists,
+        tags
+    } = req.body;
 
     try {
-        // Update subscriber's email, name, customer, and tags
+        // Update subscriber's core details
         const result = await pool.query(
             `UPDATE subscribers
-             SET email = $1, name = $2, customer = $3, tags = $4, updated_at = NOW()
-             WHERE id = $5 RETURNING *`,
-            [email, name, customer, JSON.stringify(tags), id]  // Convert tags to JSON string before saving
+             SET email = $1,
+                 name = $2,
+                 customer = $3,
+                 phone_number = $4,
+                 physical_address = $5,
+                 tags = $6,
+                 updated_at = NOW()
+             WHERE id = $7 RETURNING *`,
+            [email, name, customer, phone_number, physical_address, JSON.stringify(tags), id]
         );
 
         if (result.rows.length === 0) {
@@ -378,8 +396,8 @@ exports.updateSubscriber = async (req, res) => {
 
         const subscriber = result.rows[0];
 
-        // Update the subscriber's lists in the list_subscribers table
-        await pool.query('DELETE FROM list_subscribers WHERE subscriber_id = $1', [id]);  // Remove existing list subscriptions
+        // Update the subscriber's lists
+        await pool.query('DELETE FROM list_subscribers WHERE subscriber_id = $1', [id]);
 
         for (const listId of lists) {
             await pool.query(
@@ -388,7 +406,7 @@ exports.updateSubscriber = async (req, res) => {
             );
         }
 
-        // Query to return the updated subscriber with their lists
+        // Return the updated subscriber with their lists
         const updatedSubscriber = await pool.query(
             `SELECT s.*,
                     ARRAY(
@@ -401,12 +419,16 @@ exports.updateSubscriber = async (req, res) => {
             [id]
         );
 
-        res.status(200).json({ message: 'Subscriber updated successfully', subscriber: updatedSubscriber.rows[0] });
+        res.status(200).json({
+            message: 'Subscriber updated successfully',
+            subscriber: updatedSubscriber.rows[0]
+        });
     } catch (error) {
         console.error('Error updating subscriber:', error);
         res.status(500).json({ error: 'Failed to update subscriber' });
     }
 };
+
 
 
 

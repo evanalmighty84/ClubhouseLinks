@@ -1,4 +1,7 @@
-// /server/crm_function/controllers/smsController.js
+const dotenv = require('dotenv');
+
+
+dotenv.config(); // Load environment variables from .env
 const client = require('../utils/twilioClient');
 
 exports.sendSMS = async (req, res) => {
@@ -11,8 +14,8 @@ exports.sendSMS = async (req, res) => {
     try {
         const result = await client.messages.create({
             body: message,
-            to, // e.g., '+1234567890'
-            from: process.env.TWILIO_PHONE_NUMBER, // or messagingServiceSid: yourServiceSid
+            to,
+            messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID, // ✅ The improved way
         });
 
         res.status(200).json({ message: 'SMS sent successfully!', sid: result.sid });

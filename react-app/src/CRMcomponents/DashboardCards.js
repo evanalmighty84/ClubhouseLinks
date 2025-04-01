@@ -14,7 +14,8 @@ const DashboardCards = ({ recentEvents = {}, latestActivity = {} }) => {
         justifyContent: 'space-between',
         borderStyle: 'solid',
         borderColor: 'white',
-        borderWidth: '.5em',
+        borderWidth: '0em',
+        border:'0em'
     };
 
     const cardTextStyle = {
@@ -68,9 +69,10 @@ const DashboardCards = ({ recentEvents = {}, latestActivity = {} }) => {
                     <Card.Body
                         style={{
                             background: 'linear-gradient(to bottom right, #f5c2d5, #de4e7f)',
+                            textAlign: 'center'
                         }}
                     >
-                        <FaUserFriends size={48} style={{ color: '#de4e7f' }} className="m-3" />
+                        <FaUserFriends size={48} style={{ color: '#de4e7f',margin:'auto' }} className="m-3" />
                         <Card.Title>New Subscribers</Card.Title>
                         {newSubscribers.length > 0 ? (
                             <Card.Text style={cardTextStyle}>
@@ -93,6 +95,7 @@ const DashboardCards = ({ recentEvents = {}, latestActivity = {} }) => {
                     <Card.Body
                         style={{
                             background: 'linear-gradient(to right bottom, #34eb92, #23ad6a)',
+                            textAlign: 'center'
                         }}
                     >
                         <FaList size={48} style={{ color: '#28a745' }} className="m-3" />
@@ -118,6 +121,7 @@ const DashboardCards = ({ recentEvents = {}, latestActivity = {} }) => {
                     <Card.Body
                         style={{
                             background: 'linear-gradient(to bottom right, #ffdab3, orange)',
+                            textAlign: 'center'
                         }}
                     >
                         <FaBullhorn size={48} style={{ color: '#ffa726' }} className="m-3" />
@@ -143,6 +147,7 @@ const DashboardCards = ({ recentEvents = {}, latestActivity = {} }) => {
                     <Card.Body
                         style={{
                             background: 'linear-gradient(to bottom right, #a9d8d8, cadetblue)',
+                            textAlign: 'center'
                         }}
                     >
                         <FaCalendarCheck size={48} style={{ color: 'cadetblue' }} className="m-3" />

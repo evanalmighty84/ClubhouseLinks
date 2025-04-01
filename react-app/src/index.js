@@ -33,6 +33,7 @@ import SignUp from './CRMpages/SignUp';
 import SignIn from './CRMpages/SignIn';
 import ListsPage from "./CRMcomponents/Lists/ListsPage";
 import ListForm from "./CRMcomponents/Lists/ListForm";
+import NonUserDashboard from "./CRMcomponents/NonUserDashboard"
 import SubscribersPage from './CRMcomponents/Subscribers/SubscribersPage';
 import SubscriberDetails from './CRMcomponents/Subscribers/SubscriberDetails';
 import SubscribersForm from "./CRMcomponents/Subscribers/SubscribersForm";
@@ -114,7 +115,8 @@ class App extends Component {
                         <Elements stripe={stripePromise}>
                             <Routes>
                                 {/* Homepage */}
-                                <Route path="/" element={<HomePage />} />
+                         {/*       <Route path="/" element={<HomePage />} />*/}
+                                <Route path="/" element={<NonUserDashboard />} />
 
                                 {/* Other Routes */}
                                 <Route path="/app/samplePortfolios2" element={<PSAPortfolio />} />
