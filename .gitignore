@@ -1,0 +1,24 @@
+# Node.js
+node_modules/
+npm-debug.log
+.env
+
+# Logs
+logs
+*.log
+
+# MacOS
+.DS_Store
+
+# Optional: VSCode settings
+.vscode/
+
+# Optional: Heroku postbuild cache
+.cache/
+
+# Optional: OS-generated files
+Thumbs.db
+
+# Optional: build folders if you ever build frontends
+build/
+dist/
