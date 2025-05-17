@@ -49,7 +49,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
-    "deploy": "git checkout gh-pages && git reset --hard && git --work-tree build add --all && git --work-tree build commit -m '🚀 Update gh-pages' && git push origin gh-pages --force && git checkout main"
+    "deploy": "git worktree add /tmp/gh-pages gh-pages || true && npm run build && cp -r build/* /tmp/gh-pages && cd /tmp/gh-pages && git add . && git commit -m '🚀 Deploy to gh-pages' && git push origin gh-pages && cd - && git worktree remove /tmp/gh-pages --force"
   },
 
 
