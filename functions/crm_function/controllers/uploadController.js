@@ -1,14 +1,18 @@
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const os = require('os');
+const { v4: uuidv4 } = require('uuid');
+const cloudinary = require('cloudinary').v2;
+const streamifier = require('streamifier');
 
-// Use in-memory storage (Catalyst-safe)
+// Cloudinary setup
+cloudinary.config({
+    cloud_name: 'duz4vhtcn',
+    api_key: '922468697412882',
+    api_secret: 'K-CAP3rlMC-ADlYo093CXaT_Jcc',
+});
+
 const upload = multer({ storage: multer.memoryStorage() });
 
-// ✅ This is the function used in your router
 exports.uploadImage = (req, res) => {
-    // Multer must be called inside the handler for Catalyst
     upload.single('image')(req, res, async (err) => {
         if (err) {
             console.error('Multer error:', err);
@@ -20,29 +24,35 @@ exports.uploadImage = (req, res) => {
         }
 
         try {
-            // Create a unique temp file path
-            const tempDir = os.tmpdir(); // Catalyst-safe temporary folder
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-            const filename = uniqueSuffix + path.extname(req.file.originalname);
-            const filePath = path.join(tempDir, filename);
+            const mimetype = req.file.mimetype;
+            const isPdfOrNonImage = !mimetype.startsWith('image/');
 
-            // Write the file buffer to the temp path
-            fs.writeFileSync(filePath, req.file.buffer);
+            const streamUpload = () => {
+                return new Promise((resolve, reject) => {
+                    const stream = cloudinary.uploader.upload_stream(
+                        {
+                            folder: 'uploads',
+                            public_id: uuidv4(),
+                            resource_type: isPdfOrNonImage ? 'raw' : 'image' // 👈 KEY LINE
+                        },
+                        (error, result) => {
+                            if (result) resolve(result);
+                            else reject(error);
+                        }
+                    );
+                    streamifier.createReadStream(req.file.buffer).pipe(stream);
+                });
+            };
 
-            console.log('✅ File temporarily saved at:', filePath);
-
-            // In a real app: Upload to cloud storage or return buffer directly
-            const fileUrl = `file://${filePath}`; // TEMP URL just for debugging/logging
-
-            return res.status(200).json({
-                message: 'File uploaded and saved temporarily',
-                filename,
-                tempPath: filePath,
-                url: fileUrl,
+            const result = await streamUpload();
+            res.status(200).json({
+                message: 'Uploaded successfully to Cloudinary',
+                url: result.secure_url,
+                resourceType: isPdfOrNonImage ? 'raw' : 'image'
             });
-        } catch (error) {
-            console.error('Error saving temp file:', error);
-            return res.status(500).json({ error: 'Internal server error' });
+        } catch (uploadError) {
+            console.error('Cloudinary upload failed:', uploadError);
+            res.status(500).json({ error: 'Cloudinary upload failed' });
         }
     });
 };

@@ -1,0 +1,9 @@
+{
+	"name": "clearly_1_pool_service_function",
+	"version": "1.0.0",
+	"main": "index.js",
+	"author": "evanligon7@gmail.com",
+	"dependencies": {
+		"zcatalyst-sdk-node": "latest"
+	}
+}

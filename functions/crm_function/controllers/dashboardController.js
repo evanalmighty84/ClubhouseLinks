@@ -94,6 +94,12 @@ exports.getDashboardStats = async (req, res) => {
         );
 
         const totalOpens = parseInt(totalOpensResult.rows[0].total_opens, 10);
+// Fetch text queue subscription status
+        const textQueueResult = await pool.query(
+            `SELECT text_queue_enabled FROM users WHERE id = $1`,
+            [userId]
+        );
+        const textQueueEnabled = textQueueResult.rows[0]?.text_queue_enabled || false;
 
 
 
@@ -131,6 +137,7 @@ exports.getDashboardStats = async (req, res) => {
             totalLists: parseInt(listsResult.rows[0].total_lists, 10),
             totalSubscribers: parseInt(subscribersResult.rows[0].total_subscribers, 10),
             totalOpens, // Include total email opens in the response
+            textQueueEnabled,
             recentEvents: recentEventsByPeriod, // Include recent events in the response
             latestActivity: {
                 timePeriod: `${formattedStart} - ${formattedEnd}`,

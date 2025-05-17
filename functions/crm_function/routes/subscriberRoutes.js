@@ -24,6 +24,10 @@ router.post('/schedule', subscriberController.scheduleSubscribers);
 
 router.put('/:id/unschedule', subscriberController.unscheduleEvent);
 
+router.put( '/:id/notes',subscriberController.editNotes);
+
+
+
 
 router.get('/:subscriberId/queued-emails', subscriberController.getQueuedEmailsForSubscriber);
 

@@ -1,34 +1,36 @@
 const nodemailer = require('nodemailer');
+const dotenv = require('dotenv');
+dotenv.config();
 
-// Function to send an email
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
+
 const sendEmail = async (to, subject, htmlContent) => {
     try {
-        // Create a nodemailer transporter using Zoho SMTP settings
         const transporter = nodemailer.createTransport({
             host: 'smtp.zoho.com',
             port: 587,
-            secure: false,  // Upgrade later with STARTTLS
+            secure: false,
             auth: {
-                user: process.env.EMAIL_USER,  // Your Zoho email address
-                pass: process.env.EMAIL_PASS   // Your Zoho app-specific password
+                user: EMAIL_USER,
+                pass: EMAIL_PASS
+            },
+            tls: {
+                rejectUnauthorized: false
             }
         });
 
-        // Email options
-        const mailOptions = {
-            from: process.env.EMAIL_USER,  // Sender address (your Zoho email)
-            to: to,                        // Receiver's email address
-            subject: subject,              // Subject line
-            html: htmlContent              // HTML content
-        };
+        await transporter.sendMail({
+            from: EMAIL_USER,
+            to,
+            subject,
+            html: htmlContent
+        });
 
-        // Send the email
-        const info = await transporter.sendMail(mailOptions);
-
-        console.log('Email sent: ' + info.response);
+        console.log(`📤 Email sent to ${to}`);
     } catch (error) {
-        console.error('Error sending email: ', error);
-        throw new Error('Email could not be sent');
+        console.error('❌ Error sending email:', error);
+        throw error;
     }
 };
 

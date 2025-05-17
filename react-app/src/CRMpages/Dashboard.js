@@ -7,7 +7,7 @@ import CalendarScheduler from '../CRMcomponents/CalendarScheduler';
 import axios from 'axios';
 import '../CRMstyles/Dashboard.css';
 
-const NonUserDashboard = () => {
+const Dashboard = () => {
     const [userName, setUserName] = useState('');
     const [userIndustry, setUserIndustry] = useState('');
     const [dashboardData, setDashboardData] = useState({
@@ -52,6 +52,7 @@ const NonUserDashboard = () => {
             const data = response.data;
 
             setUserIndustry(data.industry);
+            localStorage.setItem('textQueueEnabled', JSON.stringify(data.textQueueEnabled));
 
             setDashboardData({
                 lists: data.totalLists,
@@ -86,7 +87,7 @@ const NonUserDashboard = () => {
     return (
         <Card className="p-3" style={{ maxWidth: '100%', backgroundColor: 'white', marginBottom: '0px' }}>
 
-            <CalendarScheduler/>
+
 
             <div className="dashboard">
                 {userIndustry && (
@@ -98,6 +99,9 @@ const NonUserDashboard = () => {
                     <div className="dashboard-cards">
                         <DashboardCards recentEvents={dashboardData.recentEvents} latestActivity={dashboardData.latestActivity} />
                     </div>
+                    <hr/>
+                    <CalendarScheduler/>
+                    <hr/>
 <br/>
 
                     <VideoOverlay />
@@ -109,4 +113,4 @@ const NonUserDashboard = () => {
     );
 };
 
-export default NonUserDashboard;
+export default Dashboard;

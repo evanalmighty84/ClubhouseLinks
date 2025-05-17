@@ -205,6 +205,198 @@ exports.sendHardcodedFormThankYou = async (req, res) => {
         return res.status(500).json({ error: 'Internal error while sending email' });
     }
 };
+exports.sendGoogleFormTerri = async (req, res) => {
+    const { name, email } = req.body;
+    const userId = 440; // Hardcoded for this flow
+
+    try {
+        console.log('Sending hardcoded thank-you email...');
+
+        // Step 1: Get thank-you template
+        const templateResult = await pool.query(
+            `SELECT id AS template_id, content 
+             FROM templates 
+             WHERE user_id = $1 AND workflow = $2`,
+            [userId, 6]
+        );
+
+        if (templateResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Thank-you template not found' });
+        }
+
+        const { template_id: templateId, content: templateContent } = templateResult.rows[0];
+
+        // Step 2: Check or create subscriber
+        let subscriberResult = await pool.query(
+            `SELECT id FROM subscribers WHERE email = $1 AND user_id = $2`,
+            [email, userId]
+        );
+
+        let subscriberId;
+        if (subscriberResult.rows.length === 0) {
+            const insertResult = await pool.query(
+                `INSERT INTO subscribers (name, email, user_id) VALUES ($1, $2, $3) RETURNING id`,
+                [name, email, userId]
+            );
+            subscriberId = insertResult.rows[0].id;
+        } else {
+            subscriberId = subscriberResult.rows[0].id;
+        }
+
+        // Step 3: Setup SMTP
+        let transporter;
+        const smtpSettings = await getUserSMTPSettings(userId);
+
+        if (smtpSettings) {
+            const decryptedPassword = decryptPassword(smtpSettings.smtp_password);
+            if (!decryptedPassword) throw new Error('SMTP password invalid');
+            transporter = nodemailer.createTransport({
+                host: smtpSettings.smtp_host,
+                port: smtpSettings.smtp_port,
+                secure: false,
+                auth: {
+                    user: smtpSettings.smtp_username,
+                    pass: decryptedPassword,
+                },
+                tls: { rejectUnauthorized: false },
+            });
+        } else {
+            transporter = nodemailer.createTransport({
+                host: 'smtp.zoho.com',
+                port: 587,
+                secure: false,
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS,
+                },
+            });
+        }
+
+        // Step 4: Inject tracking
+        const appUrl = 'https://homepage-809404625.catalystserverless.com/server/crm_function';
+
+        const trackingPixel = `<img src="${appUrl}/api/track/template/open/${templateId}/${subscriberId}?rand=${Math.random()}" width="1" height="1" style="display:none;" alt=""/>`;
+        const unsubscribeLink = `<p style="text-align: center; font-size: small"> <a style="color: red" href="${appUrl}/api/unsubscribe/${subscriberId}">Unsubscribe</a></p>`;
+
+        let htmlWithTracking = `${templateContent} ${trackingPixel} ${unsubscribeLink}`;
+
+        htmlWithTracking = htmlWithTracking.replace(
+            /<a href="(.*?)"/g,
+            (_, link) => `<a href="${appUrl}/api/track/template/click/${templateId}/${subscriberId}?redirect=${encodeURIComponent(link)}"`
+        );
+
+        // Step 5: Send the email
+        await transporter.sendMail({
+            from: smtpSettings ? smtpSettings.smtp_username : process.env.EMAIL_USER,
+            to: email,
+            subject: `Thank you, ${name}!`,
+            html: htmlWithTracking,
+        });
+
+        console.log(`Email sent to ${email}`);
+        return res.status(200).json({ message: 'Thank-you email sent successfully' });
+
+    } catch (error) {
+        console.error('Error sending email:', error);
+        return res.status(500).json({ error: 'Internal error while sending email' });
+    }
+};
+exports.sendGoogleFormJohn = async (req, res) => {
+    const { name, email } = req.body;
+    const userId = 307; // Hardcoded for this flow
+
+    try {
+        console.log('Sending Google Review Form...');
+
+        // Step 1: Get thank-you template
+        const templateResult = await pool.query(
+            `SELECT id AS template_id, content 
+             FROM templates 
+             WHERE user_id = $1 AND workflow = $2`,
+            [userId, 6]
+        );
+
+        if (templateResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Thank-you template not found' });
+        }
+
+        const { template_id: templateId, content: templateContent } = templateResult.rows[0];
+
+        // Step 2: Check or create subscriber
+        let subscriberResult = await pool.query(
+            `SELECT id FROM subscribers WHERE email = $1 AND user_id = $2`,
+            [email, userId]
+        );
+
+        let subscriberId;
+        if (subscriberResult.rows.length === 0) {
+            const insertResult = await pool.query(
+                `INSERT INTO subscribers (name, email, user_id) VALUES ($1, $2, $3) RETURNING id`,
+                [name, email, userId]
+            );
+            subscriberId = insertResult.rows[0].id;
+        } else {
+            subscriberId = subscriberResult.rows[0].id;
+        }
+
+        // Step 3: Setup SMTP
+        let transporter;
+        const smtpSettings = await getUserSMTPSettings(userId);
+
+        if (smtpSettings) {
+            const decryptedPassword = decryptPassword(smtpSettings.smtp_password);
+            if (!decryptedPassword) throw new Error('SMTP password invalid');
+            transporter = nodemailer.createTransport({
+                host: smtpSettings.smtp_host,
+                port: smtpSettings.smtp_port,
+                secure: false,
+                auth: {
+                    user: smtpSettings.smtp_username,
+                    pass: decryptedPassword,
+                },
+                tls: { rejectUnauthorized: false },
+            });
+        } else {
+            transporter = nodemailer.createTransport({
+                host: 'smtp.zoho.com',
+                port: 587,
+                secure: false,
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS,
+                },
+            });
+        }
+
+        // Step 4: Inject tracking
+        const appUrl = 'https://homepage-809404625.catalystserverless.com/server/crm_function';
+
+        const trackingPixel = `<img src="${appUrl}/api/track/template/open/${templateId}/${subscriberId}?rand=${Math.random()}" width="1" height="1" style="display:none;" alt=""/>`;
+        const unsubscribeLink = `<p style="text-align: center; font-size: small"> <a style="color: red" href="${appUrl}/api/unsubscribe/${subscriberId}">Unsubscribe</a></p>`;
+
+        let htmlWithTracking = `${templateContent} ${trackingPixel} ${unsubscribeLink}`;
+
+        htmlWithTracking = htmlWithTracking.replace(
+            /<a href="(.*?)"/g,
+            (_, link) => `<a href="${appUrl}/api/track/template/click/${templateId}/${subscriberId}?redirect=${encodeURIComponent(link)}"`
+        );
+
+        // Step 5: Send the email
+        await transporter.sendMail({
+            from: smtpSettings ? smtpSettings.smtp_username : process.env.EMAIL_USER,
+            to: email,
+            subject: `Thank you, ${name}!`,
+            html: htmlWithTracking,
+        });
+
+        console.log(`Email sent to ${email}`);
+        return res.status(200).json({ message: 'Thank-you email sent successfully' });
+
+    } catch (error) {
+        console.error('Error sending email:', error);
+        return res.status(500).json({ error: 'Internal error while sending email' });
+    }
+};
 
 
 exports.getUserTemplates = async (req, res) => {

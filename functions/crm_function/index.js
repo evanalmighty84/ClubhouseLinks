@@ -18,6 +18,8 @@ const templatesRoutes = require('./routes/templatesRoutes')
 const workflowRoutes = require('./routes/workflowRoutes')
 const emailQueuedRoutes = require('./routes/emailQueuedRoutes')
 const smsRoutes = require('./routes/smsRoutes')
+const paymentRoutes = require('./routes/paymentRoutes')
+
 
 const path = require('path');
 
@@ -38,8 +40,8 @@ app.use((req, res, next) => {
 
 
 // Increase the JSON payload size to 5MB
-app.use(express.json({ limit: '5mb' }));
 
+app.use(express.json({ limit: '5mb' }));
 // Increase the URL-encoded form data payload size to 5MB
 
 // Authentication Routes
@@ -67,6 +69,9 @@ app.use('/api/smtp', smtpRoutes);
 
 app.use('/api/smsqueue', smsRoutes);
 
+app.use('/api/payments', express.raw({ type: 'application/json' }), paymentRoutes);
+
+
 
 // Use tracking routes
 app.use('/api/track', trackingRoutes);
@@ -78,6 +83,8 @@ app.use('/api/unsubscribe', unSubscribeRoutes);
 app.use('/api/templates', templatesRoutes);
 
 app.use('/api/workflow', workflowRoutes);
+
+
 
 // Export the app module for Zoho Catalyst to handle the server initialization
 module.exports = app;

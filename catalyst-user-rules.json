@@ -1,0 +1,89 @@
+[
+  {
+    "name": "Login Redirect",
+    "source_endpoint": "/app/index.html",
+    "target_endpoint": "/app/index.html",
+    "target": "client",
+    "method": "GET",
+    "throttling": {
+      "overall": {},
+      "ip": {}
+    },
+    "system": true
+  },
+  {
+    "name": "clubhouselinkshomepage - Web Client Hosting",
+    "source_endpoint": "/{path1:(.*)}",
+    "target_endpoint": "/app/{path1}",
+    "target": "client",
+    "method": "GET",
+    "throttling": {
+      "overall": {},
+      "ip": {}
+    }
+  },
+  {
+    "name": "Direct Web Client Access (optional)",
+    "source_endpoint": "/app/{path1:(.*)}",
+    "target_endpoint": "/app/{path1}",
+    "target": "client",
+    "method": "GET",
+    "throttling": {
+      "overall": {},
+      "ip": {}
+    }
+  },
+  {
+    "name": "Articles",
+    "source_endpoint": "/getArticles",
+    "target_endpoint": "/app/",
+    "target": "client",
+    "method": "GET",
+    "throttling": {
+      "overall": {},
+      "ip": {
+        "duration": {
+          "days": 0,
+          "hours": 1,
+          "minutes": 0,
+          "seconds": 0
+        },
+        "limit": "120"
+      }
+    }
+  },
+  {
+    "name": "home_page_function",
+    "source_endpoint": "/server/home_page_function/{path1:(.*)}",
+    "target_endpoint": "/server/home_page_function/{path1}",
+    "target": "advancedio",
+    "method": "ANY",
+    "throttling": {
+      "overall": {},
+      "ip": {}
+    },
+    "target_id": "17011000000005001"
+  },
+  {
+    "name": "crm_function",
+    "source_endpoint": "/server/crm_function/{path1:(.*)}",
+    "target_endpoint": "/server/crm_function/{path1}",
+    "target": "advancedio",
+    "method": "ANY",
+    "throttling": {
+      "overall": {},
+      "ip": {}
+    }
+  },
+  {
+    "name": "clearly_1_pool_service_function",
+    "source_endpoint": "/server/clearly_1_pool_service_function/{path1:(.*)}",
+    "target_endpoint": "/server/clearly_1_pool_service_function/{path1}",
+    "target": "advancedio",
+    "method": "ANY",
+    "throttling": {
+      "overall": {},
+      "ip": {}
+    }
+  }
+]
