@@ -2,7 +2,7 @@
   "name": "react-app",
   "version": "0.1.0",
   "private": true,
-  "homepage": ".",
+  "homepage": "https://evanalmighty84.github.io/ClubhouseLinks",
   "dependencies": {
     "@react-oauth/google": "^0.12.1",
     "@sanity/client": "^6.20.1",
@@ -46,13 +46,9 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
     "predeploy": "npm run build",
-    "deploy": "git worktree add /tmp/gh-pages gh-pages || true && npm run build && cp -r build/* /tmp/gh-pages && cd /tmp/gh-pages && git add . && git commit -m '🚀 Deploy to gh-pages' && git push origin gh-pages && cd - && git worktree remove /tmp/gh-pages --force"
+    "deploy": "npx gh-pages -d build --git git"
   },
-
-
   "eslintConfig": {
     "extends": [
       "react-app",
@@ -70,5 +66,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "gh-pages": "^6.3.0"
   }
 }
