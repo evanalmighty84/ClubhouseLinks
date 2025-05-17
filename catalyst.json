@@ -10,12 +10,15 @@
       "hotlist_cron",
       "warmlist_cron",
       "topofmind_cron",
-      "sendemail_cron"
+      "sendemail_cron",
+      "campaign_and_workflow_report_function",
+      "clearly_1_pool_service_function"
     ],
     "ignore": [],
     "source": "functions"
   },
   "apig": {
-    "enabled": false
+    "enabled": true,
+    "rules": "catalyst-user-rules.json"
   }
 }

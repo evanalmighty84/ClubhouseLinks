@@ -1,0 +1,11 @@
+{
+	"deployment": {
+		"name": "clearly_1_pool_service_function",
+		"stack": "node18",
+		"type": "advancedio",
+		"env_variables": {}
+	},
+	"execution": {
+		"main": "index.js"
+	}
+}

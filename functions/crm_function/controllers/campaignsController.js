@@ -1,5 +1,7 @@
 const pool = require('../db/db');
 const { sendCampaignEmail } = require('../utils/sendCampaignEmail');
+const { decryptPassword } = require('../utils/encryption');
+const { getUserSMTPSettings } = require('../utils/smtp');
 
 // Create a new campaign
 const incrementSendCount = async (campaignId, incrementBy = 1) => {
@@ -35,14 +37,17 @@ exports.getCampaignById = async (req, res) => {
 };
 
 // Create a new campaign with static values for testing
+const nodemailer = require('nodemailer');
+
 exports.createCampaign = async (req, res) => {
     const {
         name,
         subject,
-        fromAddress = 'noreply@user@yoursite.com',  // Default email if none provided
+        fromAddress = 'noreply@user@yoursite.com',
         listIds,
         content,
-        userId // No fallback to a static value like '8'
+        userId,
+        attachments = [] // 🆕 Support attachments from request
     } = req.body;
 
     if (!userId) {
@@ -54,23 +59,18 @@ exports.createCampaign = async (req, res) => {
 
         const formattedListIds = Array.isArray(listIds) ? listIds.map(id => parseInt(id, 10)) : [];
 
+        // 1️⃣ Insert campaign into database
         const result = await pool.query(
             `INSERT INTO campaigns 
             (name, subject, from_address, list_ids, template, messenger, tags, content, url_slug, metadata, send_later, scheduled_date, publish_to_archive, user_id, status, send_count, created_at, updated_at)
             VALUES ($1, $2, $3, $4, 'default', 'email', '', $5, '', '{}', false, null, false, $6, 'sent', 0, NOW(), NOW())
             RETURNING *`,
-            [
-                name,
-                subject,
-                fromAddress,
-                formattedListIds,
-                content,
-                userId  // Pass userId dynamically from the request
-            ]
+            [name, subject, fromAddress, formattedListIds, content, userId]
         );
 
         const newCampaign = result.rows[0];
 
+        // 2️⃣ Fetch subscribers for the campaign
         if (newCampaign.status === 'sent') {
             const subscribersResult = await pool.query(
                 `SELECT s.email, s.id AS subscriber_id 
@@ -82,15 +82,56 @@ exports.createCampaign = async (req, res) => {
 
             const subscribers = subscribersResult.rows;
 
+            // 3️⃣ Setup SMTP transporter
+            let transporter;
+            const smtpSettings = await getUserSMTPSettings(userId);
+
+            if (smtpSettings) {
+                console.log('Using user-specific SMTP settings...');
+                const decryptedPassword = decryptPassword(smtpSettings.smtp_password);
+                if (!decryptedPassword) throw new Error('SMTP password decryption failed');
+
+                transporter = nodemailer.createTransport({
+                    host: smtpSettings.smtp_host,
+                    port: smtpSettings.smtp_port,
+                    secure: false,
+                    auth: {
+                        user: smtpSettings.smtp_username,
+                        pass: decryptedPassword
+                    },
+                    tls: { rejectUnauthorized: false }
+                });
+            } else {
+                console.log('Fallback: Using default Zoho SMTP settings...');
+                transporter = nodemailer.createTransport({
+                    host: 'smtp.zoho.com',
+                    port: 587,
+                    secure: false,
+                    auth: {
+                        user: process.env.EMAIL_USER,
+                        pass: process.env.EMAIL_PASS,
+                    },
+                    tls: { rejectUnauthorized: false }
+                });
+            }
+
+            // 4️⃣ Send email to each subscriber
             for (const subscriber of subscribers) {
-                await sendCampaignEmail(
-                    subscriber.email,
-                    subject,
-                    content,
-                    newCampaign.id,
-                    subscriber.subscriber_id,
-                    userId  // Ensure you pass the userId here as well
-                );
+                try {
+                    await sendCampaignEmail(
+                        subscriber.email,
+                        subject,
+                        content,
+                        newCampaign.id,
+                        subscriber.subscriber_id,
+                        userId,
+                        transporter,
+                        attachments // 🆕 Pass attachments to sendCampaignEmail only if i choo
+                    );
+                } catch (error) {
+                    console.error(`Skipping subscriber ${subscriber.subscriber_id} (${subscriber.email}) due to error: ${error.message}`);
+                    continue;
+                }
             }
 
             await incrementSendCount(newCampaign.id, subscribers.length);
@@ -107,8 +148,8 @@ exports.createCampaign = async (req, res) => {
 
 
 exports.resendCampaign = async (req, res) => {
-    const { id } = req.params;  // Campaign ID
-    const { userId } = req.body;  // Make sure to pass userId in the request body or token
+    const { id } = req.params;
+    const { userId } = req.body;
 
     if (!userId) {
         return res.status(400).json({ error: 'User ID is required' });
@@ -117,6 +158,8 @@ exports.resendCampaign = async (req, res) => {
     try {
         const campaignResult = await pool.query('SELECT * FROM campaigns WHERE id = $1', [id]);
         const campaignData = campaignResult.rows[0];
+        const { subject, content } = campaignData;
+
 
         if (!campaignData) {
             return res.status(404).json({ error: 'Campaign not found' });
@@ -129,7 +172,7 @@ exports.resendCampaign = async (req, res) => {
         }
 
         const subscribersResult = await pool.query(
-            `SELECT s.email, s.id AS subscriber_id 
+            `SELECT s.email, s.id
              FROM subscribers s
              JOIN list_subscribers ls ON s.id = ls.subscriber_id
              WHERE ls.list_id = ANY($1::int[])`,
@@ -138,23 +181,67 @@ exports.resendCampaign = async (req, res) => {
 
         const subscribers = subscribersResult.rows;
 
+        // ✅ Create transporter once
+        let transporter;
+        const smtpSettings = await getUserSMTPSettings(userId);
+
+        if (smtpSettings) {
+            console.log('Using user-specific SMTP settings...');
+            const decryptedPassword = decryptPassword(smtpSettings.smtp_password);
+            if (!decryptedPassword) throw new Error('SMTP password decryption failed');
+
+            transporter = nodemailer.createTransport({
+                host: smtpSettings.smtp_host,
+                port: smtpSettings.smtp_port,
+                secure: false,
+                auth: {
+                    user: smtpSettings.smtp_username,
+                    pass: decryptedPassword
+                },
+                tls: { rejectUnauthorized: false }
+            });
+        } else {
+            console.log('Fallback: Using default Zoho SMTP settings...');
+            transporter = nodemailer.createTransport({
+                host: 'smtp.zoho.com',
+                port: 587,
+                secure: false,
+                auth: {
+                    user: process.env.EMAIL_USER, // From your .env
+                    pass: process.env.EMAIL_PASS,
+                },
+                tls: { rejectUnauthorized: false }
+            });
+        }
+
+
         for (const subscriber of subscribers) {
-            await sendCampaignEmail(
-                subscriber.email,
-                campaignData.subject,
-                campaignData.content,
-                campaignData.id,
-                subscriber.subscriber_id,
-                userId  // Pass userId here as well
-            );
+            try {
+                await sendCampaignEmail(
+                    subscriber.email,
+                    subject,
+                    content,
+                    campaignData.id,
+                    subscriber.id,
+                    userId,
+                    transporter,
+          // may need attachments here later
+                );
+
+            } catch (error) {
+                console.error(`Skipping subscriber ${subscriber.id} (${subscriber.email}) due to error: ${error.message}`);
+                continue; // ✅ skip to next subscriber safely
+            }
         }
 
         res.json({ message: 'Campaign sent successfully!' });
     } catch (error) {
-        console.error('Error resending campaign:', error);
+        console.error('Error resending campaign:', error.message);
         res.status(500).json({ error: 'Failed to resend the campaign' });
     }
 };
+
+
 
 
 

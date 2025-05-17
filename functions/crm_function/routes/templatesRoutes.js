@@ -6,7 +6,8 @@ const templatesController = require('../controllers/templatesController');
 
 
 router.post('/thankyou', templatesController.sendThankYouTemplate);
-router.post('/send-thank-you-form', templatesController.sendHardcodedFormThankYou);
+router.post('/send-thank-you-form-terri', templatesController.sendHardcodedFormThankYou);
+router.post('/send-thank-you-form-john', templatesController.sendGoogleFormJohn);
 
 router.post('/create', templatesController.createOrUpdateTemplate);
 

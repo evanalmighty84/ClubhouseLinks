@@ -3,6 +3,7 @@ import { Table, Button, Form, Row, Col, Modal } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';  // Toastify for notifications
 
+
 const SubscribersPage = () => {
     const [subscribers, setSubscribers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -150,6 +151,7 @@ const SubscribersPage = () => {
 
             console.log('Thank-you email sent successfully');
             toast.success('Thank-you email sent successfully!');
+            navigate('/app/dashboard');
         } catch (error) {
             console.error('Error sending thank-you email:', error);
             toast.error('Failed to send thank-you email');
@@ -193,7 +195,10 @@ const SubscribersPage = () => {
             console.error('Error updating subscriber:', error);
         }
     };
-
+    const handleSubscribeToText = () => {
+        // ✅ Redirect to your payment link here
+        window.location.href = 'https://checkout.clubhouselinks.com/b/14kaGAaUMe786QgbJ0';
+    };
 
     const handleListChange = (e) => {
         const selectedOptions = Array.from(e.target.selectedOptions);
@@ -208,6 +213,9 @@ const SubscribersPage = () => {
                 <Col>
                     <h2>Subscribers ({subscribers.length})</h2>
                 </Col>
+
+
+
                 <Col className="text-right">
                     <Button variant="primary" onClick={() => navigate('/subscribers/new')}>
                         + New
@@ -270,6 +278,17 @@ const SubscribersPage = () => {
                 </Modal.Header>
                 <Modal.Body>
                     <Form>
+                        <Form.Group controlId="name" className="mt-3">
+                            <Form.Label>Name</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={selectedSubscriber?.name || ''}
+                                onChange={(e) =>
+                                    setSelectedSubscriber({ ...selectedSubscriber, name: e.target.value })
+                                }
+                            />
+                        </Form.Group>
+
                         <Form.Group controlId="email">
                             <Form.Label>Email</Form.Label>
                             <Form.Control
@@ -338,6 +357,12 @@ const SubscribersPage = () => {
                     <Button variant="primary" onClick={handleSave}>
                         Save
                     </Button>
+                    {!JSON.parse(localStorage.getItem('textQueueEnabled')) && (
+                        <Button variant="warning" onClick={handleSubscribeToText}>
+                            Subscribe to send Thank you Text
+                        </Button>
+                    )}
+
                     <Button
                         variant="success"
                         onClick={() => handleSendThankYou(selectedSubscriber)}

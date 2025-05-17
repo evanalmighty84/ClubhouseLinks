@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Button, Row, Col, Form, Modal, Carousel } from 'react-bootstrap';
+import {Card, Button, Row, Col, Form,Tabs,  Modal, Carousel, Tab} from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
@@ -9,7 +9,8 @@ import WorkflowContainer from "./WorkflowContainer";
 
 const CampaignPage = () => {
     const navigate = useNavigate();
-
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
     const [campaigns, setCampaigns] = useState([]);
     const [userLists, setUserLists] = useState([]);
     const [selectedCampaign, setSelectedCampaign] = useState(null);
@@ -25,9 +26,13 @@ const CampaignPage = () => {
         if (user && user.id) {
             try {
                 const response = await axios.get(`/server/crm_function/api/campaigns/user/${user.id}`);
-                const campaigns = response.data;
+                const campaigns = response.data.map(c => ({
+                    ...c,
+                    listIds: c.list_ids || [],
+                }));
                 const sortedCampaigns = campaigns.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                 setCampaigns(sortedCampaigns);
+
                 const listResponse = await axios.get(`/server/crm_function/api/lists/user/${user.id}`);
                 setUserLists(listResponse.data);
             } catch (error) {
@@ -35,6 +40,7 @@ const CampaignPage = () => {
             }
         }
     };
+
 
     const handlePreview = (htmlContent) => {
         const previewWindow = window.open('', 'Preview', 'width=600,height=800');
@@ -59,9 +65,10 @@ const CampaignPage = () => {
 
     const handleEditLists = (campaign) => {
         setSelectedCampaign(campaign);
-        setSelectedCampaignLists(campaign.list_ids || []);
+        setSelectedCampaignLists(campaign.listIds || []);
         setShowModal(true);
     };
+
 
     const handleSaveLists = async () => {
         try {
@@ -85,6 +92,9 @@ const CampaignPage = () => {
         const selectedListIds = selectedOptions.map((option) => parseInt(option.value));
         setSelectedCampaignLists(selectedListIds);
     };
+    const handlePageChange = (pageNumber) => {
+        setCurrentPage(pageNumber);
+    };
 
     const handleRunCampaignAgain = async (campaignId) => {
         try {
@@ -103,79 +113,93 @@ const CampaignPage = () => {
             return list ? list.name : `List ID: ${id}`;
         }).join(', ');
     };
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentCampaigns = campaigns.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(campaigns.length / itemsPerPage);
 
     return (
 
         <div className="campaign-page" style={{backgroundColor:'white'}}>
-            <h3 style={{textAlign:'center',color:'rgb(255, 112, 67)'}}>Campaigns and Automated Emails</h3>
             {/* Active Campaigns Section with Carousel */}
             <Row>
-                <h4 style={{ textAlign: 'center' }}>Active Campaigns</h4>
-                <small style={{ color: "gray", textAlign: 'center' }}>swipe to go through</small>
-                <Col>
-                    <Carousel
-                        interval={null}
-                        controls={true} // Enable navigation arrows
-                        indicators={false}
-                        className="mt-3"
-                    >
-                        {campaigns.map((campaign, index) => (
-                            <Carousel.Item key={campaign.id} className="text-center">
-                                <Card className="p-2 shadow-sm mx-auto" style={{ maxWidth: '500px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#f9f9f9' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor:'white' }}>
-                                        <div style={{ flex: 1, padding: '10px' }}>
-                                            <h4 style={{ textAlign: 'center', color: '#333', fontSize: '1.2rem', marginBottom: '10px' }}>
-                                                {campaign.name}
-                                            </h4>
-                                            <p style={{ color: '#555', fontSize: '0.9rem', marginBottom: '5px' }}>
-                                                <strong>Lists Associated:</strong> {getCampaignLists(campaign.list_ids || [])}
-                                            </p>
-                                        </div>
-                                        <img
-                                            src="https://res.cloudinary.com/duz4vhtcn/image/upload/v1732061697/marketing_nuyvhq.gif"
-                                            alt="Campaign"
-                                            style={{ width: '100px', height: '100px', objectFit: 'contain', margin: '10px' }}
-                                        />
+                {/* Pagination Controls */}
+                <div className="pagination-controls mt-3 text-center">
+                    {Array.from({ length: totalPages }, (_, index) => (
+                        <Button
+                            key={index + 1}
+                            variant={index + 1 === currentPage ? 'primary' : 'light'}
+                            onClick={() => handlePageChange(index + 1)}
+                            className="mx-1"
+                        >
+                            {index + 1}
+                        </Button>
+                    ))}
+                </div>
+                <h3 style={{ textAlign: 'center' }}>Archived Campaigns</h3>
+                <Row>
+                    {currentCampaigns.map((campaign) => (
+                        <Col key={campaign.id} xs={12} md={6} className="mb-3">
+                            <Card className="p-2 shadow-sm recent-campaign-card" style={{ borderRadius: '8px', border: '1px solid #ddd', backgroundColor: 'white' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'white' }}>
+                                    {/* Campaign Info */}
+                                    <div style={{ flex: 1, padding: '10px' }}>
+                                        <h4 style={{ textAlign: 'center', color: 'black', fontSize: '1.2rem', marginBottom: '10px' }}>
+                                            {campaign.name}
+                                        </h4>
+                                        <p style={{ color: 'black', fontSize: '0.9rem', marginBottom: '5px' }}>
+                                            <strong>Lists Associated:</strong> {getCampaignLists(campaign.listIds)}
+                                        </p>
+                                        <p style={{ color: 'black', fontSize: '0.9rem', marginBottom: '5px' }}>
+                                            <strong>Unsubscribe Count:</strong> {campaign.unsubscribeCount || 0}
+                                        </p>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 10px 0 10px' }}>
-                                        <Button
-                                            style={{ backgroundColor: '#0dcaf0', fontSize: '0.8rem' }}
-                                            variant="primary"
-                                            onClick={() => handlePreview(campaign.content)}
-                                        >
-                                            Preview
-                                        </Button>
-                                        <Button
-                                            style={{ backgroundColor: '#fc6b01', fontSize: '0.8rem', color: 'white' }}
-                                            variant="info"
-                                            onClick={() => handleEditLists(campaign)}
-                                        >
-                                            Change Audience
-                                        </Button>
-                                        <Button
-                                            style={{ background: 'linear-gradient(to right bottom, #34eb92, #23ad6a)', fontSize: '0.8rem' }}
-                                            variant="success"
-                                            onClick={() => handleRunCampaignAgain(campaign.id)}
-                                        >
-                                            Run Again
-                                        </Button>
-                                    </div>
-                                </Card>
-                                <div style={{ textAlign: 'center', marginTop: '10px', fontSize: '0.9rem', color: '#666' }}>
-                                    {index + 1} of {campaigns.length}
+
+                                    {/* Campaign Image */}
+                                    <img
+                                        src="https://res.cloudinary.com/duz4vhtcn/image/upload/v1732061697/marketing_nuyvhq.gif"
+                                        alt="Campaign"
+                                        style={{ width: '100px', height: '100px', objectFit: 'contain', margin: '10px' }}
+                                    />
                                 </div>
-                            </Carousel.Item>
-                        ))}
-                    </Carousel>
-                </Col>
+
+                                {/* Action Buttons */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 10px 0 10px' }}>
+                                    <Button
+                                        style={{ backgroundColor: '#0dcaf0', fontSize: '0.8rem' }}
+                                        variant="primary"
+                                        onClick={() => handlePreview(campaign.content)}
+                                    >
+                                        Preview
+                                    </Button>
+                                    <Button
+                                        style={{ backgroundColor: '#fc6b01', fontSize: '0.8rem', color: 'white' }}
+                                        variant="info"
+                                        onClick={() => handleEditLists(campaign)}
+                                    >
+                                        Change Audience
+                                    </Button>
+                                    <Button
+                                        style={{ background: 'linear-gradient(to right bottom, #34eb92, #23ad6a)', fontSize: '0.8rem' }}
+                                        variant="success"
+                                        onClick={() => handleRunCampaignAgain(campaign.id)}
+                                    >
+                                        Run Again
+                                    </Button>
+                                </div>
+                            </Card>
+                        </Col>
+                    ))}
+                </Row>
 
 
 
-            <ToastContainer position="top-right" autoClose={3000} />
+                <ToastContainer position="top-right" autoClose={3000} />
 
 
                 <WorkflowContainer />
             </Row>
+
 
 
 

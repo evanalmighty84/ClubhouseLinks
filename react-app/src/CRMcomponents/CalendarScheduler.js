@@ -121,10 +121,27 @@ const CalendarScheduler = ({ guestMode = false })  => {
             console.error('Error fetching templates:', error);
         }
     };
+    const getModalStyle = (actionType) => {
+        switch (actionType) {
+            case 'email':
+                return { background: 'linear-gradient(to right bottom, rgb(255, 218, 179), orange)', color: 'black' };
+            case 'phone_call':
+                return { background: 'linear-gradient(to right bottom, rgb(52, 235, 146), rgb(35, 173, 106))', color: 'white' };
+            case 'meeting':
+                return { background: 'linear-gradient(to right bottom, rgb(169, 216, 216), cadetblue)', color: 'white' };
+            case 'other':
+                return { background: 'lightgray', color: 'black' };
+            case 'text':
+                return { background: 'linear-gradient(to right bottom, #ccf, #66f)', color: 'white' };
+            default:
+                return { background: 'white', color: 'black' };
+        }
+    };
 
     const handleDateClick = async (slotInfo) => {
         await fetchTemplates();
         setSelectedDate(slotInfo.start);
+        setNote(''); // ✅ Clear out previous note
         setShowModal(true);
     };
 
@@ -134,15 +151,31 @@ const CalendarScheduler = ({ guestMode = false })  => {
         const subscriberName = event.title.split(" - ")[1];
         const subscriber = subscribers.find(sub => sub.name === subscriberName);
 
-        if (subscriber) {
+        let freshSubscriber = subscriber;
+
+        if (subscriber && !guestMode) {
+            try {
+                const res = await fetch(`/server/crm_function/api/subscribers/${subscriber.id}`);
+                const data = await res.json();
+                if (res.ok) {
+                    freshSubscriber = data;
+                }
+            } catch (err) {
+                console.error("Error refreshing subscriber:", err);
+            }
+
             await fetchQueuedEmails(subscriber.id);
         }
+
 
         const matchedTemplate = templates.find(t => t.name === event.templateName);
         setEventDetails({
             ...event,
             templateContent: matchedTemplate?.content,
+            notes: freshSubscriber?.notes || '',
         });
+        setNote(freshSubscriber?.notes || '');
+
 
         setSelectedDate(event.start);
         setActionType(event.title.toLowerCase().split(" - ")[0]);
@@ -150,27 +183,28 @@ const CalendarScheduler = ({ guestMode = false })  => {
     };
 
     const handleDeleteEvent = async () => {
-        if (!eventDetails) return;
+        if (!eventDetails?.subscriberId) return;
 
         try {
-            const subscriberName = eventDetails.title.split(" - ")[1];
-            const subscriber = subscribers.find(sub => sub.name === subscriberName);
-            if (!subscriber) return;
-
-            const response = await fetch(`/server/crm_function/api/subscribers/${subscriber.id}/unschedule`, {
+            const response = await fetch(`/server/crm_function/api/subscribers/${eventDetails.subscriberId}/unschedule`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type: actionType })
             });
 
             if (response.ok) {
+                console.log('Deleted event for subscriber:', eventDetails.subscriberId);
                 setShowModal(false);
                 fetchSubscribers();
+            } else {
+                console.error('Delete failed');
             }
         } catch (error) {
             console.error('Error deleting event:', error);
         }
     };
+
+
 
     const handlePreview = (html) => {
         const newWindow = window.open();
@@ -226,6 +260,32 @@ const CalendarScheduler = ({ guestMode = false })  => {
     };
 
 
+    const handleNoteSave = async () => {
+        if (!eventDetails) return;
+
+        const subscriberName = eventDetails.title?.split(" - ")[1];
+        const subscriber = subscribers.find(sub => sub.name === subscriberName);
+
+        if (!subscriber || guestMode) return;
+
+        try {
+            const response = await fetch(`/server/crm_function/api/subscribers/${subscriber.id}/notes`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ note })
+            });
+
+            if (response.ok) {
+                toast.success('Note saved successfully!');
+                fetchSubscribers(); // ✅ refresh updated data
+            } else {
+                toast.error('Failed to save note');
+            }
+        } catch (err) {
+            console.error("Error saving note:", err);
+            toast.error('Error saving note');
+        }
+    };
 
 
 
@@ -237,18 +297,20 @@ const CalendarScheduler = ({ guestMode = false })  => {
                 email: 'event-email',
                 phone_call: 'event-call',
                 meeting: 'event-meeting',
+                text:'event-text',
                 other: 'event-other',
             };
 
             const formatDate = (date) => moment(date).format('MMMM Do YYYY, h:mm A');
 
             if (sub.scheduled_email) {
-                const date = moment(sub.scheduled_email).toDate();
+                const date = moment.utc(sub.scheduled_email).local().toDate();
+
                 events.push({
                     title: `Email - ${sub.name}`,
                     start: date,
                     end: date,
-                    formattedDate: formatDate(date),
+                    formattedDate: moment(date).format('MMMM Do YYYY, h:mm A'),
                     notes: sub.notes,
                     templateName: sub.template_name,
                     className: styleMap.email
@@ -256,36 +318,40 @@ const CalendarScheduler = ({ guestMode = false })  => {
             }
 
             if (sub.scheduled_phone_call) {
-                const date = moment(sub.scheduled_phone_call).toDate();
+                const date = moment.utc(sub.scheduled_phone_call).local().toDate();
+
                 events.push({
                     title: `Call - ${sub.name}`,
                     start: date,
                     end: date,
-                    formattedDate: formatDate(date),
+                    formattedDate: moment(date).format('MMMM Do YYYY, h:mm A'),
                     notes: sub.notes,
                     className: styleMap.phone_call
                 });
             }
 
             if (sub.scheduled_meeting) {
-                const date = moment(sub.scheduled_meeting).toDate();
+                const date = moment.utc(sub.scheduled_meeting).local().toDate();
                 events.push({
                     title: `Meeting - ${sub.name}`,
                     start: date,
                     end: date,
-                    formattedDate: formatDate(date),
+                    formattedDate: moment(date).format('MMMM Do YYYY, h:mm A'),
                     notes: sub.notes,
-                    className: styleMap.meeting
+                    className: styleMap.meeting,
+                    subscriberId: sub.id  // ✅ Add this
                 });
             }
 
+
+
             if (sub.scheduled_other) {
-                const date = moment(sub.scheduled_other).toDate();
+                const date = moment.utc(sub.scheduled_other).local().toDate();
                 events.push({
                     title: `Other - ${sub.name}`,
                     start: date,
                     end: date,
-                    formattedDate: formatDate(date),
+                    formattedDate: moment(date).format('MMMM Do YYYY, h:mm A'),
                     notes: sub.notes,
                     className: styleMap.other
                 });
@@ -301,8 +367,8 @@ const CalendarScheduler = ({ guestMode = false })  => {
             const subscriber = subscribers.find(sub => sub.id === sms.subscriber_id);
             return {
                 title: `Text - ${subscriber ? subscriber.name : 'Unknown Subscriber'}`,
-                start: new Date(sms.scheduled_time),
-                end: new Date(sms.scheduled_time),
+                start: moment.utc(sms.scheduled_time).local().toDate(),
+                end: moment.utc(sms.scheduled_time).local().toDate(),
                 notes: subscriber?.notes || '', // <-- grab notes from subscribers table
                 className: 'event-text',
             };
@@ -327,11 +393,16 @@ const CalendarScheduler = ({ guestMode = false })  => {
                 background: 'linear-gradient(to right bottom, rgb(169, 216, 216), cadetblue)',
                 color: 'white'
             },
+            'event-text': {
+                background: 'linear-gradient(to right bottom, rgb(204, 204, 255), rgb(102, 102, 255))',
+                color: 'white'
+            },
             'event-other': {
                 background: 'lightgray',
                 color: 'black'
             }
         };
+
         return {
             style: styles[event.className] || {}
         };
@@ -367,16 +438,22 @@ const CalendarScheduler = ({ guestMode = false })  => {
                 onSelectEvent={handleEventClick}
                 eventPropGetter={eventPropGetter}
                 className="custom-calendar"
-                views={{ month: true, week: true, day: true, agenda: true }}
+                defaultView={Views.AGENDA}
+                views={{ agenda: true, month: true, week: true, day: true }}
             />
 
-            <Modal show={showModal} onHide={() => { setShowModal(false); setEventDetails(null); setActionType(''); }} size="lg">
-                <Modal.Header closeButton>
+            <Modal show={showModal} onHide={() => { setShowModal(false); setEventDetails(null); setActionType('');  setNote('');  }} size="lg">
+                <Modal.Header
+                    closeButton
+                    style={getModalStyle(actionType || eventDetails?.title?.split(' - ')[0]?.toLowerCase())}
+                >
                     <Modal.Title>
                         {eventDetails ? eventDetails.title : `Schedule on ${selectedDate?.toLocaleString()}`}
                     </Modal.Title>
                 </Modal.Header>
-                <Modal.Body>
+                <Modal.Body
+                    style={getModalStyle(actionType || eventDetails?.title?.split(' - ')[0]?.toLowerCase())}
+                >
                     {eventDetails && queuedEmails.length > 0 && (
                         <div className="mb-3">
                             <h5>Queued Emails</h5>
@@ -450,8 +527,20 @@ const CalendarScheduler = ({ guestMode = false })  => {
                                     )}
                                 </div>
                             )}
-                            <p><strong>Notes:</strong></p>
-                            <pre style={{ whiteSpace: 'pre-wrap' }}>{formatNoteWithDate(eventDetails.notes)}</pre>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Edit Notes</Form.Label>
+                                <Form.Control
+                                    as="textarea"
+                                    rows={4}
+                                    value={note}
+                                    onChange={(e) => setNote(e.target.value)}
+                                />
+                            </Form.Group>
+                            <Button variant="primary" size="sm" onClick={handleNoteSave}>
+                                Save Note
+                            </Button>
+
+
                             <p>
                                 <strong>Scheduled {eventDetails.title?.split(' - ')[0] || 'Event'} Time:</strong>{' '}
                                 {moment(eventDetails.start).format('MMMM Do YYYY, h:mm A')}
@@ -531,7 +620,9 @@ const CalendarScheduler = ({ guestMode = false })  => {
                         </>
                     )}
                 </Modal.Body>
-                <Modal.Footer>
+                <Modal.Footer
+                    style={getModalStyle(actionType || eventDetails?.title?.split(' - ')[0]?.toLowerCase())}
+                >
                     {eventDetails && (
                         <Button variant="danger" onClick={handleDeleteEvent}>Delete from Calendar</Button>
                     )}

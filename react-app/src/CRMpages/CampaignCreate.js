@@ -160,10 +160,10 @@ const CampaignCreate = ({ campaigns }) => {
             <head>
                 <title>Campaign Preview</title>
                 <style>
-                    body {
+        /*            body {
                         font-family: Arial, sans-serif;
                         padding: 20px;
-                    }
+                    }*/
                 </style>
             </head>
             <body>

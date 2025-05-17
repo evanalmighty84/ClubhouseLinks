@@ -227,7 +227,7 @@ const TemplateCreate = ({ selectedCategory, selectedInterval }) => {
                 : '<span style="color: gray;">No Logo</span>'
         }
         
-        <div>
+        <div style="text-align: center">
    ${
             customContent.website
                 ? `<a style="text-align: center;" href="${customContent.website}" alt="Website" style="max-width: 50px; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto; margin-top: auto; margin-bottom: auto;" >${customContent.website}</a>
@@ -252,7 +252,7 @@ const TemplateCreate = ({ selectedCategory, selectedInterval }) => {
 console.log('here is the selected category and interval',selectedCategory + selectedInterval)
         try {
             const response = await axios.post('/server/crm_function/api/templates/create', templateToSave);
-            if (response.status === 201) {
+            if (response.status === 200 || response.status === 201) {
                 alert('Template saved successfully!');
                 navigate('/app/dashboard');
             }

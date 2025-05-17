@@ -44,7 +44,7 @@ const generatePreviewHTML = (category, data) => {
     const emailContent = emailBodies.map((body, index) => {
         const image = images[index] || ''; // Match each image with the emailBodies
         return `
-            ${body ? `<p>${body}</p>` : `<p>Email Body ${index + 1} Placeholder</p>`}
+            ${body ? `<p style="text-align: center">${body}</p>` : `<p>Email Body ${index + 1} Placeholder</p>`}
             ${
             image
                 ? `<img src="${image}" alt="Image ${index + 1}" style="width: 100%; max-width: 560px; margin: 10px auto; border-radius: 8px;" />`
@@ -78,6 +78,12 @@ const generatePreviewHTML = (category, data) => {
         </div>
         <p style="text-align: center; color: gray;">${formattedContactInfo}</p>
         <footer style="text-align: center; color: gray;"></footer>
+        ${(data.attachments || []).map((url, index) => `
+    <p style="text-align:center;">
+        <a href="${url}" target="_blank">Download Attachment ${index + 1}</a>
+    </p>
+`).join('')}
+
     </div>`;
 };
 
@@ -196,9 +202,6 @@ const CampaignCreate = ({ campaigns, selectedCategory }) => {
         try {
             const user = JSON.parse(localStorage.getItem('user')); // Get current user
 
-            // 🔼 Helper to upload a single file to your Node backend
-
-
             // 🔁 Upload images if they are File objects
             const uploadedImages = await Promise.all(
                 campaignData.images.map(async (img) => {
@@ -209,13 +212,31 @@ const CampaignCreate = ({ campaigns, selectedCategory }) => {
                 })
             );
 
-            // ✨ Build new campaignData with uploaded image URLs
+            // ✅ Upload attachments if they are File objects
+            const uploadedAttachments = await Promise.all(
+                (campaignData.attachments || []).map(async (file) => {
+                    if (file instanceof File) {
+                        const formData = new FormData();
+                        formData.append('image', file); // using same endpoint
+                        const res = await fetch('/server/crm_function/api/upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const data = await res.json();
+                        return data.url;
+                    }
+                    return file; // already a URL
+                })
+            );
+
+            // ✨ Build new campaignData with uploaded assets
             const finalData = {
                 ...campaignData,
-                images: uploadedImages
+                images: uploadedImages,
+                attachments: uploadedAttachments
             };
 
-            // 🔥 Generate preview HTML with real URLs
+            // 🔥 Generate preview HTML with real image URLs
             const campaignToSubmit = {
                 ...finalData,
                 userId: user.id,
@@ -236,6 +257,7 @@ const CampaignCreate = ({ campaigns, selectedCategory }) => {
             alert('Failed to create the campaign.');
         }
     };
+
 
 
 
@@ -274,10 +296,10 @@ const CampaignCreate = ({ campaigns, selectedCategory }) => {
             <head>
                 <title>Campaign Preview</title>
                 <style>
-                    body {
+           /*         body {
                         font-family: Arial, sans-serif;
                         padding: 20px;
-                    }
+                    }*/
                 </style>
             </head>
             <body>
@@ -400,6 +422,20 @@ const CampaignCreate = ({ campaigns, selectedCategory }) => {
                                         ))}
                                     </Form.Select>
                                 </Form.Group>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Attachments (PDF, DOCX, etc.)</Form.Label>
+                                    <Form.Control
+                                        type="file"
+                                        accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+                                        multiple
+                                        onChange={(e) => {
+                                            const files = Array.from(e.target.files);
+                                            setCampaignData({ ...campaignData, attachments: files });
+                                        }}
+                                    />
+                                </Form.Group>
+
+
 
                                 {/* Continue to Content Button */}
                                 <Button onClick={() => setActiveTab('content')}>Continue to Content</Button>

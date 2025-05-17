@@ -49,7 +49,7 @@ exports.scheduleSubscribers = async (req, res) => {
             const subscriber = rows[0];
             if (!subscriber) continue;
 
-            const formattedDate = moment(date).format('YYYY-MM-DD HH:mm:ss'); // <-- LOCAL TIME without Z
+            const formattedDate = moment.utc(date).toDate(); // store as actual UTC timestamp
 
             if (type === 'text') {
                 const phone_number = subscriber.phone_number;
@@ -62,10 +62,19 @@ exports.scheduleSubscribers = async (req, res) => {
 
                 await client.query(
                     `INSERT INTO smsqueue (subscriber_id, user_id, message, phone_number, scheduled_time, status)
-                     VALUES ($1, $2, $3, $4, $5, 'pending')`,
+         VALUES ($1, $2, $3, $4, $5, 'pending')`,
                     [id, user_id, notes, phone_number, formattedDate]
                 );
-            } else {
+
+                // ✅ Append to notes for text actions too
+                await client.query(
+                    `UPDATE subscribers
+         SET notes = COALESCE(notes, '') || $1, updated_at = NOW()
+         WHERE id = $2`,
+                    [`\n[TEXT on ${moment(date).format('MMMM Do YYYY, h:mm A')}]: ${notes}`, id]
+                );
+            }
+            else {
                 const columnMap = {
                     email: 'scheduled_email',
                     phone_call: 'scheduled_phone_call',
@@ -122,12 +131,19 @@ exports.unscheduleEvent = async (req, res) => {
     }
 
     try {
-        await pool.query(`UPDATE subscribers SET ${column} = NULL WHERE id = $1`, [id]);
+        const result = await pool.query(`UPDATE subscribers SET ${column} = NULL WHERE id = $1`, [id]);
+
+        if (result.rowCount === 0) {
+            console.warn(`No rows updated. Subscriber may not exist or already had ${column} = NULL.`);
+            return res.status(404).json({ error: 'No matching subscriber found or already unset' });
+        }
+
         res.status(200).json({ message: `${type} unscheduled successfully` });
     } catch (error) {
         console.error('Error unscheduling event:', error);
         res.status(500).json({ error: 'Failed to unschedule event' });
     }
+
 };
 
 exports.getQueuedEmailsForSubscriber = async (req, res) => {
@@ -444,6 +460,38 @@ exports.updateSubscriber = async (req, res) => {
         res.status(500).json({ error: 'Failed to update subscriber' });
     }
 };
+
+
+
+
+exports.editNotes = async (req, res) => {
+    const { id } = req.params;         // subscriber ID
+    const { note } = req.body;         // updated notes content
+
+    if (!note) {
+        return res.status(400).json({ error: 'Note is required' });
+    }
+
+    try {
+        const result = await pool.query(
+            `UPDATE subscribers SET notes = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
+            [note, id]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: 'Subscriber not found' });
+        }
+
+        res.status(200).json({
+            message: 'Notes updated successfully',
+            subscriber: result.rows[0],
+        });
+    } catch (err) {
+        console.error('Error updating notes:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
 
 
 
