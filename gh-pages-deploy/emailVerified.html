@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verified</title>
+    <style>
+        /* Body Styling */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to bottom right, #f7e0c4, brown); /* Default background gradient */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            animation: gradientChange 20s infinite;
+            background-size: 200% 200%;
+        }
+
+        /* Header Styling */
+        h1 {
+            font-size: 2.5rem;
+            text-align: center;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Paragraph Styling */
+        p {
+            font-size: 1.2rem;
+            text-align: center;
+            margin: 10px 0;
+            color: white;
+        }
+
+        /* Button Styling */
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 24px;
+            font-size: 1.2rem;
+            color: white;
+            background-color: #de4e7f;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s, background-color 0.3s;
+        }
+
+        /* Button Hover Effect */
+        a:hover {
+            background-color: #008B00;
+            transform: translateY(-3px);
+        }
+
+        /* Gradient Animation */
+        @keyframes gradientChange {
+            0% { background: linear-gradient(to bottom right, #f7e0c4, brown); }
+            16.7% { background: linear-gradient(to bottom right, #b0d4e3, steelblue); }
+            33.3% { background: linear-gradient(to bottom right, #f5c2d5, #de4e7f); }
+            50% { background: linear-gradient(to bottom right, #7fc87f, #008B00); }
+            66.7% { background: linear-gradient(to bottom right, #a9d8d8, cadetblue); }
+            83.3% { background: linear-gradient(to bottom right, #ffecb3, gold); }
+            100% { background: linear-gradient(to bottom right, #ffdab3, orange); }
+        }
+    </style>
+</head>
+<body>
+<div>
+    <h1>Email Verified Successfully! 🎉</h1>
+    <p>Your email has been verified, and your default lists have been created. You're all set to start using Clubhouse Links!</p>
+    <a href="https://www.clubhouselinks.com/app/#/app/signin" target="_blank">Go to Clubhouse Links</a>
+</div>
+</body>
+</html>
