@@ -47,7 +47,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "deploy": "git checkout --orphan gh-pages && git reset --hard && git --work-tree build add --all && git --work-tree build commit -m '🚀 Deploy to gh-pages' && git push origin HEAD:gh-pages --force && git checkout main"
   },
   "eslintConfig": {
     "extends": [
