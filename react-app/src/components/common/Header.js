@@ -26,13 +26,13 @@ const Header = () => {
 
     const getBorderColor = (path) => {
         switch (path) {
-            case '/app/samplePortfolios': return 'linear-gradient(to bottom right, #f7e0c4, brown)';
-            case '/app/aiProjects': return 'linear-gradient(to bottom right, #b0d4e3, steelblue';
-            case '/app/onlineReviews': return 'linear-gradient(to bottom right, #f5c2d5, #de4e7f)';
-            case '/app/eCommerce': return 'linear-gradient(to right bottom, #34eb92, #23ad6a';
-            case '/app/clubhouseMarketing': return 'linear-gradient(to bottom right, #a9d8d8, cadetblue';
-            case '/app/contactUs': return 'linear-gradient(to bottom right, #ffecb3, gold';
-            case '/app/appstore': return 'linear-gradient(to bottom right, #ffdab3, orange';
+            case '/samplePortfolios': return 'linear-gradient(to bottom right, #f7e0c4, brown)';
+            case '/aiProjects': return 'linear-gradient(to bottom right, #b0d4e3, steelblue';
+            case '/onlineReviews': return 'linear-gradient(to bottom right, #f5c2d5, #de4e7f)';
+            case '/eCommerce': return 'linear-gradient(to right bottom, #34eb92, #23ad6a';
+            case '/clubhouseMarketing': return 'linear-gradient(to bottom right, #a9d8d8, cadetblue';
+            case '/contactUs': return 'linear-gradient(to bottom right, #ffecb3, gold';
+            case '/appstore': return 'linear-gradient(to bottom right, #ffdab3, orange';
             default: return 'transparent';
         }
     };
@@ -102,12 +102,12 @@ const Header = () => {
                 { path: '/app/samplePortfolio2', label: 'Sample Portfolio 2' },
                 { path: '/app/samplePortfolio3', label: 'Sample Portfolio 3' }
             ]},
-        { path: '/app/aiProjects', label: 'AI Projects', icon: aiProjectsEmoji },
-        { path: '/app/clubhouseMarketing', label: 'Clubhouse Marketing', icon: stockEmoji },
-        { path: '/app/eCommerce', label: 'E-commerce/ Retail', icon: eCommerceEmoji },
-        { path: '/app/onlineReviews', label: 'Online Reviews', icon: onlineReviewsEmoji },
-        { path: '/app/contactUs', label: 'Contact/Hire', icon: localSportsEmoji },
-        { path: '/app/appstore', label: 'Clubhouse Links Apps', icon: appStoreEmoji }
+        { path: '/aiProjects', label: 'AI Projects', icon: aiProjectsEmoji },
+        { path: '/clubhouseMarketing', label: 'Clubhouse Marketing', icon: stockEmoji },
+        { path: '/eCommerce', label: 'E-commerce/ Retail', icon: eCommerceEmoji },
+        { path: '/onlineReviews', label: 'Online Reviews', icon: onlineReviewsEmoji },
+        { path: '/contactUs', label: 'Contact/Hire', icon: localSportsEmoji },
+        { path: '/appstore', label: 'Clubhouse Links Apps', icon: appStoreEmoji }
     ];
 
     const renderNavLink = (item) => (

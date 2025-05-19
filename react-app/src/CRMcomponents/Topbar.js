@@ -50,16 +50,16 @@ const Topbar = () => {
                     {localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).name : 'Guest'}
                 </h3>
                 <Nav className="ms-auto">
-                    <Nav.Link onClick={() => handleNavigation('/app/subscribers')}>Subscribers</Nav.Link>
-                    <Nav.Link onClick={() => handleNavigation('/app/lists')}>Lists</Nav.Link>
-                    <Nav.Link onClick={() => handleNavigation('/app/campaigns')}>Campaigns/Workflows</Nav.Link>
-                    <Nav.Link onClick={() => handleNavigation('/app/emailqueued')}>Email/Text Log</Nav.Link>
+                    <Nav.Link onClick={() => handleNavigation('/subscribers')}>Subscribers</Nav.Link>
+                    <Nav.Link onClick={() => handleNavigation('/lists')}>Lists</Nav.Link>
+                    <Nav.Link onClick={() => handleNavigation('/campaigns')}>Campaigns/Workflows</Nav.Link>
+                    <Nav.Link onClick={() => handleNavigation('/emailqueued')}>Email/Text Log</Nav.Link>
 
 
             {/*        <Nav.Link onClick={() => handleNavigation('/app/signup')}>Sign Up</Nav.Link>*/}
     {/*                <Nav.Link onClick={() => handleNavigation('/app/signin')}>Sign In</Nav.Link>*/}
-                    <Nav.Link onClick={() => handleNavigation('/app/settings')}>Settings</Nav.Link>
-                    <Nav.Link onClick={() => handleNavigation('/app/appstore')}>Log Out</Nav.Link>
+                    <Nav.Link onClick={() => handleNavigation('/settings')}>Settings</Nav.Link>
+                    <Nav.Link onClick={() => handleNavigation('/appstore')}>Log Out</Nav.Link>
                 </Nav>
             </Navbar.Collapse>
         </Navbar>
