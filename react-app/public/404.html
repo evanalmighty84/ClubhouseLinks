@@ -4,9 +4,10 @@
     <meta charset="UTF-8" />
     <title>Redirecting...</title>
     <script>
-        const redirectTo = location.pathname + location.search;
-        window.location.replace('/ClubhouseLinks/index.html?redirect=' + redirectTo);
+        const redirectPath = location.pathname.replace('/ClubhouseLinks', '');
+        window.location.replace('/ClubhouseLinks/?redirect=' + redirectPath);
     </script>
+
 </head>
 <body></body>
 </html>

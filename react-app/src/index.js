@@ -59,14 +59,21 @@ const stripePromise = loadStripe("pk_live_4s4TtIY6HXHbiKpHOoFGvQRf");
 
 const RedirectHandler = () => {
     const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
         const query = new URLSearchParams(window.location.search);
         const redirectPath = query.get("redirect");
-        if (redirectPath) {
+
+        // Only run redirect from the homepage route, and avoid loops
+        if (
+            redirectPath &&
+            (location.pathname === "/" || location.pathname === "/ClubhouseLinks") &&
+            !location.pathname.includes(redirectPath)
+        ) {
             navigate(redirectPath, { replace: true });
         }
-    }, [navigate]);
+    }, [navigate, location]);
 
     return null;
 };
