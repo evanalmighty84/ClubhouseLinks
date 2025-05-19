@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd react-app
-          npm install
+          npm install --legacy-peer-deps
 
       - name: Build the project
         run: |
