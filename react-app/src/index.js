@@ -1,17 +1,17 @@
-import React, { Component } from "react";
+import React, { Component, useEffect } from "react";
 import { render } from "react-dom";
 import {
     BrowserRouter,
     Routes,
     Route,
     Navigate,
-    useLocation
+    useLocation,
+    useNavigate
 } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { GoogleOAuthProvider } from "@react-oauth/google";
-
 
 // Your Components
 import Checkout from "./Checkout";
@@ -54,13 +54,22 @@ import EmailVerified from "./CRMpages/EmailVerified";
 import EmailQueuedPage from "./CRMpages/EmailQueuedPage";
 
 import "./index.css";
-const query = new URLSearchParams(window.location.search);
-const redirectPath = query.get('redirect');
-if (redirectPath && window.location.pathname === "/") {
-    window.history.replaceState({}, '', redirectPath);
-}
 
 const stripePromise = loadStripe("pk_live_4s4TtIY6HXHbiKpHOoFGvQRf");
+
+const RedirectHandler = () => {
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const query = new URLSearchParams(window.location.search);
+        const redirectPath = query.get("redirect");
+        if (redirectPath) {
+            navigate(redirectPath, { replace: true });
+        }
+    }, [navigate]);
+
+    return null;
+};
 
 const ConditionalHeader = () => {
     const location = useLocation();
@@ -109,9 +118,8 @@ class App extends Component {
         return (
             <GoogleOAuthProvider clientId="179478627002-th39iebli3b17dg5mkj4vu32sneo8mt9.apps.googleusercontent.com">
                 <BrowserRouter basename={process.env.NODE_ENV === 'production' ? '/ClubhouseLinks' : '/'}>
-
-
-                <ConditionalHeader />
+                    <RedirectHandler />
+                    <ConditionalHeader />
                     <Elements stripe={stripePromise}>
                         <Routes>
                             <Route path="/" element={<NonUserDashboard />} />
