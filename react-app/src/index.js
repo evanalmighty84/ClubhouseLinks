@@ -12,6 +12,13 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
+
+const query = new URLSearchParams(window.location.search);
+const redirectPath = query.get('redirect');
+if (redirectPath && window.location.pathname === "/") {
+    window.history.replaceState({}, '', redirectPath);
+}
+
 // Your Components
 import Checkout from "./Checkout";
 import Success from "./Success";
