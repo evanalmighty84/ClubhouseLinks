@@ -1,6 +1,6 @@
 import React from 'react';
 import RotatingSalesModal from './RotatingSalesModal'; // Adjust path as needed
-import './PoolServiceHomepage.css'; // For background image styling
+import './images/PoolServiceHomepage.css'; // For background image styling
 
 const PoolServiceHomepage = () => {
     return (

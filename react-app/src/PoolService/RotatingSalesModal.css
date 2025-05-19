@@ -1,5 +1,5 @@
 .modal-background-overlay {
-    background: url('/images/Home.png') no-repeat center center fixed;
+    background: url('./images/Home.png') no-repeat center center fixed;
     background-size: cover;
     height: 100vh;
     width: 100vw;

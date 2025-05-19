@@ -98,9 +98,9 @@ const Header = () => {
 
     const navItems = [
         { path: '/app/samplePortfolios', label: 'Website Builder', icon: samplePortfoliosEmoji, isDropdown: true, dropdownItems: [
-                { path: '/app/samplePortfolio1', label: 'Sample Portfolio 1' },
-                { path: '/app/samplePortfolio2', label: 'Sample Portfolio 2' },
-                { path: '/app/samplePortfolio3', label: 'Sample Portfolio 3' }
+                { path: '/samplePortfolio1', label: 'Sample Portfolio 1' },
+                { path: '/samplePortfolio2', label: 'Sample Portfolio 2' },
+                { path: '/samplePortfolio3', label: 'Sample Portfolio 3' }
             ]},
         { path: '/aiProjects', label: 'AI Projects', icon: aiProjectsEmoji },
         { path: '/clubhouseMarketing', label: 'Clubhouse Marketing', icon: stockEmoji },

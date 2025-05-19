@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button } from 'react-bootstrap';
-import './RotatingModal.css';
+import './RotatingSalesModal.css';
 
-import Image1 from '../images/Home.png';
-import Image2 from '../images/before-after-fort-worth-pool-remodel.jpg';
-import Image3 from '../images/mercedespool-logo.png'; // Replace with another appropriate image
+import Image1 from './images/Home.png';
+import Image2 from './images/before-after-fort-worth-pool-remodel.jpg';
+import Image3 from './images/sel-marin.jpeg'; // Replace with another appropriate image
 
 const modalSlides = [
     {
@@ -94,8 +94,8 @@ const RotatingSalesModal = () => {
             )}
 
             {showMainContent && (
-                <div className="main-content container py-5 text-white bg-dark bg-opacity-75 rounded">
-                    <h1 className="text-center mb-4">What We Do</h1>
+                <div className="main-content container py-5 text-white bg-light rounded">
+                    <h1 style={{color:'black'}} className="text-center mb-4">What We Do</h1>
                     <p className="lead">
                         At Clubhouse Links Media, we build websites specifically for pool service professionals. Our designs are mobile-friendly, SEO-rich, and visually impactful to help you stand out from competitors.
                     </p>
@@ -104,7 +104,7 @@ const RotatingSalesModal = () => {
                     </p>
                     <div className="text-center mt-5">
                         <img src={Image2} alt="Before and After Pool" className="img-fluid rounded mb-4" />
-                        <img src={Image1} alt="Luxury Pool" className="img-fluid rounded" />
+                        <img src={Image3} alt="Luxury Pool" className="img-fluid rounded" />
                     </div>
                 </div>
             )}
