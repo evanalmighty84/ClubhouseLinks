@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import { render } from "react-dom";
 import {
-    BrowserRouter as Router,
+    BrowserRouter,
     Routes,
     Route,
     Navigate,
@@ -102,8 +102,10 @@ class App extends Component {
 
         return (
             <GoogleOAuthProvider clientId="179478627002-th39iebli3b17dg5mkj4vu32sneo8mt9.apps.googleusercontent.com">
-                <Router>
-                    <ConditionalHeader />
+                <BrowserRouter basename={process.env.NODE_ENV === 'production' ? '/ClubhouseLinks' : '/'}>
+
+
+                <ConditionalHeader />
                     <Elements stripe={stripePromise}>
                         <Routes>
                             <Route path="/" element={<NonUserDashboard />} />
@@ -146,7 +148,7 @@ class App extends Component {
                             <Route path="*" element={<div style={{ padding: '2rem', color: 'red' }}>❌ 404 - Page Not Found</div>} />
                         </Routes>
                     </Elements>
-                </Router>
+                </BrowserRouter>
             </GoogleOAuthProvider>
         );
     }
