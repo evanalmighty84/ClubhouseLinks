@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/ClubhouseLinks/static/css/main.c6beaa34.css",
-    "main.js": "/ClubhouseLinks/static/js/main.c30b3400.js",
+    "main.css": "/ClubhouseLinks/static/css/main.54b408af.css",
+    "main.js": "/ClubhouseLinks/static/js/main.4d5af34d.js",
     "static/media/vecteezy_two-brown-dogs-digging-the-ground-for-hunting-fat-pets_32544191.gif": "/ClubhouseLinks/static/media/vecteezy_two-brown-dogs-digging-the-ground-for-hunting-fat-pets_32544191.9a2f7d0191dc928804fa.gif",
     "static/media/Revolutionize Your Pet Grooming Business_ AI-Powered Solutions.mp4": "/ClubhouseLinks/static/media/Revolutionize Your Pet Grooming Business_ AI-Powered Solutions.03536c75974482438bf6.mp4",
     "static/media/vecteezy_the-vet-is-taking-the-pug-dog-on-her-arms_35314315 (1).mp4": "/ClubhouseLinks/static/media/vecteezy_the-vet-is-taking-the-pug-dog-on-her-arms_35314315 (1).f77722808b0d7949b5dc.mp4",
@@ -9,6 +9,7 @@
     "static/media/Storm.gif": "/ClubhouseLinks/static/media/Storm.be5fbe6f269f02066be5.gif",
     "static/media/TeamStreamFinal.gif": "/ClubhouseLinks/static/media/TeamStreamFinal.4eb2e6856534d93782ba.gif",
     "static/media/soccerkids3.mp4": "/ClubhouseLinks/static/media/soccerkids3.f245be5ea944d176a7a0.mp4",
+    "static/media/Home.png": "/ClubhouseLinks/static/media/Home.9390e5c6bfb6556d6641.png",
     "static/media/OrderSummaryDesign1.png": "/ClubhouseLinks/static/media/OrderSummaryDesign1.1cc635b5df05bd7ecba3.png",
     "static/media/Subscription.png": "/ClubhouseLinks/static/media/Subscription.6aeeb1ea145e0f32c3a1.png",
     "static/media/vecteezy_pet-hairdresser-woman-cutting-fur-of-cute-yellow-dog_11930357.jpg": "/ClubhouseLinks/static/media/vecteezy_pet-hairdresser-woman-cutting-fur-of-cute-yellow-dog_11930357.5465eb3d26b8ef5b304c.jpg",
@@ -35,6 +36,7 @@
     "static/media/frederik-rosar-NDSZcCfnsbY-unsplash.jpg": "/ClubhouseLinks/static/media/frederik-rosar-NDSZcCfnsbY-unsplash.92b03ab99f214d03e5f1.jpg",
     "static/media/Magento-shopify-woocommerce-1024x673.png": "/ClubhouseLinks/static/media/Magento-shopify-woocommerce-1024x673.00d01044b6d3833513e2.png",
     "static/media/img.png": "/ClubhouseLinks/static/media/img.7fbb948976a0776011d1.png",
+    "static/media/before-after-fort-worth-pool-remodel.jpg": "/ClubhouseLinks/static/media/before-after-fort-worth-pool-remodel.7ba0afb3c924e5328f65.jpg",
     "static/media/girl-taking-selfie-with-friends-golf-field.jpg": "/ClubhouseLinks/static/media/girl-taking-selfie-with-friends-golf-field.d754712e6e24e95b0e8d.jpg",
     "static/media/basketball-camp.jpeg": "/ClubhouseLinks/static/media/basketball-camp.d2e6894f3252c671f28f.jpeg",
     "static/media/Lexus_RZ_Artistic_Hero.jpeg": "/ClubhouseLinks/static/media/Lexus_RZ_Artistic_Hero.684cec6b60e907f3d7a5.jpeg",
@@ -47,6 +49,7 @@
     "static/media/3d-fluency-wordpress.png": "/ClubhouseLinks/static/media/3d-fluency-wordpress.5b9c566ff7e48d2f2b56.png",
     "static/media/working-business-lady.jpg": "/ClubhouseLinks/static/media/working-business-lady.5d2d7aaf140b7989358e.jpg",
     "static/media/professional-golf-player.jpg": "/ClubhouseLinks/static/media/professional-golf-player.debf834c36e46d3db355.jpg",
+    "static/media/sel-marin.jpeg": "/ClubhouseLinks/static/media/sel-marin.a8039767e7059e7c78be.jpeg",
     "static/media/asia-business-woman-feeling-happy-smiling-looking-camera-while-relax-home-office.jpg": "/ClubhouseLinks/static/media/asia-business-woman-feeling-happy-smiling-looking-camera-while-relax-home-office.55af5c73f414050db818.jpg",
     "static/media/bootstrap-icons.woff": "/ClubhouseLinks/static/media/bootstrap-icons.be656520955ea602ab4c.woff",
     "static/media/studio-shot-beautiful-happy-retired-caucasian-female-with-pixie-hairdo-crossing-arms-her-chest-having-confident-look-smiling-broadly.jpg": "/ClubhouseLinks/static/media/studio-shot-beautiful-happy-retired-caucasian-female-with-pixie-hairdo-crossing-arms-her-chest-having-confident-look-smiling-broadly.01b20ad3df1adc0225d9.jpg",
@@ -66,11 +69,11 @@
     "static/media/icons8-facebook-business-suite.svg": "/ClubhouseLinks/static/media/icons8-facebook-business-suite.f7ceaa166fa73eb83ae4c87efbaa3f4e.svg",
     "index.html": "/ClubhouseLinks/index.html",
     "static/media/icons8-home-500.svg": "/ClubhouseLinks/static/media/icons8-home-500.8d7af442010e2aa4ece75b8c46348171.svg",
-    "main.c6beaa34.css.map": "/ClubhouseLinks/static/css/main.c6beaa34.css.map",
-    "main.c30b3400.js.map": "/ClubhouseLinks/static/js/main.c30b3400.js.map"
+    "main.54b408af.css.map": "/ClubhouseLinks/static/css/main.54b408af.css.map",
+    "main.4d5af34d.js.map": "/ClubhouseLinks/static/js/main.4d5af34d.js.map"
   },
   "entrypoints": [
-    "static/css/main.c6beaa34.css",
-    "static/js/main.c30b3400.js"
+    "static/css/main.54b408af.css",
+    "static/js/main.4d5af34d.js"
   ]
 }
