@@ -13,12 +13,6 @@ import { Elements } from "@stripe/react-stripe-js";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
 
-const query = new URLSearchParams(window.location.search);
-const redirectPath = query.get('redirect');
-if (redirectPath && window.location.pathname === "/") {
-    window.history.replaceState({}, '', redirectPath);
-}
-
 // Your Components
 import Checkout from "./Checkout";
 import Success from "./Success";
@@ -60,6 +54,11 @@ import EmailVerified from "./CRMpages/EmailVerified";
 import EmailQueuedPage from "./CRMpages/EmailQueuedPage";
 
 import "./index.css";
+const query = new URLSearchParams(window.location.search);
+const redirectPath = query.get('redirect');
+if (redirectPath && window.location.pathname === "/") {
+    window.history.replaceState({}, '', redirectPath);
+}
 
 const stripePromise = loadStripe("pk_live_4s4TtIY6HXHbiKpHOoFGvQRf");
 
