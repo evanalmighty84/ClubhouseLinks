@@ -54,6 +54,7 @@ import EmailVerified from "./CRMpages/EmailVerified";
 import EmailQueuedPage from "./CRMpages/EmailQueuedPage";
 
 import "./index.css";
+import PoolServiceHomepage from "./PoolService/PoolServiceHomePage";
 
 const stripePromise = loadStripe("pk_live_4s4TtIY6HXHbiKpHOoFGvQRf");
 
@@ -131,6 +132,7 @@ class App extends Component {
                         <Routes>
                             <Route path="/" element={<NonUserDashboard />} />
                             <Route path="/samplePortfolios2" element={<PSAPortfolio />} />
+                            <Route path="/pool" element={<PoolServiceHomepage />} />
                             <Route path="/samplePortfolios" element={<SamplePortfolios />} />
                             <Route path="/BradMcClain" element={<SendGoogleReviewForm />} />
                             <Route path="/TerriPescatore" element={<SendGoogleReviewForm2 />} />
