@@ -59,7 +59,7 @@ const Apps = () => {
                 <Col lg={6} className="d-flex flex-column align-items-center">
 
                     {/* Highlighted available section */}
-                    <div className="mb-4" onClick={() => navigate('/app/signin')} style={{cursor: 'pointer', width: '100%', maxWidth: '400px', border: '2px solid green', position: 'relative', boxShadow: '0 4px 8px rgba(0, 128, 0, 0.5)', padding: '10px' }}>
+                    <div className="mb-4" onClick={() => navigate('/signin')} style={{cursor: 'pointer', width: '100%', maxWidth: '400px', border: '2px solid green', position: 'relative', boxShadow: '0 4px 8px rgba(0, 128, 0, 0.5)', padding: '10px' }}>
                         <Image src={CrmPicture} style={{ width: '100%', height: '300px', objectFit: 'cover' }} fluid />
                         <span style={{ color: 'green', fontWeight: 'bold', position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'rgba(255,255,255,0.8)', padding: '5px 10px' }}>
         Available Now

@@ -35,7 +35,7 @@ const SignUp = () => {
     // Handle modal close and redirect to sign-in
     const handleModalClose = () => {
         setShowModal(false);
-        navigate('/app/signin'); // Redirect to sign-in page
+        navigate('/signin'); // Redirect to sign-in page
     };
 
     return (

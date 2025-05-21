@@ -160,19 +160,19 @@ const Checkout = () => {
                     if (confirmError) {
                         console.error('Error confirming card payment:', confirmError);
                     } else if (paymentIntent.status === 'succeeded') {
-                        navigate('/app/success');
+                        navigate('/success');
                     } else if (paymentIntent.status === 'requires_action') {
                         // Payment requires additional actions
                         window.location.href = paymentIntent.next_action.use_stripe_sdk.redirect_to_url;
                     } else {
-                        navigate('/app/cancel');
+                        navigate('/cancel');
                     }
                 } else {
                     console.error('Client secret is missing.');
                 }
             } catch (error) {
                 console.error('Error fetching payment intent:', error);
-                navigate('/app/cancel');
+                navigate('/cancel');
             }
         }
     };

@@ -151,7 +151,7 @@ const SubscribersPage = () => {
 
             console.log('Thank-you email sent successfully');
             toast.success('Thank-you email sent successfully!');
-            navigate('/app/dashboard');
+            navigate('/dashboard');
         } catch (error) {
             console.error('Error sending thank-you email:', error);
             toast.error('Failed to send thank-you email');

@@ -250,7 +250,7 @@ const CampaignCreate = ({ campaigns, selectedCategory }) => {
             console.log('Campaign created successfully:', response.data);
 
             // ✅ Navigate away
-            navigate('/app/dashboard');
+            navigate('/dashboard');
 
         } catch (error) {
             console.error('Error creating campaign:', error);

@@ -242,7 +242,7 @@ const CampaignCreate = ({ campaigns }) => {
 
             const response = await axios.post('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/campaigns/create', campaignToSubmit);
             console.log('Campaign created successfully:', response.data);
-            navigate('/app/campaigns'); // Redirect to campaigns list
+            navigate('/campaigns'); // Redirect to campaigns list
         } catch (error) {
             console.error('Error creating campaign:', error);
             alert('Failed to create the campaign.');
