@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/ClubhouseLinks/static/css/main.54b408af.css",
-    "main.js": "/ClubhouseLinks/static/js/main.4d5af34d.js",
+    "main.css": "/ClubhouseLinks/static/css/main.023cd2af.css",
+    "main.js": "/ClubhouseLinks/static/js/main.07e23807.js",
     "static/media/vecteezy_two-brown-dogs-digging-the-ground-for-hunting-fat-pets_32544191.gif": "/ClubhouseLinks/static/media/vecteezy_two-brown-dogs-digging-the-ground-for-hunting-fat-pets_32544191.9a2f7d0191dc928804fa.gif",
     "static/media/Revolutionize Your Pet Grooming Business_ AI-Powered Solutions.mp4": "/ClubhouseLinks/static/media/Revolutionize Your Pet Grooming Business_ AI-Powered Solutions.03536c75974482438bf6.mp4",
     "static/media/vecteezy_the-vet-is-taking-the-pug-dog-on-her-arms_35314315 (1).mp4": "/ClubhouseLinks/static/media/vecteezy_the-vet-is-taking-the-pug-dog-on-her-arms_35314315 (1).f77722808b0d7949b5dc.mp4",
@@ -68,12 +68,11 @@
     "static/media/softball.webp": "/ClubhouseLinks/static/media/softball.b95b6f380168d7a598e9.webp",
     "static/media/icons8-facebook-business-suite.svg": "/ClubhouseLinks/static/media/icons8-facebook-business-suite.f7ceaa166fa73eb83ae4c87efbaa3f4e.svg",
     "index.html": "/ClubhouseLinks/index.html",
-    "static/media/icons8-home-500.svg": "/ClubhouseLinks/static/media/icons8-home-500.8d7af442010e2aa4ece75b8c46348171.svg",
-    "main.54b408af.css.map": "/ClubhouseLinks/static/css/main.54b408af.css.map",
-    "main.4d5af34d.js.map": "/ClubhouseLinks/static/js/main.4d5af34d.js.map"
+    "main.023cd2af.css.map": "/ClubhouseLinks/static/css/main.023cd2af.css.map",
+    "main.07e23807.js.map": "/ClubhouseLinks/static/js/main.07e23807.js.map"
   },
   "entrypoints": [
-    "static/css/main.54b408af.css",
-    "static/js/main.4d5af34d.js"
+    "static/css/main.023cd2af.css",
+    "static/js/main.07e23807.js"
   ]
 }
