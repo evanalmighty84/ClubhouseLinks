@@ -25,7 +25,7 @@ const Header = () => {
     };
 
     const navItems = [
-        { path: '/app/samplePortfolios', label: 'Website Builder', icon: samplePortfoliosEmoji },
+        { path: '/samplePortfolios', label: 'Website Builder', icon: samplePortfoliosEmoji },
         { path: '/aiProjects', label: 'AI Projects', icon: aiProjectsEmoji },
         { path: '/clubhouseMarketing', label: 'Clubhouse Marketing', icon: stockEmoji },
         { path: '/eCommerce', label: 'E-commerce/ Retail', icon: eCommerceEmoji },
