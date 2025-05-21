@@ -32,7 +32,7 @@ router.get('/verify-email/:token', async (req, res) => {
         // Create default lists for the user
         await createListsForNewUser(user.id);
         // Send success response and redirect
-        res.redirect('https://www.clubhouselinks.com/app/#/app/verify-email-success');
+        res.redirect('https://www.clubhouselinks.com/verify-email-success');
     } catch (error) {
         console.error('Error verifying email:', error);
         res.status(500).json({ error: 'Server error' });

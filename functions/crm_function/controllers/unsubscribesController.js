@@ -41,7 +41,7 @@ exports.unsubscribe = async (req, res) => {
 
         await client.query('COMMIT');
         console.log(`Unsubscribe process completed for Subscriber ID: ${subscriberId}`);
-        res.redirect('https://www.clubhouselinks.com/app/#/app/unsubscribe');
+        res.redirect('https://www.clubhouselinks.com');
     } catch (error) {
         await client.query('ROLLBACK');
         console.error(`Error during unsubscribe process for Subscriber ID: ${subscriberId}`, error);

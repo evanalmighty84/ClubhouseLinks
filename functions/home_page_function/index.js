@@ -35,7 +35,7 @@ app.post('/create-payment-intent', async (req, res) => {
 			currency: 'usd',
 			payment_method: payment_method_id,
 			confirm: true,
-			return_url: 'https://www.clubhouselinks.com/app/#/app/success',
+			return_url: 'https://www.clubhouselinks.com/success',
 		});
 
 		// Return the client_secret
