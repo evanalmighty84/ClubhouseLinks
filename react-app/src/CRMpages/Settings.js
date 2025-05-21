@@ -27,7 +27,7 @@ const Settings = () => {
 
     const fetchSmtpSettings = async (userId) => {
         try {
-            const response = await axios.get(`/server/crm_function/api/smtp/smtp-settings/${userId}`);
+            const response = await axios.get(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/smtp/smtp-settings/${userId}`);
             if (response.data) {
                 setSmtpSettings(response.data);
             }
@@ -54,7 +54,7 @@ const Settings = () => {
     const handleSmtpSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('/server/crm_function/api/smtp/smtp-settings', {
+            await axios.post('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/smtp/smtp-settings', {
                 ...smtpSettings,
                 userId,
             });
@@ -68,7 +68,7 @@ const Settings = () => {
     const handlePasswordSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('/server/crm_function/api/users/update-settings', {
+            await axios.post('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/users/update-settings', {
                 userId,
                 currentPassword,
                 newPassword,

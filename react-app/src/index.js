@@ -66,18 +66,30 @@ const RedirectHandler = () => {
         const query = new URLSearchParams(window.location.search);
         const redirectPath = query.get("redirect");
 
-        // Only run redirect from the homepage route, and avoid loops
+        // Handle ?redirect=...
         if (
             redirectPath &&
             (location.pathname === "/" || location.pathname === "/ClubhouseLinks") &&
             !location.pathname.includes(redirectPath)
         ) {
             navigate(redirectPath, { replace: true });
+            return;
+        }
+
+        // Handle legacy hash-based URLs like /app/#/app/TerriPescatore
+        const hash = window.location.hash;
+
+        if (hash.startsWith("#/")) {
+            let cleanPath = hash.replace(/^#/, ""); // remove leading #
+            cleanPath = cleanPath.replace(/\/?app\//gi, "/"); // remove all /app/ with optional preceding slash
+            navigate(cleanPath, { replace: true });
         }
     }, [navigate, location]);
 
     return null;
 };
+
+
 
 const ConditionalHeader = () => {
     const location = useLocation();

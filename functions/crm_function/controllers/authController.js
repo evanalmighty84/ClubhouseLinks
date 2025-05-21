@@ -35,7 +35,7 @@ exports.signup = async (req, res) => {
         const user = newUser.rows[0];
 
         // Send verification email with inline styling and video
-        const verificationLink = `https://homepage-809404625.development.catalystserverless.com/server/crm_function/api/auth/verify-email/${verificationToken}`;
+        const verificationLink = `https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/auth/verify-email/${verificationToken}`;
         const emailContent = `
             <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                 <div style="background-color: steelblue; padding: 20px; text-align: center; color: white;">

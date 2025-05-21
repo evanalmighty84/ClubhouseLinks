@@ -30,7 +30,7 @@ const ScheduledWorkflowEvents = () => {
 
             try {
                 console.log('Fetching workflow events for user_id:', user_id);
-                const response = await axios.get('/server/crm_function/api/workflow/scheduled-workflows', {
+                const response = await axios.get('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/workflow/scheduled-workflows', {
                     params: { user_id },
                 });
                 setEvents(response.data);

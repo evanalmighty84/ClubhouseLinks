@@ -9,14 +9,14 @@ const ListForm = ({ initialList, onSaveSuccess, userId }) => {
 
     useEffect(() => {
         // Fetch all available subscribers for this user
-        fetch(`/server/crm_function/api/subscribers/user/${userId}`)
+        fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/subscribers/user/${userId}`)
             .then((response) => response.json())
             .then((data) => setAllSubscribers(Array.isArray(data) ? data : [])) // Ensure data is an array
             .catch((err) => console.error('Error fetching subscribers:', err));
 
         // If editing a list, fetch the subscribers for the list
         if (initialList && initialList.id) {
-            fetch(`/server/crm_function/api/lists/${initialList.id}/subscribers`)
+            fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/lists/${initialList.id}/subscribers`)
                 .then((response) => response.json())
                 .then((data) => setSelectedSubscriberIds(data.map((sub) => sub.id)))
                 .catch((err) => console.error('Error fetching list subscribers:', err));
@@ -34,8 +34,8 @@ const ListForm = ({ initialList, onSaveSuccess, userId }) => {
 
         const method = initialList.id ? 'PUT' : 'POST';
         const endpoint = initialList.id
-            ? `/server/crm_function/api/lists/${initialList.id}`
-            : '/server/crm_function/api/lists/create';
+            ? `https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/lists/${initialList.id}`
+            : 'https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/lists/create';
 
         fetch(endpoint, {
             method,

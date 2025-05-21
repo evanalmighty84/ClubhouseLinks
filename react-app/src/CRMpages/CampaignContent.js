@@ -102,7 +102,7 @@ const CampaignCreate = () => {
         const fetchUserLists = async () => {
             try {
                 const userId = JSON.parse(localStorage.getItem('user')).id;
-                const response = await axios.get(`/server/crm_function/api/lists/user/${userId}`);
+                const response = await axios.get(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/lists/user/${userId}`);
                 setUserLists(response.data);
             } catch (error) {
                 console.error('Error fetching lists:', error);
@@ -148,7 +148,7 @@ const CampaignCreate = () => {
                 scheduledDate: campaignData.sendLater ? campaignData.scheduledDate : null
             };
 
-            const response = await axios.post('/server/crm_function/api/campaigns/create', campaignToSubmit);
+            const response = await axios.post('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/campaigns/create', campaignToSubmit);
             console.log('Campaign created successfully:', response.data);
             navigate('/campaigns'); // Redirect to campaigns list
         } catch (error) {

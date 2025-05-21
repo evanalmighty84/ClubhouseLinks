@@ -64,7 +64,7 @@ const CreateWorkflowForm = ({ onCreateWorkflow }) => {
     }, []);
     const fetchRecentEvents = async (userId) => {
         try {
-            const response = await axios.get(`/server/crm_function/api/dashboard/${userId}`);
+            const response = await axios.get(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/dashboard/${userId}`);
 
             const data = response.data.recentEvents || {}; // Ensure the default is an empty object
             setRecentEvents(data);
@@ -76,7 +76,7 @@ const CreateWorkflowForm = ({ onCreateWorkflow }) => {
 
     const fetchScheduledWorkflows = async (userId) => {
         try {
-            const response = await axios.get(`/server/crm_function/api/workflow/scheduled-workflows`, {
+            const response = await axios.get(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/workflow/scheduled-workflows`, {
                 params: { user_id: userId },
             });
             setScheduledEvents(response.data || []);
@@ -128,7 +128,7 @@ const CreateWorkflowForm = ({ onCreateWorkflow }) => {
             try {
                 // Replace user_id with the actual user ID
                 const user_id = localUserId.user_id; // Example user ID, adjust accordingly
-                const response = await axios.get(`/server/crm_function/api/templates`, {
+                const response = await axios.get(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/templates`, {
                     params: {
                         category: workflowData.name,
                         user_id: user_id
@@ -181,7 +181,7 @@ const CreateWorkflowForm = ({ onCreateWorkflow }) => {
 
     const fetchScheduledSubscribers = async (userId, interval) => {
         try {
-            const response = await axios.get(`/server/crm_function/api/lists/scheduled-subscribers`, {
+            const response = await axios.get(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/lists/scheduled-subscribers`, {
                 params: { user_id: userId, interval: interval },
             });
             setScheduledEvents(response.data || []);

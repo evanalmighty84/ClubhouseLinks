@@ -8,7 +8,7 @@ const ListItem = ({ list, onDelete }) => {
     const handleDelete = async (id) => {
         try {
             // Call the API to delete the list
-            const response = await fetch(`/server/crm_function/api/lists/${id}`, {
+            const response = await fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/lists/${id}`, {
                 method: 'DELETE',
             });
 

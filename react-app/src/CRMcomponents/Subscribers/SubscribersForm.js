@@ -22,13 +22,13 @@ const SubscribersForm = ({ initialSubscriber = {} }) => {
         }
         const userId = user.id;
 
-        fetch(`/server/crm_function/api/lists/user/${userId}`)
+        fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/lists/user/${userId}`)
             .then(response => response.json())
             .then(data => setAllLists(data))
             .catch(err => console.error('Error fetching lists:', err));
 
         if (id) {
-            fetch(`/server/crm_function/api/subscribers/${id}`)
+            fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/subscribers/${id}`)
                 .then(response => response.json())
                 .then(subscriber => {
                     setEmail(subscriber.email);
@@ -36,7 +36,7 @@ const SubscribersForm = ({ initialSubscriber = {} }) => {
                     setPhone(subscriber.phone_number || '');
                     setAddress(subscriber.physical_address || '');
                     setTags(subscriber.tags ? subscriber.tags.join(',') : '');
-                    fetch(`/server/crm_function/api/subscribers/${id}/lists`)
+                    fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/subscribers/${id}/lists`)
                         .then(response => response.json())
                         .then(listData => {
                             const selectedListIds = listData.map(list => list.id);
@@ -68,8 +68,8 @@ const SubscribersForm = ({ initialSubscriber = {} }) => {
 
         const method = id ? 'PUT' : 'POST';
         const endpoint = id
-            ? `/server/crm_function/api/subscribers/${id}/edit`
-            : '/server/crm_function/api/subscribers/create';
+            ? `https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/subscribers/${id}/edit`
+            : 'https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/subscribers/create';
 
         fetch(endpoint, {
             method,

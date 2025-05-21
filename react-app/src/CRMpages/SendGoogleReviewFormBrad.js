@@ -17,7 +17,7 @@ const BradMcClainProfile = () => {
         setError('');
 
         try {
-            await axios.post('/server/crm_function/api/templates/send-thank-you-form', {
+            await axios.post('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/templates/send-thank-you-form', {
                 email,
                 name
             });

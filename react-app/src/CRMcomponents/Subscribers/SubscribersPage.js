@@ -33,7 +33,7 @@ const SubscribersPage = () => {
                 return;
             }
 
-            const response = await fetch(`/server/crm_function/api/subscribers/user/${user.id}`);
+            const response = await fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/subscribers/user/${user.id}`);
             const data = await response.json();
 
             if (response.ok) {
@@ -57,7 +57,7 @@ const SubscribersPage = () => {
                 return;
             }
 
-            const response = await fetch(`/server/crm_function/api/lists/user/${user.id}`);
+            const response = await fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/lists/user/${user.id}`);
             const data = await response.json();
 
             if (response.ok) {
@@ -91,7 +91,7 @@ const SubscribersPage = () => {
 
         try {
             const response = await fetch(
-                `/server/crm_function/api/subscribers/${id}?userId=${user.id}`,
+                `https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/subscribers/${id}?userId=${user.id}`,
                 { method: 'DELETE' }
             );
 
@@ -114,7 +114,7 @@ const SubscribersPage = () => {
 
         // Fetch lists the subscriber is associated with
         try {
-            const response = await fetch(`/server/crm_function/api/subscribers/${subscriber.id}/lists`);
+            const response = await fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/subscribers/${subscriber.id}/lists`);
             const data = await response.json();
             const selectedLists = data.map((list) => list.id); // Extract list IDs
 
@@ -135,7 +135,7 @@ const SubscribersPage = () => {
                 return;
             }
 
-            const response = await fetch(`/server/crm_function/api/templates/thankyou`, {
+            const response = await fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/templates/thankyou`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -174,7 +174,7 @@ const SubscribersPage = () => {
             };
 
             const response = await fetch(
-                `/server/crm_function/api/subscribers/${selectedSubscriber.id}`,
+                `https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/subscribers/${selectedSubscriber.id}`,
                 {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },

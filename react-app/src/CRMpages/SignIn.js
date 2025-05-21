@@ -15,7 +15,7 @@ const SignIn = () => {
         setValidationError(''); // Clear previous errors
 
         try {
-            const response = await axios.post('/server/crm_function/api/auth/signin/', { email, password });
+            const response = await axios.post('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/auth/signin/', { email, password });
             const { user, token } = response.data;
 
             // Store user and token in localStorage
