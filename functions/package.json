@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "hotlist-cron": "node functions/hotlist_cron/index.js"
+    "hotlist-cron": "node hotlist_cron/index.js"
+
   },
   "dependencies": {
     "express": "^4.18.2",
