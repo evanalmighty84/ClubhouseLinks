@@ -1,8 +1,8 @@
 {
   "name": "untitled7",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "workspaces": ["functions"],
   "scripts": {
     "predeploy": "npm run build --prefix react-app && rm -rf app && mkdir app && cp -r react-app/build/* app/",
     "deploy": "catalyst deploy",
