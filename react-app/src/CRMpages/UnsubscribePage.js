@@ -56,7 +56,7 @@ const UnsubscribePage = () => {
                   You have successfully unsubscribed from receiving emails from us
                 </p>
                 <a
-                    href="https://www.clubhouselinks.com/app/#/app/signin"
+                    href="https://www.clubhouselinks.com/signin"
                     target="_blank"
                     rel="noopener noreferrer"
                     style={buttonStyle}

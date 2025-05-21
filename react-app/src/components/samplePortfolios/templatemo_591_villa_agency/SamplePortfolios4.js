@@ -33,7 +33,7 @@ const SamplePortfolios4 = () => {
 
     return (
         <div>
-            <body>
+
 
             <div className="sub-header">
                 <div className="container">
@@ -112,9 +112,19 @@ const SamplePortfolios4 = () => {
                     <div className="row">
                         <div className="col-lg-4">
                             <div className="left-image">
-                                <img src="assets/images/featured.jpg" alt=""/>
-                                    <a href="property-details.html"><img src="assets/images/featured-icon.png" alt="" style={{maxWidth:'60px',padding:'0px'}}/></a>
+                                <img
+                                    src={`${process.env.PUBLIC_URL}/assets/images/featured.jpg`}
+                                    alt="Featured"
+                                />
+                                <a href="property-details.html">
+                                    <img
+                                        src={`${process.env.PUBLIC_URL}/assets/images/featured-icon.png`}
+                                        alt="Featured Icon"
+                                        style={{maxWidth: '60px', padding: '0px'}}
+                                    />
+                                </a>
                             </div>
+
                         </div>
                         <div className="col-lg-5">
                             <div className="section-heading">
@@ -183,20 +193,24 @@ const SamplePortfolios4 = () => {
                             <div className="info-table">
                                 <ul>
                                     <li>
-                                        <img src="assets/images/info-icon-01.png" alt="" style={{maxWidth:'52px'}}/>
-                                            <h4>250 m2<br/><span>Total Flat Space</span></h4>
+                                        <img src={`${process.env.PUBLIC_URL}/assets/images/info-icon-01.png`} alt=""
+                                             style={{maxWidth: '52px'}}/>
+                                        <h4>250 m2<br/><span>Total Flat Space</span></h4>
                                     </li>
                                     <li>
-                                        <img src="assets/images/info-icon-02.png" alt="" style={{maxWidth:'52px'}}/>
-                                            <h4>Contract<br/><span>Contract Ready</span></h4>
+                                        <img src={`${process.env.PUBLIC_URL}/assets/images/info-icon-02.png`} alt=""
+                                             style={{maxWidth: '52px'}}/>
+                                        <h4>Contract<br/><span>Contract Ready</span></h4>
                                     </li>
                                     <li>
-                                        <img src="assets/images/info-icon-03.png" alt=""style={{maxWidth:'52px'}}/>
-                                            <h4>Payment<br/><span>Payment Process</span></h4>
+                                        <img src={`${process.env.PUBLIC_URL}/assets/images/info-icon-03.png`} alt=""
+                                             style={{maxWidth: '52px'}}/>
+                                        <h4>Payment<br/><span>Payment Process</span></h4>
                                     </li>
                                     <li>
-                                        <img src="assets/images/info-icon-04.png" alt="" style={{maxWidth:'52px'}}/>
-                                            <h4>Safety<br/><span>24/7 Under Control</span></h4>
+                                        <img src={`${process.env.PUBLIC_URL}/assets/images/info-icon-04.png`} alt=""
+                                             style={{maxWidth: '52px'}}/>
+                                        <h4>Safety<br/><span>24/7 Under Control</span></h4>
                                     </li>
                                 </ul>
                             </div>
@@ -223,8 +237,10 @@ const SamplePortfolios4 = () => {
                     <div className="row">
                         <div className="col-lg-10 offset-lg-1">
                             <div className="video-frame">
-                                <img src="assets/images/video-frame.jpg" alt=""/>
-                                    <a href="https://youtube.com" target="_blank"><i className="fa fa-play"></i></a>
+                                <img
+                                    src={`${process.env.PUBLIC_URL}/assets/images/video-frame.jpg`}
+                                    alt=""
+                                /> <a href="https://youtube.com" target="_blank"><i className="fa fa-play"></i></a>
                             </div>
                         </div>
                     </div>
@@ -316,17 +332,19 @@ const SamplePortfolios4 = () => {
                                                     </div>
                                                 </div>
                                                 <div className="col-lg-6">
-                                                    <img src="assets/images/deal-01.jpg" alt=""/>
-                                                </div>
+                                                    <img
+                                                        src={`${process.env.PUBLIC_URL}/assets/images/deal-01.jpg`}
+                                                        alt=""
+                                                    /></div>
                                                 <div className="col-lg-3">
                                                     <h4>Extra Info About Property</h4>
                                                     <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, do
                                                         eiusmod tempor pack incididunt ut labore et dolore magna aliqua
                                                         quised ipsum suspendisse.
                                                         <br/><br/>When you need free CSS templates, you can simply type
-                                                            TemplateMo in any search engine website. In addition, you
-                                                            can type TemplateMo Portfolio, TemplateMo One Page Layouts,
-                                                            etc.</p>
+                                                        TemplateMo in any search engine website. In addition, you
+                                                        can type TemplateMo Portfolio, TemplateMo One Page Layouts,
+                                                        etc.</p>
                                                     <div className="icon-button">
                                                         <a href="property-details.html"><i
                                                             className="fa fa-calendar"></i> Schedule a visit</a>
@@ -349,16 +367,18 @@ const SamplePortfolios4 = () => {
                                                     </div>
                                                 </div>
                                                 <div className="col-lg-6">
-                                                    <img src="assets/images/deal-02.jpg" alt=""/>
-                                                </div>
+                                                    <img
+                                                        src={`${process.env.PUBLIC_URL}/assets/images/dea-02.jpg`}
+                                                        alt=""
+                                                    /></div>
                                                 <div className="col-lg-3">
                                                     <h4>Detail Info About Villa</h4>
                                                     <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, do
                                                         eiusmod tempor pack incididunt ut labore et dolore magna aliqua
                                                         quised ipsum suspendisse. <br/><br/>Swag fanny pack lyft blog
-                                                            twee. JOMO ethical copper mug, succulents typewriter shaman
-                                                            DIY kitsch twee taiyaki fixie hella venmo after messenger
-                                                            poutine next level humblebrag swag franzen.</p>
+                                                        twee. JOMO ethical copper mug, succulents typewriter shaman
+                                                        DIY kitsch twee taiyaki fixie hella venmo after messenger
+                                                        poutine next level humblebrag swag franzen.</p>
                                                     <div className="icon-button">
                                                         <a href="property-details.html"><i
                                                             className="fa fa-calendar"></i> Schedule a visit</a>
@@ -381,16 +401,18 @@ const SamplePortfolios4 = () => {
                                                     </div>
                                                 </div>
                                                 <div className="col-lg-6">
-                                                    <img src="assets/images/deal-03.jpg" alt=""/>
-                                                </div>
+                                                    <img
+                                                        src={`${process.env.PUBLIC_URL}/assets/images/dea-03.jpg`}
+                                                        alt=""
+                                                    /></div>
                                                 <div className="col-lg-3">
                                                     <h4>Extra Info About Penthouse</h4>
                                                     <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, do
                                                         eiusmod tempor pack incididunt ut labore et dolore magna aliqua
                                                         quised ipsum suspendisse. <br/><br/>Swag fanny pack lyft blog
-                                                            twee. JOMO ethical copper mug, succulents typewriter shaman
-                                                            DIY kitsch twee taiyaki fixie hella venmo after messenger
-                                                            poutine next level humblebrag swag franzen.</p>
+                                                        twee. JOMO ethical copper mug, succulents typewriter shaman
+                                                        DIY kitsch twee taiyaki fixie hella venmo after messenger
+                                                        poutine next level humblebrag swag franzen.</p>
                                                     <div className="icon-button">
                                                         <a href="property-details.html"><i
                                                             className="fa fa-calendar"></i> Schedule a visit</a>
@@ -419,7 +441,12 @@ const SamplePortfolios4 = () => {
                     <div className="row">
                         <div className="col-lg-4 col-md-6">
                             <div className="item">
-                                <a href="property-details.html"><img src="assets/images/property-01.jpg" alt=""/></a>
+                                <a href="property-details.html">
+                                    <img
+                                        src={`${process.env.PUBLIC_URL}/assets/images/property-01.jpg`}
+                                        alt="Property 05"
+                                    />
+                                </a>
                                 <span className="category">Luxury Villa</span>
                                 <h6>$2.264.000</h6>
                                 <h4><a href="property-details.html">18 New Street Miami, OR 97219</a></h4>
@@ -435,99 +462,124 @@ const SamplePortfolios4 = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="col-lg-4 col-md-6">
-                            <div className="item">
-                                <a href="property-details.html"><img src="assets/images/property-02.jpg" alt=""/></a>
-                                <span className="category">Luxury Villa</span>
-                                <h6>$1.180.000</h6>
-                                <h4><a href="property-details.html">54 Mid Street Florida, OR 27001</a></h4>
-                                <ul>
-                                    <li>Bedrooms: <span>6</span></li>
-                                    <li>Bathrooms: <span>5</span></li>
-                                    <li>Area: <span>450m2</span></li>
-                                    <li>Floor: <span>3</span></li>
-                                    <li>Parking: <span>8 spots</span></li>
-                                </ul>
-                                <div className="main-button">
-                                    <a href="property-details.html">Schedule a visit</a>
-                                </div>
+                    </div>
+                    <div className="col-lg-4 col-md-6">
+                        <div className="item">
+                            <a href="property-details.html">
+                                <img
+                                    src={`${process.env.PUBLIC_URL}/assets/images/property-02.jpg`}
+                                    alt="Property 05"
+                                />
+                            </a>
+                            <span className="category">Luxury Villa</span>
+                            <h6>$1.180.000</h6>
+                            <h4><a href="property-details.html">54 Mid Street Florida, OR 27001</a></h4>
+                            <ul>
+                                <li>Bedrooms: <span>6</span></li>
+                                <li>Bathrooms: <span>5</span></li>
+                                <li>Area: <span>450m2</span></li>
+                                <li>Floor: <span>3</span></li>
+                                <li>Parking: <span>8 spots</span></li>
+                            </ul>
+                            <div className="main-button">
+                                <a href="property-details.html">Schedule a visit</a>
                             </div>
                         </div>
-                        <div className="col-lg-4 col-md-6">
-                            <div className="item">
-                                <a href="property-details.html"><img src="assets/images/property-03.jpg" alt=""/></a>
-                                <span className="category">Luxury Villa</span>
-                                <h6>$1.460.000</h6>
-                                <h4><a href="property-details.html">26 Old Street Miami, OR 38540</a></h4>
-                                <ul>
-                                    <li>Bedrooms: <span>5</span></li>
-                                    <li>Bathrooms: <span>4</span></li>
-                                    <li>Area: <span>225m2</span></li>
-                                    <li>Floor: <span>3</span></li>
-                                    <li>Parking: <span>10 spots</span></li>
-                                </ul>
-                                <div className="main-button">
-                                    <a href="property-details.html">Schedule a visit</a>
-                                </div>
+                    </div>
+                    <div className="col-lg-4 col-md-6">
+                        <div className="item">
+                            <a href="property-details.html">
+                                <img
+                                    src={`${process.env.PUBLIC_URL}/assets/images/property-03.jpg`}
+                                    alt="Property 05"
+                                />
+                            </a>
+                            <span className="category">Luxury Villa</span>
+                            <h6>$1.460.000</h6>
+                            <h4><a href="property-details.html">26 Old Street Miami, OR 38540</a></h4>
+                            <ul>
+                                <li>Bedrooms: <span>5</span></li>
+                                <li>Bathrooms: <span>4</span></li>
+                                <li>Area: <span>225m2</span></li>
+                                <li>Floor: <span>3</span></li>
+                                <li>Parking: <span>10 spots</span></li>
+                            </ul>
+                            <div className="main-button">
+                                <a href="property-details.html">Schedule a visit</a>
                             </div>
                         </div>
-                        <div className="col-lg-4 col-md-6">
-                            <div className="item">
-                                <a href="property-details.html"><img src="assets/images/property-04.jpg" alt=""/></a>
-                                <span className="category">Apartment</span>
-                                <h6>$584.500</h6>
-                                <h4><a href="property-details.html">12 New Street Miami, OR 12650</a></h4>
-                                <ul>
-                                    <li>Bedrooms: <span>4</span></li>
-                                    <li>Bathrooms: <span>3</span></li>
-                                    <li>Area: <span>125m2</span></li>
-                                    <li>Floor: <span>25th</span></li>
-                                    <li>Parking: <span>2 cars</span></li>
-                                </ul>
-                                <div className="main-button">
-                                    <a href="property-details.html">Schedule a visit</a>
-                                </div>
+                    </div>
+                    <div className="col-lg-4 col-md-6">
+                        <div className="item">
+                            <a href="property-details.html">
+                                <img
+                                    src={`${process.env.PUBLIC_URL}/assets/images/property-04.jpg`}
+                                    alt="Property 05"
+                                />
+                            </a>
+                            <span className="category">Apartment</span>
+                            <h6>$584.500</h6>
+                            <h4><a href="property-details.html">12 New Street Miami, OR 12650</a></h4>
+                            <ul>
+                                <li>Bedrooms: <span>4</span></li>
+                                <li>Bathrooms: <span>3</span></li>
+                                <li>Area: <span>125m2</span></li>
+                                <li>Floor: <span>25th</span></li>
+                                <li>Parking: <span>2 cars</span></li>
+                            </ul>
+                            <div className="main-button">
+                                <a href="property-details.html">Schedule a visit</a>
                             </div>
                         </div>
-                        <div className="col-lg-4 col-md-6">
-                            <div className="item">
-                                <a href="property-details.html"><img src="assets/images/property-05.jpg" alt=""/></a>
-                                <span className="category">Penthouse</span>
-                                <h6>$925.600</h6>
-                                <h4><a href="property-details.html">34 Beach Street Miami, OR 42680</a></h4>
-                                <ul>
-                                    <li>Bedrooms: <span>4</span></li>
-                                    <li>Bathrooms: <span>4</span></li>
-                                    <li>Area: <span>180m2</span></li>
-                                    <li>Floor: <span>38th</span></li>
-                                    <li>Parking: <span>2 cars</span></li>
-                                </ul>
-                                <div className="main-button">
-                                    <a href="property-details.html">Schedule a visit</a>
-                                </div>
+                    </div>
+                    <div className="col-lg-4 col-md-6">
+                        <div className="item">
+
+                            <a href="property-details.html">
+                                <img
+                                    src={`${process.env.PUBLIC_URL}/assets/images/property-05.jpg`}
+                                    alt="Property 05"
+                                />
+                            </a>
+                            <span className="category">Penthouse</span>
+                            <h6>$925.600</h6>
+                            <h4><a href="property-details.html">34 Beach Street Miami, OR 42680</a></h4>
+                            <ul>
+                                <li>Bedrooms: <span>4</span></li>
+                                <li>Bathrooms: <span>4</span></li>
+                                <li>Area: <span>180m2</span></li>
+                                <li>Floor: <span>38th</span></li>
+                                <li>Parking: <span>2 cars</span></li>
+                            </ul>
+                            <div className="main-button">
+                                <a href="property-details.html">Schedule a visit</a>
                             </div>
                         </div>
-                        <div className="col-lg-4 col-md-6">
-                            <div className="item">
-                                <a href="property-details.html"><img src="assets/images/property-06.jpg" alt=""/></a>
-                                <span className="category">Modern Condo</span>
-                                <h6>$450.000</h6>
-                                <h4><a href="property-details.html">22 New Street Portland, OR 16540</a></h4>
-                                <ul>
-                                    <li>Bedrooms: <span>3</span></li>
-                                    <li>Bathrooms: <span>2</span></li>
-                                    <li>Area: <span>165m2</span></li>
-                                    <li>Floor: <span>26th</span></li>
-                                    <li>Parking: <span>3 cars</span></li>
-                                </ul>
-                                <div className="main-button">
-                                    <a href="property-details.html">Schedule a visit</a>
-                                </div>
+                    </div>
+                    <div className="col-lg-4 col-md-6">
+                        <div className="item">
+                            <a href="property-details.html"> <img
+                                src={`${process.env.PUBLIC_URL}/assets/images/property-06.jpg`}
+                                alt=""
+                            /></a>
+                            <span className="category">Modern Condo</span>
+                            <h6>$450.000</h6>
+                            <h4><a href="property-details.html">22 New Street Portland, OR 16540</a></h4>
+                            <ul>
+                                <li>Bedrooms: <span>3</span></li>
+                                <li>Bathrooms: <span>2</span></li>
+                                <li>Area: <span>165m2</span></li>
+                                <li>Floor: <span>26th</span></li>
+                                <li>Parking: <span>3 cars</span></li>
+                            </ul>
+                            <div className="main-button">
+                                <a href="property-details.html">Schedule a visit</a>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
 
             <div className="contact section">
                 <div className="container">
@@ -547,31 +599,34 @@ const SamplePortfolios4 = () => {
                     <div className="row">
                         <div className="col-lg-7">
                             <div id="map">
-                                <iframe
+                {/*                <iframe
                                     src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d12469.776493332698!2d-80.14036379941481!3d25.907788681148624!2m3!1f357.26927939317244!2f20.870722720054623!3f0!3m2!1i1024!2i768!4f35!3m3!1m2!1s0x88d9add4b4ac788f%3A0xe77469d09480fcdb!2sSunny%20Isles%20Beach!5e1!3m2!1sen!2sth!4v1642869952544!5m2!1sen!2sth"
                                     width="100%"
-                                    height="500px"
+                                    height="500"
                                     frameBorder="0"
-                                    style={{
-                                        border: '0',
-                                        borderRadius: '10px',
-                                        boxShadow: '0px 0px 15px rgba(0, 0, 0, 0.15)'
-                                    }}
+                                    style="border-radius: 10px; box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.15);"
                                     allowFullScreen
-                                    title="Google Map"
-                                ></iframe>
+                                    title="Google Map - Sunny Isles Beach"
+                                ></iframe>*/}
+
                             </div>
                             <div className="row">
                                 <div className="col-lg-6">
                                     <div className="item phone">
-                                        <img src="assets/images/phone-icon.png" alt=""style={{maxWidth:'52px'}}/>
-                                            <h6>010-020-0340<br/><span>Phone Number</span></h6>
+                                        <img
+                                            src={`${process.env.PUBLIC_URL}/assets/images/phone-icon.png`}
+                                            alt=""
+                                        />
+                                        <h6>010-020-0340<br/><span>Phone Number</span></h6>
                                     </div>
                                 </div>
                                 <div className="col-lg-6">
                                     <div className="item email">
-                                        <img src="assets/images/email-icon.png" alt="" style={{maxWidth:'52px'}}/>
-                                            <h6>info@villa.co<br/><span>Business Email</span></h6>
+                                        <img
+                                            src={`${process.env.PUBLIC_URL}/assets/images/email-icon.png`}
+                                            alt=""
+                                        />                                              <h6>info@villa.co<br/><span>Business Email</span>
+                                    </h6>
                                     </div>
                                 </div>
                             </div>
@@ -617,7 +672,9 @@ const SamplePortfolios4 = () => {
                             </form>
                         </div>
                     </div>
+
                 </div>
+
             </div>
 
             <footer>
@@ -629,11 +686,14 @@ const SamplePortfolios4 = () => {
                     </div>
                 </div>
             </footer>
-
-
-            </body>
         </div>
-    );
-};
+
+    )
+}
+
+
+
+
+
 
 export default SamplePortfolios4;

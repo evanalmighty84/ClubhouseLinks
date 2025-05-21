@@ -24,7 +24,7 @@ const advertisementTemplate = `
                 </span>
             </div>
             <div class="x_827423126align-center" style="text-align: center">
-                <a href="https://www.clubhouselinks.com/app/#/app/samplePortfolios"
+                <a href="https://www.clubhouselinks.com/samplePortfolios"
                    style="display: inline-block; padding: 10px 20px; font-size: 16px; font-weight: bold; color: #FFFFFF; background: linear-gradient(45deg, #40E0D0, #20B2AA); border-radius: 5px; text-align: center; text-decoration: none"
                    target="_blank">Click to start building</a>
             </div>
