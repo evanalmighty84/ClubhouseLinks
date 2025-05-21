@@ -30,7 +30,7 @@ const Topbar = () => {
             {/* Replace text with your logo */}
 
             <Navbar.Brand
-                onClick={() => handleNavigation('/app/dashboard')}
+                onClick={() => handleNavigation('/dashboard')}
                 style={{ cursor: 'pointer', textAlign: 'center', width: '60px' }}
 
             >
