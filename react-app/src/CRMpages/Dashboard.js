@@ -42,7 +42,7 @@ const Dashboard = () => {
             }
         } catch (error) {
             console.error('Error parsing user data:', error);
-            navigate('/app/signin');
+            navigate('/signin');
         }
     }, [navigate]);
 

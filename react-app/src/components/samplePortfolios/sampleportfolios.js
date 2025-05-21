@@ -57,7 +57,7 @@ const SamplePortfolio = () => {
             gradient: gradients[selectedGradientIndex],
             gradientIndex: selectedGradientIndex
         };
-        navigate('/app/checkout', { state: { cartItem } });
+        navigate('/checkout', { state: { cartItem } });
     };
 
     const renderSelectedComponent = () => {

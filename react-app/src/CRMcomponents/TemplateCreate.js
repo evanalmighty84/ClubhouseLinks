@@ -254,7 +254,7 @@ console.log('here is the selected category and interval',selectedCategory + sele
             const response = await axios.post('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/templates/create', templateToSave);
             if (response.status === 200 || response.status === 201) {
                 alert('Template saved successfully!');
-                navigate('/app/dashboard');
+                navigate('/dashboard');
             }
         } catch (error) {
             console.error('Error saving template:', error);

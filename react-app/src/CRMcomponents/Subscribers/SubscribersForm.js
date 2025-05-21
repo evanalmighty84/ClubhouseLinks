@@ -80,7 +80,7 @@ const SubscribersForm = ({ initialSubscriber = {} }) => {
         })
             .then(response => response.json())
             .then(() => {
-                navigate('/app/subscribers');
+                navigate('/subscribers');
             })
             .catch(err => console.error('Error saving subscriber:', err));
     };

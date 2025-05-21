@@ -23,7 +23,7 @@ const SignIn = () => {
             localStorage.setItem('token', token);
 
             // Redirect to dashboard after successful sign-in
-            navigate('/app/dashboard');
+            navigate('/dashboard');
         } catch (error) {
             console.error('Sign-in failed', error);
 
@@ -38,7 +38,7 @@ const SignIn = () => {
 
     const handleSignUp = () => {
         setShowModal(false); // Hide modal
-        navigate('/app/signup'); // Redirect to sign-up page
+        navigate('/signup'); // Redirect to sign-up page
     };
 
     return (
