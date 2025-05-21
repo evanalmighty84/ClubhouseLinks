@@ -1,5 +1,5 @@
 const moment = require('moment');
-const pool = require('../../db/db'); // adjust path if needed
+const pool = require('./db/db'); // adjust path if needed
 require('dotenv').config();
 
 (async () => {
