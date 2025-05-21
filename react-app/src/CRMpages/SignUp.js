@@ -18,7 +18,7 @@ const SignUp = () => {
         setValidationError(''); // Clear previous errors
 
         try {
-            const response = await axios.post('/server/crm_function/api/auth/signup/', { email, password, name });
+            const response = await axios.post('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/auth/signup/', { email, password, name });
             setShowModal(true); // Show modal for success
         } catch (error) {
             console.error('Sign-up failed', error.response);

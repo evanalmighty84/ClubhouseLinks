@@ -9,7 +9,7 @@ const SavedTemplates = () => {
     useEffect(() => {
         const fetchTemplates = async () => {
             try {
-                const response = await axios.get('/server/crm_function/api/templates/all');
+                const response = await axios.get('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/templates/all');
                 setTemplates(response.data);
             } catch (error) {
                 console.error('Error fetching templates:', error);

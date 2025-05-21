@@ -9,7 +9,7 @@ const TerriPescatoreProfile = () => {
         e.preventDefault();
 
         try {
-            const response = await fetch('/server/crm_function/api/templates/send-thank-you-form-terri', {
+            const response = await fetch('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/templates/send-thank-you-form-terri', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

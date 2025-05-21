@@ -18,12 +18,12 @@ const WorkflowContainer = () => {
         const user = JSON.parse(localStorage.getItem('user'));
         if (user && user.id) {
             try {
-                const response = await axios.get(`/server/crm_function/api/campaigns/user/${user.id}`);
+                const response = await axios.get(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/campaigns/user/${user.id}`);
                 const campaigns = response.data;
                 const sortedCampaigns = campaigns.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                 setCampaigns(sortedCampaigns);
 
-                const listResponse = await axios.get(`/server/crm_function/api/lists/user/${user.id}`);
+                const listResponse = await axios.get(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/lists/user/${user.id}`);
                 setUserLists(listResponse.data);
             } catch (error) {
                 console.error('Error fetching campaigns:', error);

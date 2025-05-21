@@ -32,7 +32,7 @@ const ListsPage = ({ guestMode = false }) => {
 
     const fetchLists = async (userId) => {
         try {
-            const response = await fetch(`/server/crm_function/api/lists/user/${userId}`);
+            const response = await fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/lists/user/${userId}`);
             const data = await response.json();
             setLists(data);
         } catch (err) {
@@ -61,7 +61,7 @@ const ListsPage = ({ guestMode = false }) => {
         if (!listId || guestMode) return;
 
         try {
-            const response = await fetch(`/server/crm_function/api/lists/${listId}`, {
+            const response = await fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/lists/${listId}`, {
                 method: 'DELETE',
             });
             if (response.ok) {

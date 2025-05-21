@@ -42,7 +42,7 @@ const EmailQueueList = ({ guestMode = false }) => {
     const fetchEmails = async (id) => {
         setLoading(true);
         try {
-            const res = await axios.post('/server/crm_function/api/emailQueue/showEmails', {
+            const res = await axios.post('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/emailQueue/showEmails', {
                 userId: id,
                 status: statusFilter,
                 page: currentPage,
@@ -61,7 +61,7 @@ const EmailQueueList = ({ guestMode = false }) => {
 
     const fetchSmsQueue = async (id) => {
         try {
-            const res = await axios.get(`/server/crm_function/api/smsqueue/all/${id}`);
+            const res = await axios.get(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/smsqueue/all/${id}`);
             setSmsQueue(res.data || []);
         } catch (error) {
             console.error('Error fetching scheduled SMS queue:', error);

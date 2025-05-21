@@ -48,7 +48,7 @@ const Dashboard = () => {
 
     const fetchDashboardData = async (userId) => {
         try {
-            const response = await axios.get(`/server/crm_function/api/dashboard/${userId}`);
+            const response = await axios.get(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/dashboard/${userId}`);
             const data = response.data;
 
             setUserIndustry(data.industry);

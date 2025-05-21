@@ -37,7 +37,7 @@ const CalendarScheduler = ({ guestMode = false })  => {
 
     const fetchQueuedEmails = async (subscriberId) => {
         try {
-            const response = await axios.get(`/server/crm_function/api/subscribers/${subscriberId}/queued-emails`);
+            const response = await axios.get(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/subscribers/${subscriberId}/queued-emails`);
             if (Array.isArray(response.data)) {
                 setQueuedEmails(response.data);
             } else {
@@ -67,7 +67,7 @@ const CalendarScheduler = ({ guestMode = false })  => {
         }
         try {
             const user = JSON.parse(localStorage.getItem('user'));
-            const response = await fetch(`/server/crm_function/api/subscribers/user/${user.id}`);
+            const response = await fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/subscribers/user/${user.id}`);
             const data = await response.json();
             if (response.ok) {
                 setSubscribers(data);
@@ -81,7 +81,7 @@ const CalendarScheduler = ({ guestMode = false })  => {
     const fetchQueuedSMS = async () => {
         try {
             const user = JSON.parse(localStorage.getItem('user'));
-            const response = await fetch(`/server/crm_function/api/smsqueue/scheduled/${user.id}`);
+            const response = await fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/smsqueue/scheduled/${user.id}`);
             const data = await response.json();
             if (response.ok) {
                 setQueuedSMS(data);
@@ -99,7 +99,7 @@ const CalendarScheduler = ({ guestMode = false })  => {
     const fetchLists = async () => {
         try {
             const user = JSON.parse(localStorage.getItem('user'));
-            const response = await fetch(`/server/crm_function/api/lists/user/${user.id}`);
+            const response = await fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/lists/user/${user.id}`);
             const data = await response.json();
             if (response.ok) {
                 setAllLists(data);
@@ -112,7 +112,7 @@ const CalendarScheduler = ({ guestMode = false })  => {
     const fetchTemplates = async () => {
         try {
             const user = JSON.parse(localStorage.getItem('user'));
-            const response = await fetch(`/server/crm_function/api/templates/user/${user.id}`);
+            const response = await fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/templates/user/${user.id}`);
             const data = await response.json();
             if (response.ok) {
                 setTemplates(data);
@@ -155,7 +155,7 @@ const CalendarScheduler = ({ guestMode = false })  => {
 
         if (subscriber && !guestMode) {
             try {
-                const res = await fetch(`/server/crm_function/api/subscribers/${subscriber.id}`);
+                const res = await fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/subscribers/${subscriber.id}`);
                 const data = await res.json();
                 if (res.ok) {
                     freshSubscriber = data;
@@ -186,7 +186,7 @@ const CalendarScheduler = ({ guestMode = false })  => {
         if (!eventDetails?.subscriberId) return;
 
         try {
-            const response = await fetch(`/server/crm_function/api/subscribers/${eventDetails.subscriberId}/unschedule`, {
+            const response = await fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/subscribers/${eventDetails.subscriberId}/unschedule`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type: actionType })
@@ -229,7 +229,7 @@ const CalendarScheduler = ({ guestMode = false })  => {
 
     const handleSchedule = async () => {
         try {
-            const response = await fetch('/server/crm_function/api/subscribers/schedule', {
+            const response = await fetch('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/subscribers/schedule', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -269,7 +269,7 @@ const CalendarScheduler = ({ guestMode = false })  => {
         if (!subscriber || guestMode) return;
 
         try {
-            const response = await fetch(`/server/crm_function/api/subscribers/${subscriber.id}/notes`, {
+            const response = await fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/subscribers/${subscriber.id}/notes`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ note })

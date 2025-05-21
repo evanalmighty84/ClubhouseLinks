@@ -22,7 +22,7 @@ const SubscriberDetails = () => {
 
     const fetchLists = async () => {
         const user = JSON.parse(localStorage.getItem('user'));
-        const response = await fetch(`/server/crm_function/api/lists/user/${user.id}`);
+        const response = await fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/lists/user/${user.id}`);
         const data = await response.json();
         setAllLists(data);
     };
@@ -30,7 +30,7 @@ const SubscriberDetails = () => {
     const fetchSubscriber = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`/server/crm_function/api/subscribers/${id}`);
+            const response = await fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/subscribers/${id}`);
             const data = await response.json();
             setSubscriber({
                 email: data.email || '',
@@ -39,7 +39,7 @@ const SubscriberDetails = () => {
                 physical_address: data.physical_address || ''
             });
             // Load assigned lists
-            const listResponse = await fetch(`/server/crm_function/api/subscribers/${id}/lists`);
+            const listResponse = await fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/subscribers/${id}/lists`);
             const listData = await listResponse.json();
             setListIds(listData.map((list) => list.id));
         } catch (error) {
@@ -52,7 +52,7 @@ const SubscriberDetails = () => {
     const handleSave = async () => {
         const userId = JSON.parse(localStorage.getItem('user')).id;
         try {
-            await fetch(`/server/crm_function/api/subscribers/${id}`, {
+            await fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/subscribers/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

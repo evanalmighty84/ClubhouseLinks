@@ -25,7 +25,7 @@ const CampaignPage = () => {
         const user = JSON.parse(localStorage.getItem('user'));
         if (user && user.id) {
             try {
-                const response = await axios.get(`/server/crm_function/api/campaigns/user/${user.id}`);
+                const response = await axios.get(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/campaigns/user/${user.id}`);
                 const campaigns = response.data.map(c => ({
                     ...c,
                     listIds: c.list_ids || [],
@@ -33,7 +33,7 @@ const CampaignPage = () => {
                 const sortedCampaigns = campaigns.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                 setCampaigns(sortedCampaigns);
 
-                const listResponse = await axios.get(`/server/crm_function/api/lists/user/${user.id}`);
+                const listResponse = await axios.get(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/lists/user/${user.id}`);
                 setUserLists(listResponse.data);
             } catch (error) {
                 console.error('Error fetching campaigns:', error);
@@ -77,7 +77,7 @@ const CampaignPage = () => {
                 list_ids: selectedCampaignLists,
             };
 
-            await axios.put(`/server/crm_function/api/campaigns/${selectedCampaign.id}`, updatedCampaign);
+            await axios.put(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/campaigns/${selectedCampaign.id}`, updatedCampaign);
             setShowModal(false);
             fetchCampaigns();
             toast.success('Campaign lists updated successfully!');
@@ -99,7 +99,7 @@ const CampaignPage = () => {
     const handleRunCampaignAgain = async (campaignId) => {
         try {
             const user = JSON.parse(localStorage.getItem('user'));
-            await axios.post(`/server/crm_function/api/campaigns/send/${campaignId}`, { userId: user.id });
+            await axios.post(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/campaigns/send/${campaignId}`, { userId: user.id });
             toast.success('Campaign sent successfully!');
         } catch (error) {
             console.error('Error resending campaign:', error);

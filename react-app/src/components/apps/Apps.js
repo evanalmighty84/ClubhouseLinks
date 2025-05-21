@@ -130,15 +130,15 @@ const Apps = () => {
                         </div></a>
 
                     {/* New Placeholder image 2 */}
-                    <a href="https://www.clubhousesportslink.com">
+                    <a href="https://www.clubhouselinks.com/pool">
                     <div className="mb-4" style={{ width: '100%',  border: '1px solid #de4e7f', position: 'relative', padding: '10px' }}>
-                        <Image src="https://res.cloudinary.com/duz4vhtcn/image/upload/v1738008251/1084C821-A769-4700-869A-7EC6F14798A2_szhckf.jpg" style={{ width: '100%', height: '300px', objectFit: 'cover' }} fluid />
+                        <Image src="https://res.cloudinary.com/duz4vhtcn/image/upload/v1747787727/7CAF164F-418F-445A-8925-DFE931A4981E_dr4i4q.jpg" style={{ width: '100%', height: '300px', objectFit: 'cover' }} fluid />
                         <span style={{ color: 'green', fontWeight: 'bold', position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'rgba(255,255,255,0.8)', padding: '5px 10px' }}>
         Available Now
     </span>
 
                         <p className="subtle-glow-text" style={{ paddingTop: '5px' }}>
-                           Website widget that Creates your own A.I. pinterest like board with live feeds for your business website
+                           Get an SEO website that serves you Pool Leads from A.I.
                         </p>
                     </div>
                     </a>

@@ -62,7 +62,7 @@ const CampaignCreate = ({ campaigns }) => {
             const fetchUserLists = async () => {
                 try {
                     const userId = JSON.parse(localStorage.getItem('user')).id;
-                    const response = await axios.get(`/server/crm_function/api/lists/user/${userId}`);
+                    const response = await axios.get(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/lists/user/${userId}`);
                     setUserLists(response.data);
                 } catch (error) {
                     console.error('Error fetching user lists:', error);
@@ -95,11 +95,11 @@ const CampaignCreate = ({ campaigns }) => {
         // Handle running the campaign again
         const handleRunCampaignAgain = async (campaignId) => {
             try {
-                const response = await axios.get(`/server/crm_function/api/campaigns/${campaignId}`);
+                const response = await axios.get(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/campaigns/${campaignId}`);
                 const campaignData = response.data;
                 const userId = JSON.parse(localStorage.getItem('user')).id;
 
-                await axios.post(`/server/crm_function/api/campaigns/send/${campaignId}`, { ...campaignData, userId });
+                await axios.post(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/campaigns/send/${campaignId}`, { ...campaignData, userId });
                 toast.success('Campaign sent successfully!');
             } catch (error) {
                 console.error('Error resending campaign:', error);
@@ -118,7 +118,7 @@ const CampaignCreate = ({ campaigns }) => {
         const handleSaveLists = async () => {
             try {
                 const updatedCampaign = { ...selectedCampaign, list_ids: selectedCampaignLists };
-                await axios.put(`/server/crm_function/api/campaigns/${selectedCampaign.id}`, updatedCampaign);
+                await axios.put(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/campaigns/${selectedCampaign.id}`, updatedCampaign);
                 setShowModal(false);
                 toast.success('Campaign lists updated successfully!');
             } catch (error) {
@@ -138,7 +138,7 @@ const CampaignCreate = ({ campaigns }) => {
         const fetchUserLists = async () => {
             try {
                 const userId = JSON.parse(localStorage.getItem('user')).id;
-                const response = await axios.get(`/server/crm_function/api/lists/user/${userId}`);
+                const response = await axios.get(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/lists/user/${userId}`);
                 setUserLists(response.data);
             } catch (error) {
                 console.error('Error fetching lists:', error);
@@ -200,7 +200,7 @@ const CampaignCreate = ({ campaigns }) => {
             formData.append('file', file);
 
             try {
-                const response = await axios.post('/server/crm_function/api/upload', formData);
+                const response = await axios.post('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/upload', formData);
                 const imageUrl = response.data.url;
                 setTemplateContent(prevState => ({ ...prevState, [`image${imageNum}`]: imageUrl }));
             } catch (error) {
@@ -240,7 +240,7 @@ const CampaignCreate = ({ campaigns }) => {
                 scheduledDate: campaignData.sendLater ? campaignData.scheduledDate : null
             };
 
-            const response = await axios.post('/server/crm_function/api/campaigns/create', campaignToSubmit);
+            const response = await axios.post('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/campaigns/create', campaignToSubmit);
             console.log('Campaign created successfully:', response.data);
             navigate('/app/campaigns'); // Redirect to campaigns list
         } catch (error) {

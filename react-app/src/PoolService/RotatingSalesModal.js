@@ -8,7 +8,7 @@ import Image3 from './images/sel-marin.jpeg'; // Replace with another appropriat
 
 const modalSlides = [
     {
-        color: '#de958a',
+        color: '#ffffff',
         image: Image1,
         content: (
             <>
@@ -23,7 +23,7 @@ const modalSlides = [
         )
     },
     {
-        color: '#f8d67f',
+        color: '#ffffff',
         image: Image2,
         content: (
             <>
@@ -38,7 +38,7 @@ const modalSlides = [
         )
     },
     {
-        color: '#99bcc1',
+        color: '#ffffff',
         image: Image3,
         content: (
             <>
