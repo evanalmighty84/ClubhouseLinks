@@ -2,6 +2,10 @@
   "name": "functions",
   "version": "1.0.0",
   "description": "",
+  "engines": {
+    "node": "18.x"
+  },
+
   "private": true,
   "main": "index.js",
   "scripts": {
