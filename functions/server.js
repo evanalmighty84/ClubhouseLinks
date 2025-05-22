@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const crmApp = require('./crm_function'); // crm_function/index.js should export an app or router
+const crmApp = require('./index'); // crm_function/index.js should export an app or router
 
 app.use('/server/crm_function/', crmApp);
 
