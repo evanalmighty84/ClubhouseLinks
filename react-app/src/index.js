@@ -137,7 +137,7 @@ class App extends Component {
 
         return (
             <GoogleOAuthProvider clientId="179478627002-th39iebli3b17dg5mkj4vu32sneo8mt9.apps.googleusercontent.com">
-                <BrowserRouter basename={process.env.NODE_ENV === 'production' ? '/ClubhouseLinks' : '/'}>
+                <BrowserRouter basename="/">
                     <RedirectHandler />
                     <ConditionalHeader />
                     <Elements stripe={stripePromise}>
