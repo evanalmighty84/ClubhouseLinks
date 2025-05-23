@@ -19,6 +19,7 @@ const workflowRoutes = require('./routes/workflowRoutes')
 const emailQueuedRoutes = require('./routes/emailQueuedRoutes')
 const smsRoutes = require('./routes/smsRoutes')
 const paymentRoutes = require('./routes/paymentRoutes')
+const poolRoutes = require('./routes/poolRoutes')
 
 
 const path = require('path');
@@ -52,6 +53,7 @@ app.use('/uploads', express.static(path.join(__dirname, '.build/functions/upload
 // Campaigns Routes
 app.use('/api/campaigns', campaignsRoutes); // Campaign routes
 
+app.use('/api/pool', poolRoutes); // Pool routes
 app.use('/api/lists', listRoutes);
 
 app.use('/api/subscribers', subscriberRoutes);
