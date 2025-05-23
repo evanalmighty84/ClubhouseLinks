@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/static/css/main.fc241c87.css",
-    "main.js": "/static/js/main.e451db63.js",
+    "main.js": "/static/js/main.d85fb2ad.js",
     "static/media/vecteezy_two-brown-dogs-digging-the-ground-for-hunting-fat-pets_32544191.gif": "/static/media/vecteezy_two-brown-dogs-digging-the-ground-for-hunting-fat-pets_32544191.9a2f7d0191dc928804fa.gif",
     "static/media/Revolutionize Your Pet Grooming Business_ AI-Powered Solutions.mp4": "/static/media/Revolutionize Your Pet Grooming Business_ AI-Powered Solutions.03536c75974482438bf6.mp4",
     "static/media/vecteezy_the-vet-is-taking-the-pug-dog-on-her-arms_35314315 (1).mp4": "/static/media/vecteezy_the-vet-is-taking-the-pug-dog-on-her-arms_35314315 (1).f77722808b0d7949b5dc.mp4",
@@ -69,10 +69,10 @@
     "static/media/icons8-facebook-business-suite.svg": "/static/media/icons8-facebook-business-suite.f7ceaa166fa73eb83ae4c87efbaa3f4e.svg",
     "index.html": "/index.html",
     "main.fc241c87.css.map": "/static/css/main.fc241c87.css.map",
-    "main.e451db63.js.map": "/static/js/main.e451db63.js.map"
+    "main.d85fb2ad.js.map": "/static/js/main.d85fb2ad.js.map"
   },
   "entrypoints": [
     "static/css/main.fc241c87.css",
-    "static/js/main.e451db63.js"
+    "static/js/main.d85fb2ad.js"
   ]
 }
