@@ -52,6 +52,7 @@ import Settings from "./CRMpages/Settings";
 import SMSConsentPage from "./CRMpages/ConsentPage";
 import EmailVerified from "./CRMpages/EmailVerified";
 import EmailQueuedPage from "./CRMpages/EmailQueuedPage";
+import PoolReferral from "./PoolService/PoolReferral"
 
 import "./index.css";
 import PoolServiceHomepage from "./PoolService/PoolServiceHomePage";
@@ -145,6 +146,7 @@ class App extends Component {
                             <Route path="/" element={<NonUserDashboard />} />
                             <Route path="/samplePortfolios2" element={<PSAPortfolio />} />
                             <Route path="/pool" element={<PoolServiceHomepage />} />
+                            <Route path="/poolReferral" element={<PoolReferral />} />
                             <Route path="/samplePortfolios" element={<SamplePortfolios />} />
                             <Route path="/BradMcClain" element={<SendGoogleReviewForm />} />
                             <Route path="/TerriPescatore" element={<SendGoogleReviewForm2 />} />
