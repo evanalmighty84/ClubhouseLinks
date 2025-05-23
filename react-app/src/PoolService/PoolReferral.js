@@ -28,7 +28,7 @@ const PoolReferral = () => {
         e.preventDefault();
         try {
             const response = await fetch(
-                'http://localhost:5000/server/crm_function/api/pool/poolreferrals/',
+                'https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/pool/poolreferrals/',
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
