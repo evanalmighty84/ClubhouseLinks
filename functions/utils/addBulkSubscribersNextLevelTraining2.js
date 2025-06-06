@@ -2,7 +2,7 @@ const pool = require("../db/db");
 const fs = require("fs");
 const csv = require("csv-parser");
 
-const filePath = "./EXPO-ESI-Registration.csv";
+const filePath = "./EXPO-ESI-Registration.csv"; // Update if needed
 
 async function addBulkSubscribers(filePath) {
     try {
@@ -15,24 +15,28 @@ async function addBulkSubscribers(filePath) {
 
         await new Promise((resolve, reject) => {
             fs.createReadStream(filePath)
-                .pipe(csv())
-                .on("headers", (headers) => {
-                    headers = headers.map(h => h.replace(/^\uFEFF/, "").trim());
-                    console.log(`📌 Detected Headers: ${headers.join(", ")}`);
-                })
+                .pipe(csv({
+                    headers: ["Company", "City", "State", "Email", "x1", "x2", "x3", "x4", "x5"],
+                    skipLines: 0 // don't treat first row as headers, use ours
+                }))
                 .on("data", (row) => {
-                    let cleanRow = {};
-                    Object.keys(row).forEach(key => {
-                        cleanRow[key.trim()] = row[key];
-                    });
+                    const company = row["Company"]?.trim() || "";
+                    const city = row["City"]?.trim() || "";
+                    const state = row["State"]?.trim() || "";
+                    const email = row["Email"]?.trim().toLowerCase() || "";
 
-                    const contactName = cleanRow["FIRST AND LAST NAME"] ? String(cleanRow["FIRST AND LAST NAME"]).trim() : "";
-                    const email = cleanRow["BUSINESS EMAIL ADDRESS"] ? String(cleanRow["BUSINESS EMAIL ADDRESS"]).trim() : null;
+                    const physicalAddress = `${city}, ${state}`.trim();
 
-                    if (email && contactName) {
-                        results.push({ name: contactName, email: email, user_id: userId });
+                    if (company && email) {
+                        results.push({
+                            name: company,
+                            email,
+                            user_id: userId,
+                            physical_address: physicalAddress
+                        });
                     } else {
-                        console.warn(`⚠️ Skipping row with missing data: ${JSON.stringify(cleanRow)}`);
+                        skippedCount++;
+                        console.warn(`⚠️ Skipping row with missing data: ${JSON.stringify(row)}`);
                     }
                 })
                 .on("end", () => {
@@ -45,15 +49,9 @@ async function addBulkSubscribers(filePath) {
                 });
         });
 
-        console.log(`📊 Parsed ${results.length} subscribers.`);
-
-        if (results.length === 0) {
-            console.log("⚠️ No valid subscribers found. Exiting.");
-            return;
-        }
+        console.log(`📊 Parsed ${results.length} valid subscribers.`);
 
         for (const row of results) {
-            console.log(`🔎 Checking if ${row.email} exists...`);
             const checkExisting = await pool.query(
                 "SELECT id FROM subscribers WHERE email = $1 AND user_id = $2",
                 [row.email, row.user_id]
@@ -67,9 +65,10 @@ async function addBulkSubscribers(filePath) {
 
             console.log(`📤 Inserting: ${row.name} (${row.email})`);
             await pool.query(
-                `INSERT INTO subscribers (email, name, user_id, customer, created_at, updated_at)
-                 VALUES ($1, $2, $3, 'Unconfirmed', NOW(), NOW())`,
-                [row.email, row.name, row.user_id]
+                `INSERT INTO subscribers 
+                (email, name, user_id, customer, physical_address, created_at, updated_at)
+                VALUES ($1, $2, $3, 'Unconfirmed', $4, NOW(), NOW())`,
+                [row.email, row.name, row.user_id, row.physical_address]
             );
 
             addedCount++;
@@ -81,7 +80,6 @@ async function addBulkSubscribers(filePath) {
     }
 }
 
-// Run the function
 addBulkSubscribers(filePath);
 
 module.exports = addBulkSubscribers;
