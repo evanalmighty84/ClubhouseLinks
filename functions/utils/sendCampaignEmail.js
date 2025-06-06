@@ -1,137 +1,121 @@
 const nodemailer = require('nodemailer');
 const { getUserSMTPSettings } = require('./smtp');
 const { decryptPassword } = require('./encryption');
-const dotenv = require('dotenv');
-dotenv.config(); // Load environment variables from .env
-
-
-
-
 const axios = require('axios');
 const path = require('path');
+require('dotenv').config();
 
-// Convert remote file URL to nodemailer attachment object
-const fetchAttachmentFromUrl = async (url) => {
+// Cache one transporter per user to reuse the same SMTP connection
+const transporterCache = new Map();
+
+async function getTransporterForUser(userId) {
+    if (transporterCache.has(userId)) {
+        return transporterCache.get(userId);
+    }
+
+    const smtpSettings = await getUserSMTPSettings(userId);
+    let config;
+
+    if (smtpSettings) {
+        // User-specific SMTP
+        const password = decryptPassword(smtpSettings.smtp_password);
+        config = {
+            host: smtpSettings.smtp_host,
+            port: 587,
+            secure: false,
+            auth: { user: smtpSettings.smtp_username, pass: password },
+            tls: { rejectUnauthorized: false },
+            pool: true,
+            maxConnections: 5,
+            maxMessages: Infinity
+        };
+    } else {
+        // Fallback to default Zoho
+        config = {
+            host: 'smtp.zoho.com',
+            port: 587,
+            secure: false,
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            },
+            tls: { rejectUnauthorized: false },
+            pool: true,
+            maxConnections: 5,
+            maxMessages: Infinity
+        };
+    }
+
+    const transporter = nodemailer.createTransport(config);
+    transporterCache.set(userId, transporter);
+    return transporter;
+}
+
+// Fetch a remote image into an attachment buffer
+async function fetchAttachmentFromUrl(url) {
     try {
         const response = await axios.get(url, { responseType: 'arraybuffer' });
-
         const contentType = response.headers['content-type'];
         const filename = path.basename(new URL(url).pathname);
-
-        return {
-            filename,
-            content: Buffer.from(response.data),
-            contentType
-        };
+        return { filename, content: Buffer.from(response.data), contentType };
     } catch (err) {
-        console.error('Failed to fetch attachment from Cloudinary:', err.message);
+        console.error('Failed to fetch attachment:', err.message);
         return null;
     }
-};
+}
 
+/**
+ * Send a campaign email, with tracking pixel + unsubscribe link and optional attachments.
+ * Reuses a pooled transporter per user.
+ */
+async function sendCampaignEmail({
+                                     to,
+                                     subject,
+                                     html,
+                                     campaignId,
+                                     subscriberId,
+                                     userId,
+                                     attachmentUrls = []
+                                 }) {
+    console.log('Sending campaign email... Subscriber ID:', subscriberId);
 
-const sendCampaignEmail = async (to, subject, html, campaignId, subscriberId, userId, externalTransporter = null, attachments = []) => {
-    console.log('Sending campaign email...');
-    console.log('Subscriber ID:', subscriberId);
+    const transporter = await getTransporterForUser(userId);
 
-    try {
-        let transporter = externalTransporter;
-        let smtpConfig;
-        let decryptedPassword;
-        let attempt = 1;
+    // Build tracking pixel and unsubscribe
+    const appUrl = 'https://www.clubhouselinks.com/server/crm_function';
+    const trackingPixel =
+        `<img src="${appUrl}/api/track/campaign/open/${campaignId}/${subscriberId}?rand=${Math.random()}" ` +
+        'width="1" height="1" style="display:none;" />';
+    const unsubscribe =
+        `<p style="text-align:center;color:gray"><a ` +
+        `href="${appUrl}/api/unsubscribe/${subscriberId}" style="color:red;">Unsubscribe</a></p>`;
 
-        if (!transporter) {
-            const smtpSettings = await getUserSMTPSettings(userId);
+    // Inject pixel & unsubscribe into HTML
+    let htmlBody = `${html}${trackingPixel}${unsubscribe}`;
+    // Rewrite all <a href="..."> to track clicks
+    htmlBody = htmlBody.replace(
+        /<a href="(.*?)"/g,
+        (_, originalUrl) =>
+            `<a href="${appUrl}/api/track/campaign/click/${campaignId}/${subscriberId}?redirect=${encodeURIComponent(
+                originalUrl
+            )}"`
+    );
 
-            if (smtpSettings) {
-                console.log('Using user-specific SMTP settings...');
-                try {
-                    decryptedPassword = decryptPassword(smtpSettings.smtp_password);
-                } catch (decryptionError) {
-                    console.error('Decryption failed:', decryptionError.message);
-                    throw new Error('Decryption of SMTP password failed');
-                }
+    // Prepare attachments
+    const attachments = (
+        await Promise.all(attachmentUrls.map(fetchAttachmentFromUrl))
+    ).filter(Boolean);
 
-                if (!decryptedPassword) {
-                    throw new Error('Decrypted password is empty or invalid');
-                }
+    // Send mail
+    await transporter.sendMail({
+        from: transporter.options.auth.user,
+        to,
+        subject,
+        html: htmlBody,
+        attachments
+    });
 
-                smtpConfig = {
-                    host: smtpSettings.smtp_host,
-                    port: 587,
-                    secure: false,
-                    auth: {
-                        user: smtpSettings.smtp_username,
-                        pass: decryptedPassword
-                    },
-                    tls: { rejectUnauthorized: false }
-                };
-
-                transporter = nodemailer.createTransport(smtpConfig);
-            } else {
-                console.log('Fallback: Using default Zoho SMTP settings...');
-                smtpConfig = {
-                    host: 'smtp.zoho.com',
-                    port: 587,
-                    secure: false,
-                    auth: {
-                        user: process.env.EMAIL_USER,
-                        pass: process.env.EMAIL_PASS
-                    }
-                };
-                transporter = nodemailer.createTransport(smtpConfig);
-            }
-        }
-
-        const sendEmail = async () => {
-            try {
-                const appUrl = 'https://www.clubhouselinks.com/server/crm_function';
-
-                const trackingCampaignPixelUrl = `<img src="${appUrl}/api/track/campaign/open/${campaignId}/${subscriberId}?rand=${Math.random()}" width="1" height="1" style="display:none;" alt=""/>`;
-                const unsubscribeLink = `<p style="text-align: center; color: gray"><a style="color: red; text-align: center" href="${appUrl}/api/unsubscribe/${subscriberId}">Unsubscribe</a></p>`;
-
-                const htmlWithTracking = `${html} ${trackingCampaignPixelUrl} ${unsubscribeLink}`;
-
-                const htmlWithLinkTracking = htmlWithTracking.replace(
-                    /<a href="(.*?)"/g,
-                    (match, p1) => `<a href="${appUrl}/api/track/campaign/click/${campaignId}/${subscriberId}?redirect=${encodeURIComponent(p1)}"`
-                );
-
-                const mailOptions = {
-                    from: transporter.options.auth.user,
-                    to,
-                    subject,
-                    html: htmlWithLinkTracking,
-                    headers: {
-                        'X-Campaign-ID': campaignId,
-                        'X-Subscriber-ID': subscriberId
-                    }
-                };
-
-
-                await transporter.sendMail(mailOptions);
-                console.log('Campaign email sent successfully');
-            } catch (error) {
-                console.error(`Attempt ${attempt}: Error sending campaign email:`, error);
-
-                if (attempt === 1 && !externalTransporter) {
-                    console.log('Retrying with SSL (Port 465)...');
-                    smtpConfig.port = 465;
-                    smtpConfig.secure = true;
-                    transporter = nodemailer.createTransport(smtpConfig);
-                    attempt++;
-                    await sendEmail();
-                } else {
-                    throw new Error('Could not send campaign email after retrying');
-                }
-            }
-        };
-
-        await sendEmail();
-    } catch (error) {
-        console.error('Final error sending campaign email:', error);
-        throw new Error('Could not send campaign email');
-    }
-};
+    console.log('Campaign email sent successfully');
+}
 
 module.exports = { sendCampaignEmail };
