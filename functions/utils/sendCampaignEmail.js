@@ -1,3 +1,4 @@
+// utils/sendCampaignEmail.js
 const nodemailer = require('nodemailer');
 const { getUserSMTPSettings } = require('./smtp');
 const { decryptPassword } = require('./encryption');
@@ -5,59 +6,18 @@ const axios = require('axios');
 const path = require('path');
 require('dotenv').config();
 
-// Cache one transporter per user to reuse the same SMTP connection
+// --- TRANSPORTER CACHE (one per user) ---
 const transporterCache = new Map();
 
-async function getTransporterForUser(userId) {
-    if (transporterCache.has(userId)) {
-        return transporterCache.get(userId);
-    }
-
-    const smtpSettings = await getUserSMTPSettings(userId);
-    let config;
-
-    if (smtpSettings) {
-        // User-specific SMTP
-        const password = decryptPassword(smtpSettings.smtp_password);
-        config = {
-            host: smtpSettings.smtp_host,
-            port: 587,
-            secure: false,
-            auth: { user: smtpSettings.smtp_username, pass: password },
-            tls: { rejectUnauthorized: false },
-            pool: true,
-            maxConnections: 5,
-            maxMessages: Infinity
-        };
-    } else {
-        // Fallback to default Zoho
-        config = {
-            host: 'smtp.zoho.com',
-            port: 587,
-            secure: false,
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            },
-            tls: { rejectUnauthorized: false },
-            pool: true,
-            maxConnections: 5,
-            maxMessages: Infinity
-        };
-    }
-
-    const transporter = nodemailer.createTransport(config);
-    transporterCache.set(userId, transporter);
-    return transporter;
-}
-
-// Fetch a remote image into an attachment buffer
+/**
+ * Fetches a remote URL into a Buffer attachment
+ */
 async function fetchAttachmentFromUrl(url) {
     try {
-        const response = await axios.get(url, { responseType: 'arraybuffer' });
-        const contentType = response.headers['content-type'];
+        const res = await axios.get(url, { responseType: 'arraybuffer' });
+        const contentType = res.headers['content-type'];
         const filename = path.basename(new URL(url).pathname);
-        return { filename, content: Buffer.from(response.data), contentType };
+        return { filename, content: Buffer.from(res.data), contentType };
     } catch (err) {
         console.error('Failed to fetch attachment:', err.message);
         return null;
@@ -65,54 +25,116 @@ async function fetchAttachmentFromUrl(url) {
 }
 
 /**
- * Send a campaign email, with tracking pixel + unsubscribe link and optional attachments.
- * Reuses a pooled transporter per user.
+ * Sends a campaign email, reusing a pooled transporter per user.
+ *
+ * @param {string} to             recipient email address
+ * @param {string} subject        email subject
+ * @param {string} html           html body (will get pixel + unsubscribe appended)
+ * @param {number} campaignId
+ * @param {number} subscriberId
+ * @param {number} userId         owner of the campaign (for lookup of SMTP)
+ * @param {Transporter} [externalTransporter]
+ * @param {string[]} [attachmentUrls]
  */
-async function sendCampaignEmail({
-                                     to,
-                                     subject,
-                                     html,
-                                     campaignId,
-                                     subscriberId,
-                                     userId,
-                                     attachmentUrls = []
-                                 }) {
+async function sendCampaignEmail(
+    to,
+    subject,
+    html,
+    campaignId,
+    subscriberId,
+    userId,
+    externalTransporter = null,
+    attachmentUrls = []
+) {
     console.log('Sending campaign email... Subscriber ID:', subscriberId);
+    if (!to) {
+        throw new Error('No `to` address provided');
+    }
 
-    const transporter = await getTransporterForUser(userId);
+    // 1) Get or build the transporter
+    let transporter = externalTransporter;
+    if (!transporter) {
+        // reuse one per user
+        if (transporterCache.has(userId)) {
+            transporter = transporterCache.get(userId);
+        } else {
+            // build a pooled transporter
+            const smtpSettings = await getUserSMTPSettings(userId);
+            let config;
 
-    // Build tracking pixel and unsubscribe
+            if (smtpSettings) {
+                const pass = decryptPassword(smtpSettings.smtp_password);
+                config = {
+                    host: smtpSettings.smtp_host,
+                    port: smtpSettings.smtp_port || 587,
+                    secure: false,
+                    auth: {
+                        user: smtpSettings.smtp_username,
+                        pass
+                    },
+                    tls: { rejectUnauthorized: false },
+
+                    // ==== POOL OPTIONS ====
+                    pool: true,
+                    maxConnections: 5,
+                    maxMessages: Infinity
+                };
+            } else {
+                // fallback Zoho with pooling too
+                config = {
+                    host: 'smtp.zoho.com',
+                    port: 587,
+                    secure: false,
+                    auth: {
+                        user: process.env.EMAIL_USER,
+                        pass: process.env.EMAIL_PASS
+                    },
+                    tls: { rejectUnauthorized: false },
+
+                    // ==== POOL OPTIONS ====
+                    pool: true,
+                    maxConnections: 5,
+                    maxMessages: Infinity
+                };
+            }
+
+            transporter = nodemailer.createTransport(config);
+            transporterCache.set(userId, transporter);
+        }
+    }
+
+    // 2) Build HTML with tracking pixel + unsubscribe + click-tracking
     const appUrl = 'https://www.clubhouselinks.com/server/crm_function';
-    const trackingPixel =
-        `<img src="${appUrl}/api/track/campaign/open/${campaignId}/${subscriberId}?rand=${Math.random()}" ` +
-        'width="1" height="1" style="display:none;" />';
-    const unsubscribe =
-        `<p style="text-align:center;color:gray"><a ` +
-        `href="${appUrl}/api/unsubscribe/${subscriberId}" style="color:red;">Unsubscribe</a></p>`;
+    const pixel = `<img src="${appUrl}/api/track/campaign/open/${campaignId}/${subscriberId}?rand=${Math.random()}" width="1" height="1" style="display:none;" alt=""/>`;
+    const unsub = `<p style="text-align:center;color:gray">
+                   <a href="${appUrl}/api/unsubscribe/${subscriberId}" style="color:red;">Unsubscribe</a>
+                 </p>`;
 
-    // Inject pixel & unsubscribe into HTML
-    let htmlBody = `${html}${trackingPixel}${unsubscribe}`;
-    // Rewrite all <a href="..."> to track clicks
+    let htmlBody = `${html}${pixel}${unsub}`;
     htmlBody = htmlBody.replace(
         /<a href="(.*?)"/g,
-        (_, originalUrl) =>
+        (_, original) =>
             `<a href="${appUrl}/api/track/campaign/click/${campaignId}/${subscriberId}?redirect=${encodeURIComponent(
-                originalUrl
+                original
             )}"`
     );
 
-    // Prepare attachments
+    // 3) Fetch attachments
     const attachments = (
         await Promise.all(attachmentUrls.map(fetchAttachmentFromUrl))
     ).filter(Boolean);
 
-    // Send mail
+    // 4) Send
     await transporter.sendMail({
         from: transporter.options.auth.user,
         to,
         subject,
         html: htmlBody,
-        attachments
+        attachments,
+        headers: {
+            'X-Campaign-ID': campaignId,
+            'X-Subscriber-ID': subscriberId
+        }
     });
 
     console.log('Campaign email sent successfully');
