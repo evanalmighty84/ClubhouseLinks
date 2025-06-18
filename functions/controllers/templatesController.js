@@ -76,7 +76,7 @@ exports.sendThankYouTemplate = async (req, res) => {
         }
 
         // Step 4: Generate tracking links
-         const appUrl = 'https://homepage-809404625.catalystserverless.com/server/crm_function'
+         const appUrl = 'https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function'
 
         const trackingPixelUrl = `<img src="${appUrl}/api/track/template/open/${templateId}/${subscriberId}?rand=${Math.random()}" width="1" height="1" style="display:none;" alt=""/>`;
         const unsubscribeLink = `<p style="text-align: center; font-size: small"> <a style="color: red" href="${appUrl}/api/unsubscribe/${subscriberId}">Unsubscribe</a></p>`;
@@ -177,7 +177,7 @@ exports.sendHardcodedFormThankYou = async (req, res) => {
         }
 
         // Step 4: Inject tracking
-        const appUrl = 'https://homepage-809404625.catalystserverless.com/server/crm_function';
+        const appUrl = 'https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function';
 
         const trackingPixel = `<img src="${appUrl}/api/track/template/open/${templateId}/${subscriberId}?rand=${Math.random()}" width="1" height="1" style="display:none;" alt=""/>`;
         const unsubscribeLink = `<p style="text-align: center; font-size: small"> <a style="color: red" href="${appUrl}/api/unsubscribe/${subscriberId}">Unsubscribe</a></p>`;
@@ -273,7 +273,7 @@ exports.sendGoogleFormTerri = async (req, res) => {
         }
 
         // Step 4: Inject tracking
-        const appUrl = 'https://homepage-809404625.catalystserverless.com/server/crm_function';
+        const appUrl = 'https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function';
 
         const trackingPixel = `<img src="${appUrl}/api/track/template/open/${templateId}/${subscriberId}?rand=${Math.random()}" width="1" height="1" style="display:none;" alt=""/>`;
         const unsubscribeLink = `<p style="text-align: center; font-size: small"> <a style="color: red" href="${appUrl}/api/unsubscribe/${subscriberId}">Unsubscribe</a></p>`;
@@ -369,7 +369,7 @@ exports.sendGoogleFormJohn = async (req, res) => {
         }
 
         // Step 4: Inject tracking
-        const appUrl = 'https://homepage-809404625.catalystserverless.com/server/crm_function';
+        const appUrl = 'https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function';
 
         const trackingPixel = `<img src="${appUrl}/api/track/template/open/${templateId}/${subscriberId}?rand=${Math.random()}" width="1" height="1" style="display:none;" alt=""/>`;
         const unsubscribeLink = `<p style="text-align: center; font-size: small"> <a style="color: red" href="${appUrl}/api/unsubscribe/${subscriberId}">Unsubscribe</a></p>`;

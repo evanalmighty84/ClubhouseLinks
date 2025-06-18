@@ -234,8 +234,12 @@ const SubscribersPage = () => {
             {loading ? (
                 <p>Loading...</p>
             ) : (
-                <Table striped bordered hover responsive>
-                    <thead>
+                <Table bordered hover responsive>
+                    <thead
+                        style={{
+                            background: 'linear-gradient(to right, white, steelblue, #ff0080, indigo, white)',
+                        }}
+                    >
                     <tr>
                         <th>Has Opened Email</th>
                         <th>Email</th>
@@ -247,29 +251,42 @@ const SubscribersPage = () => {
                     </tr>
                     </thead>
                     <tbody>
-                    {filteredSubscribers.map((sub) => (
-                        <tr key={sub.id}>
-                            <td>{sub.customer || 'unconfirmed'}</td>
-                            <td>{sub.email}</td>
-                            <td>{sub.name}</td>
-                            <td>{sub.list_count || 0}</td>
-                            <td>{new Date(sub.created_at).toLocaleDateString()}</td>
-                            <td>{new Date(sub.updated_at).toLocaleDateString()}</td>
-                            <td>
-                                <Button variant="info" onClick={() => handleViewClick(sub)}>
-                                    View
-                                </Button>{' '}
-                                <Button
-                                    variant="danger"
-                                    onClick={() => handleDelete(sub.id)}
-                                >
-                                    Delete
-                                </Button>
+                    {filteredSubscribers.length > 0 ? (
+                        filteredSubscribers.map((sub, index) => {
+                            const isEven = index % 2 === 0;
+                            const rowStyle = {
+                                backgroundColor: isEven ? '#ffffff' : '#cce5ff',
+                            };
+
+                            return (
+                                <tr key={sub.id} style={rowStyle}>
+                                    <td>{sub.customer || 'unconfirmed'}</td>
+                                    <td>{sub.email}</td>
+                                    <td>{sub.name}</td>
+                                    <td>{sub.list_count || 0}</td>
+                                    <td>{new Date(sub.created_at).toLocaleDateString()}</td>
+                                    <td>{new Date(sub.updated_at).toLocaleDateString()}</td>
+                                    <td>
+                                        <Button variant="info" onClick={() => handleViewClick(sub)}>
+                                            View
+                                        </Button>{' '}
+                                        <Button variant="danger" onClick={() => handleDelete(sub.id)}>
+                                            Delete
+                                        </Button>
+                                    </td>
+                                </tr>
+                            );
+                        })
+                    ) : (
+                        <tr>
+                            <td colSpan="7" style={{ textAlign: 'center' }}>
+                                No subscribers found.
                             </td>
                         </tr>
-                    ))}
+                    )}
                     </tbody>
                 </Table>
+
             )}
 
             <Modal show={showModal} onHide={() => setShowModal(false)}>

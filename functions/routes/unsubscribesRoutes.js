@@ -19,7 +19,7 @@ router.get('/:subscriberId', (req, res) => {
     const { subscriberId } = req.params;
 
     // Use the root domain as the form action
-    const rootApiUrl = 'https://homepage-809404625.development.catalystserverless.com/server/crm_function';
+    const rootApiUrl = 'https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function';
 
     res.send(`
         <html>

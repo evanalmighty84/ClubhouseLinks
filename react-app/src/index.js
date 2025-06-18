@@ -19,7 +19,7 @@ import Success from "./Success";
 import Cancel from "./Cancel";
 import Header from "./components/common/Header";
 import TopBar from "./CRMcomponents/Topbar";
-import AI from "./components/ai-projects/AI";
+import AI from "./components/landing-pages/AI";
 import Marketing from "./components/marketing/Marketing";
 import ECommerce from "./components/e-commerce/ECommerce";
 import Reviews from "./components/reviews/Reviews";
@@ -52,10 +52,19 @@ import Settings from "./CRMpages/Settings";
 import SMSConsentPage from "./CRMpages/ConsentPage";
 import EmailVerified from "./CRMpages/EmailVerified";
 import EmailQueuedPage from "./CRMpages/EmailQueuedPage";
+import CrmSignIn from "./CRMcomponents/CrmSignIn";
 import PoolReferral from "./PoolService/PoolReferral"
+import BiddingSection from "./components/landing-pages/BiddingSection";
+import SocialMediaSection from "./components/landing-pages/SocialMediaSection";
+import ConstructionSection from "./components/landing-pages/ConstructionSection";
+import ApparelSection from "./components/landing-pages/ApparelSection";
+import WebsiteLeadSection from "./components/landing-pages/WebsiteLeadSection";
+import ClientPortfolios from "./components/landing-pages/ClientPortfolios";
 
 import "./index.css";
 import PoolServiceHomepage from "./PoolService/PoolServiceHomePage";
+import ContactUs from "./components/landing-pages/ContactSection";
+
 
 const stripePromise = loadStripe("pk_live_4s4TtIY6HXHbiKpHOoFGvQRf");
 
@@ -153,9 +162,14 @@ class App extends Component {
                             <Route path="/JohnHeusinkveld" element={<SendGoogleReviewForm3 />} />
                             <Route path="/DavidDixon" element={<SendGoogleReviewForm4 />} />
                             <Route path="/sms-optin-consent" element={<SMSConsentPage />} />
-                            <Route path="/contactUs" element={<WebServices />} />
+                            <Route path="/contactUs" element={<ContactUs />} />
                             <Route path="/blogs" element={<BlogsPage />} />
                             <Route path="/aiProjects" element={<AI />} />
+                            <Route path="/Bids" element={<BiddingSection />} />
+                            <Route path="/Construction" element={<ConstructionSection/>} />
+                            <Route path="/Social" element={<SocialMediaSection />} />
+                            <Route path="/Apparel" element={<ApparelSection/>} />
+                            <Route path="/Website" element={<WebsiteLeadSection/>} />
                             <Route path="/clubhouseMarketing" element={<Marketing />} />
                             <Route path="/eCommerce" element={<ECommerce />} />
                             <Route path="/onlineReviews" element={<Reviews />} />
@@ -175,12 +189,13 @@ class App extends Component {
                             <Route path="/subscribers/new" element={<ProtectedRoute><SubscribersForm /></ProtectedRoute>} />
                             <Route path="/subscribers/:id/edit" element={<ProtectedRoute><SubscriberDetails /></ProtectedRoute>} />
                             <Route path="/verify-email-success" element={<EmailVerified />} />
+                            <Route path="/ClientPortfolios" element={<ClientPortfolios />} />
                             <Route path="/lists" element={<ProtectedRoute><ListsPage /></ProtectedRoute>} />
                             <Route path="/emailqueued" element={<ProtectedRoute><EmailQueuedPage /></ProtectedRoute>} />
                             <Route path="/lists/new" element={<ProtectedRoute><ListForm /></ProtectedRoute>} />
                             <Route path="/lists/:id/edit" element={<ProtectedRoute><ListForm /></ProtectedRoute>} />
                             <Route path="/signup" element={<SignUp />} />
-                            <Route path="/signin" element={<SignIn />} />
+                            <Route path="/signin" element={<CrmSignIn />} />
                             <Route path="/unsubscribe-success" element={<UnsubscribePage />} />
                             <Route path="*" element={<div style={{ padding: '2rem', color: 'red' }}>❌ 404 - Page Not Found</div>} />
                         </Routes>

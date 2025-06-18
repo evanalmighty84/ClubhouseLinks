@@ -53,7 +53,7 @@ exports.signup = async (req, res) => {
           
                     <p style="font-size: 16px; text-align: center;">Clubhouse Links CRM: The best way to make convert customers into Sales using A.I.</p>
                     <div style="text-align: center;">
-                        <a href="hhttps://res.cloudinary.com/duz4vhtcn/video/upload/f_auto:video,q_auto/v1735451516/invideo-ai-1080_Boost_Your_Email_Campaigns_with_A.I._Mag_2024-12-29_1_online-video-cutter.com_1_xmw3lb.mp4
+                        <a href="https://res.cloudinary.com/duz4vhtcn/video/upload/f_auto:video,q_auto/v1735451516/invideo-ai-1080_Boost_Your_Email_Campaigns_with_A.I._Mag_2024-12-29_1_online-video-cutter.com_1_xmw3lb.mp4
 ">
                 <img src="https://res.cloudinary.com/duz4vhtcn/image/upload/f_auto,q_auto/v1735514979/ezgif.com-video-to-gif-converter_xlykvc.gif
 

@@ -42,8 +42,8 @@ const SignUp = () => {
         <div>
             {/* Sign-Up Form */}
 
-            <Form onSubmit={handleSignUp} className="p-4 rounded bg-white" style={{ margin: 'auto', maxWidth: '1000px', width: '100%', boxShadow: '0 0 20px orange'}}>
-                <Button disabled={true} style={{ background: 'linear-gradient(to right bottom, #34eb92, #23ad6a', opacity:'1.0' }} variant="primary" type="submit" className="w-100">
+            <Form onSubmit={handleSignUp} className="p-4 rounded bg-white" style={{ margin: 'auto', maxWidth: '1000px', width: '100%', boxShadow: '0 0 20px indigo'}}>
+                <Button disabled={true} style={{ background: 'linear-gradient(to right, indigo, steelblue, #ff0080, black)', opacity:'1.0' }} variant="primary" type="submit" className="w-100">
                     <h2 style={{padding:'20px'}}>Clubhouse Links CRM Sign Up</h2>
                 </Button>
 
@@ -96,7 +96,7 @@ const SignUp = () => {
                 </Form.Group>
 
                 {/* Sign-Up Button */}
-                <Button style={{ backgroundColor: 'steelblue' }} variant="primary" type="submit" className="w-100">
+                <Button style={{ background: 'linear-gradient(to right bottom, #34eb92, #23ad6a' }} variant="primary" type="submit" className="w-100">
                     Sign Up
                 </Button>
             </Form>

@@ -46,9 +46,9 @@ const Topbar = () => {
 
             <Navbar.Toggle aria-controls="basic-navbar-nav" onClick={handleToggle} />
             <Navbar.Collapse id="basic-navbar-nav" style={{paddingRight:'2px'}}>
-                <h3 style={{ color: 'white', textAlign: 'center' }}>
+                <p style={{ color: 'white', textAlign: 'center' }}>
                     {localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).name : 'Guest'}
-                </h3>
+                </p>
                 <Nav className="ms-auto">
                     <Nav.Link onClick={() => handleNavigation('/subscribers')}>Subscribers</Nav.Link>
                     <Nav.Link onClick={() => handleNavigation('/lists')}>Lists</Nav.Link>

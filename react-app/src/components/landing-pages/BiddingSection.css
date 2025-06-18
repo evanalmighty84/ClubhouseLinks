@@ -1,0 +1,25 @@
+/* src/components/BiddingSection.css */
+
+.bidding-section {
+    background-color: #fafafa;
+}
+
+.bidding-section h2 {
+    font-family: 'Segoe UI', sans-serif;
+    font-weight: 700;
+    color: #333;
+}
+
+.bidding-section p {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #444;
+}
+
+@media (max-width: 767px) {
+    .bidding-section .img-fluid {
+        max-width: 80%;
+        margin: 0 auto;
+        display: block;
+    }
+}

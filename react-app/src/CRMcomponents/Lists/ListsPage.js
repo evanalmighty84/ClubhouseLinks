@@ -91,8 +91,12 @@ const ListsPage = ({ guestMode = false }) => {
                     </Button>
                 </div>
 
-                <Table striped bordered hover responsive>
-                    <thead style={{ background: 'linear-gradient(to right bottom, rgb(52, 235, 146), rgb(35, 173, 106)' }}>
+                <Table bordered hover responsive>
+                    <thead
+                        style={{
+                            background: 'linear-gradient(to right, white, steelblue, #ff0080, indigo, white)',
+                        }}
+                    >
                     <tr>
                         <th>Name</th>
                         <th>Subscribers</th>
@@ -103,27 +107,36 @@ const ListsPage = ({ guestMode = false }) => {
                     </thead>
                     <tbody>
                     {lists.length > 0 ? (
-                        lists.map((list) => (
-                            <tr key={list.id}>
-                                <td>{list.name}</td>
-                                <td>{list.subscriber_count || 0}</td>
-                                <td>{new Date(list.created_at).toLocaleDateString()}</td>
-                                <td>{new Date(list.updated_at).toLocaleDateString()}</td>
-                                <td>
-                                    <Button variant="info" onClick={() => handleViewClick(list)}>
-                                        View
-                                    </Button>{' '}
-                                    {!guestMode && (
-                                        <Button variant="danger" onClick={() => handleDeleteList(list.id)}>
-                                            Delete
-                                        </Button>
-                                    )}
-                                </td>
-                            </tr>
-                        ))
+                        lists.map((list, index) => {
+                            const isEven = index % 2 === 0;
+                            const rowStyle = {
+                                backgroundColor: isEven ? '#ffffff' : '#cce5ff',
+                            };
+
+                            return (
+                                <tr key={list.id} style={rowStyle}>
+                                    <td>{list.name}</td>
+                                    <td>{list.subscriber_count || 0}</td>
+                                    <td>{new Date(list.created_at).toLocaleDateString()}</td>
+                                    <td>{new Date(list.updated_at).toLocaleDateString()}</td>
+                                    <td>
+                                        <Button variant="info" onClick={() => handleViewClick(list)}>
+                                            View
+                                        </Button>{' '}
+                                        {!guestMode && (
+                                            <Button variant="danger" onClick={() => handleDeleteList(list.id)}>
+                                                Delete
+                                            </Button>
+                                        )}
+                                    </td>
+                                </tr>
+                            );
+                        })
                     ) : (
                         <tr>
-                            <td colSpan="5">No lists available.</td>
+                            <td colSpan="5" style={{ textAlign: 'center' }}>
+                                No lists available.
+                            </td>
                         </tr>
                     )}
                     </tbody>

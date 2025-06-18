@@ -382,7 +382,7 @@ const CalendarScheduler = ({ guestMode = false })  => {
     const eventPropGetter = (event) => {
         const styles = {
             'event-email': {
-                background: 'linear-gradient(to right bottom, rgb(255, 218, 179), orange)',
+                background: 'linear-gradient(to right, white, steelblue, #ff0080, indigo)',
                 color: 'black'
             },
             'event-call': {
@@ -390,8 +390,8 @@ const CalendarScheduler = ({ guestMode = false })  => {
                 color: 'white'
             },
             'event-meeting': {
-                background: 'linear-gradient(to right bottom, rgb(169, 216, 216), cadetblue)',
-                color: 'white'
+                background: 'linear-gradient(to right, white, steelblue, #ff0080, indigo)',
+                color: 'black'
             },
             'event-text': {
                 background: 'linear-gradient(to right bottom, rgb(204, 204, 255), rgb(102, 102, 255))',
@@ -438,7 +438,7 @@ const CalendarScheduler = ({ guestMode = false })  => {
                 onSelectEvent={handleEventClick}
                 eventPropGetter={eventPropGetter}
                 className="custom-calendar"
-                defaultView={Views.AGENDA}
+                defaultView={Views.MONTH}
                 views={{ agenda: true, month: true, week: true, day: true }}
             />
 

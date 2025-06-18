@@ -7,8 +7,11 @@ import SignUp from "../CRMpages/SignUp";
 import SignIn from "../CRMpages/SignIn";
 import ListsPage from "./Lists/ListsPage";
 import '../CRMstyles/Dashboard.css';
-import './NonUserDashboard.css'; // you should have this for flipper styles
-
+import './NonUserDashboard.css';
+import ServicesSection from "../components/services/ServicesSection";
+import servicesData from "../components/landing-pages/ServicesData";
+import Unlimited from "../components/WideMovieLogo.gif";
+import Logo from "../components/Untitled_design_7_o9dfvi_c_crop,w_1116,h_628,ar_16_9.png"; // you should have this for flipper styles
 const NonUserDashboard = () => {
     const [index, setIndex] = useState(0);
 
@@ -49,6 +52,14 @@ const NonUserDashboard = () => {
     ];
 
     return (
+        <>
+            <ServicesSection
+                services       = {servicesData}
+                heroGif        = {Unlimited}
+                heroLogo       = {Logo}
+                fullScreen     = {false}      // makes each service span full width
+                heroSwapDelay  = {24000}     // swap to logo after 10s on landing
+            />
         <Card className="p-3" style={{ maxWidth: '100%', backgroundColor: 'white', marginBottom: '0px' }}>
             <div className="flipper-container">
                 <div className="flipper" style={{ transform: `rotateY(${index * 120}deg)` }}>
@@ -64,6 +75,7 @@ const NonUserDashboard = () => {
             <SignUp />
             <SignIn />
         </Card>
+        </>
     );
 };
 

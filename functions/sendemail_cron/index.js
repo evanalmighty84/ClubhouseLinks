@@ -98,7 +98,7 @@ module.exports = async (cronDetails, context) => {
 
 					const sendEmail = async () => {
 						try {
-							const appUrl = 'https://homepage-809404625.catalystserverless.com/server/crm_function';
+							const appUrl = 'https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function';
 							const trackingPixelUrl = `<img src="${appUrl}/api/track/template/open/${user_id}/${subscriber_id}?rand=${Math.random()}" width="1" height="1" style="display:none;" alt=""/>`;
 							const unsubscribeLink = `<p style="text-align: center; font-size: xx-small"><a style="color:red;text-decoration: none" href="${appUrl}/api/unsubscribe/${subscriber_id}">Unsubscribe</a></p>`;
 							const htmlWithTracking = `${template_content} ${trackingPixelUrl} ${unsubscribeLink}`;

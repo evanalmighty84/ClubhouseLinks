@@ -1,6 +1,6 @@
 /* Ensure the background-color is applied properly, overriding any Bootstrap CRMstyles */
 .navbar.topbar {
-    background-color: #4682b4 !important; /* Steel Blue */
+    background: linear-gradient(to right, black, steelblue, #ff0080, black); /* Steel Blue */
     color: white !important;
     z-index: 1000;
     padding: 10px 20px;
@@ -8,6 +8,7 @@
     position: fixed;
     top: 0;
 }
+
 
 /* Ensure navbar-brand has the right color */
 .navbar-brand {

@@ -3,7 +3,18 @@
 	"version": "1.0.0",
 	"main": "index.js",
 	"author": "evanligon7@gmail.com",
-	"dependencies": {
+
+	"scripts": {
+		"hotlist-cron":     "node hotlist_cron/index.js",
+		"warmlist-cron":    "node warmlist_cron/index.js",
+		"topofmind-cron":   "node topofmind_cron/index.js",
+		"emailreport-cron": "node emailreport_cron/index.js",
+		"sendemail-cron": "node sendemail_cron/index.js"
+	},
+
+
+
+"dependencies": {
 		"axios": "^1.8.4",
 		"bcrypt": "^5.1.1",
 		"bcryptjs": "^2.4.3",

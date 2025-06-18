@@ -1,0 +1,19 @@
+.media.blog-thumb {
+    display: flex;
+    flex-direction: row;
+    min-height: 350px;
+    overflow: hidden;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 767px) {
+    .media.blog-thumb {
+        flex-direction: column;
+    }
+
+    .media.blog-thumb .media-object,
+    .media.blog-thumb .media-body {
+        width: 100% !important;
+    }
+}

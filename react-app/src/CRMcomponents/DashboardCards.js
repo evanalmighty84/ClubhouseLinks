@@ -68,7 +68,7 @@ const DashboardCards = ({ recentEvents = {}, latestActivity = {} }) => {
                 <Card className="mb-4" style={cardStyle}>
                     <Card.Body
                         style={{
-                            background: 'linear-gradient(to bottom right, #f5c2d5, #de4e7f)',
+                            background:  'linear-gradient(to right, indigo, steelblue, #ff0080, black)',
                             textAlign: 'center'
                         }}
                     >
@@ -94,7 +94,7 @@ const DashboardCards = ({ recentEvents = {}, latestActivity = {} }) => {
                 <Card className="mb-4" style={cardStyle}>
                     <Card.Body
                         style={{
-                            background: 'linear-gradient(to right bottom, #34eb92, #23ad6a)',
+                            background:  'linear-gradient(to right, indigo, steelblue, #ff0080, black)',
                             textAlign: 'center'
                         }}
                     >
@@ -120,7 +120,7 @@ const DashboardCards = ({ recentEvents = {}, latestActivity = {} }) => {
                 <Card className="mb-4" style={cardStyle}>
                     <Card.Body
                         style={{
-                            background: 'linear-gradient(to bottom right, #ffdab3, orange)',
+                            background:  'linear-gradient(to right, indigo, steelblue, #ff0080, black)',
                             textAlign: 'center'
                         }}
                     >
@@ -146,7 +146,7 @@ const DashboardCards = ({ recentEvents = {}, latestActivity = {} }) => {
                 <Card className="mb-4" style={cardStyle}>
                     <Card.Body
                         style={{
-                            background: 'linear-gradient(to bottom right, #a9d8d8, cadetblue)',
+                            background:  'linear-gradient(to right, indigo, steelblue, #ff0080, black)',
                             textAlign: 'center'
                         }}
                     >
