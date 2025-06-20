@@ -5,7 +5,7 @@ import 'aos/dist/aos.css';
 import ApparelData from './ApparelData';
 
 // hero assets
-import Unlimited from '../Copy of Think Unlimited (Facebook Post).gif';
+
 import Logo from '../Untitled_design_7_o9dfvi_c_crop,w_1116,h_628,ar_16_9.png';
 
 const gradient = 'linear-gradient(to bottom, black, steelblue, black)';
@@ -61,17 +61,36 @@ const ApparelSection = () => {
                         className="col-12 text-center"
                         style={{ overflow: 'hidden' }}
                     >
-                        <img
-                            src={showLogo ? Logo : Unlimited}
-                            alt="Clubhouse Logo"
-                            style={{
-                                display: 'block',
-                                margin: '0 auto',
-                                width: showLogo ? '50%' : '100%',
-                                maxWidth: showLogo ? '350px' : undefined,
-                                height: 'auto'
-                            }}
-                        />
+                        {!showLogo ? (
+                            <video
+                                autoPlay
+                                muted
+                                playsInline
+                                style={{
+                                    display: 'block',
+                                    margin: '0 auto',
+                                    width: '100%',
+                                    maxHeight: '700px',
+                                    objectFit: 'cover',
+                                }}
+                            >
+                                <source src="https://clubhouselinks.b-cdn.net/Copy%20of%20Think%20Unlimited%20(Facebook%20Post).mp4" type="video/mp4" />
+                                Your browser does not support the video tag.
+                            </video>
+                        ) : (
+                            <img
+                                src={Logo}
+                                alt="Clubhouse Logo"
+                                style={{
+                                    display: 'block',
+                                    margin: '0 auto',
+                                    width: '50%',
+                                    maxWidth: '350px',
+                                    height: 'auto',
+                                }}
+                            />
+                        )}
+
                         {showLogo && (
                             <h2
                                 style={{
@@ -83,7 +102,7 @@ const ApparelSection = () => {
                                     WebkitTextFillColor: 'transparent',
                                     fontWeight: 'bold',
                                     fontFamily: 'cursive',
-                                    marginTop: '1rem'
+                                    marginTop: '1rem',
                                 }}
                                 data-aos="fade-down"
                                 data-aos-delay="200"
@@ -92,6 +111,7 @@ const ApparelSection = () => {
                             </h2>
                         )}
                     </div>
+
                 </div>
 
                 <h2 className="text-center mb-5" style={{color:'black'}}>How Our Apparel Works</h2>
