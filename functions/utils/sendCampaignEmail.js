@@ -105,12 +105,26 @@ async function sendCampaignEmail(
 
     // 2) Build HTML with tracking pixel + unsubscribe + click-tracking
     const appUrl = 'https://www.clubhouselinks.com/server/crm_function';
+    if (!campaignId || !subscriberId) {
+        throw new Error('Missing campaignId or subscriberId for tracking');
+    }
+
     const pixel = `<img src="${appUrl}/api/track/campaign/open/${campaignId}/${subscriberId}?rand=${Math.random()}" width="1" height="1" style="display:none;" alt=""/>`;
     const unsub = `<p style="text-align:center;color:gray">
                    <a href="${appUrl}/api/unsubscribe/${subscriberId}" style="color:red;">Unsubscribe</a>
                  </p>`;
 
-    let htmlBody = `${html}${pixel}${unsub}`;
+    let htmlBody = html;
+
+// try to inject pixel before </body> or </html>
+    if (htmlBody.includes('</body>')) {
+        htmlBody = htmlBody.replace('</body>', `${pixel}${unsub}</body>`);
+    } else if (htmlBody.includes('</html>')) {
+        htmlBody = htmlBody.replace('</html>', `${pixel}${unsub}</html>`);
+    } else {
+        htmlBody += pixel + unsub;
+    }
+
     htmlBody = htmlBody.replace(
         /<a href="(.*?)"/g,
         (_, original) =>
