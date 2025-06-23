@@ -4,6 +4,8 @@ const pool = require('../db/db');
 // Track pixel opens (views)
 exports.trackOpenCampaign = async (req, res) => {
     const { campaignId, subscriberId } = req.params;
+    console.log('📬 Open pixel triggered for campaign', campaignId, 'subscriber', subscriberId);
+
 
     try {
         // Log the open event in the database
