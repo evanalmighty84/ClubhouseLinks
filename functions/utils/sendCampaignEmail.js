@@ -104,7 +104,8 @@ async function sendCampaignEmail(
     }
 
     // 2) Build HTML with tracking pixel + unsubscribe + click-tracking
-    const appUrl = 'https://www.clubhouselinks.com/server/crm_function';
+    const appUrl = 'https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function';
+
     if (!campaignId || !subscriberId) {
         throw new Error('Missing campaignId or subscriberId for tracking');
     }
