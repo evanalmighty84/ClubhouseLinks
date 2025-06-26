@@ -4,9 +4,8 @@ const runIonWaveAutomation = async () => {
     console.log('🚀 Starting IonWave automation job...');
 
     const browser = await puppeteer.launch({
-        args: chromium.args,
-        executablePath: await chromium.executablePath,
-        headless: chromium.headless,
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
 
     const page = await browser.newPage();
@@ -21,7 +20,6 @@ const runIonWaveAutomation = async () => {
     await page.waitForNavigation({ waitUntil: 'networkidle0' });
     console.log('✅ Logged in successfully');
 
-    // Click "My Bid Invitations"
     const clicked = await page.evaluate(() => {
         const bids = Array.from(document.querySelectorAll('div')).find(div =>
             div.textContent.includes('My Bid Invitations')
@@ -36,12 +34,6 @@ const runIonWaveAutomation = async () => {
     console.log(clicked ? '📨 Clicked "My Bid Invitations"' : '⚠️ Could not find "My Bid Invitations" button');
 
     await page.waitForTimeout(3000);
-
-    // Optional Heroku call
-    // const axios = require('axios');
-    // await axios.get('https://crm-function-app.herokuapp.com/api/your-endpoint');
-    // console.log('📡 Heroku API triggered');
-
     await browser.close();
     console.log('🧼 Browser closed, job completed successfully');
 };
