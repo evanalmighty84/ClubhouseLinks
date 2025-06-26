@@ -1,5 +1,4 @@
-const puppeteer = require('puppeteer-core');
-const chromium = require('chrome-aws-lambda');
+const puppeteer = require('puppeteer');
 
 const runIonWaveAutomation = async () => {
     console.log('🚀 Starting IonWave automation job...');
