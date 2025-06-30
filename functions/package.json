@@ -9,7 +9,8 @@
 		"topofmind-cron": "node topofmind_cron/index.js",
 		"emailreport-cron": "node emailreport_cron/index.js",
 		"sendemail-cron": "node sendemail_cron/index.js",
-		"ionwave-cron": "node ionwave_cron/index.js"
+		"ionwave-cron": "node ionwave_cron/index.js",
+		"heroku-postbuild": "npx playwright install chromium"
 	},
 	"engines": {
 		"node": "20.x",
