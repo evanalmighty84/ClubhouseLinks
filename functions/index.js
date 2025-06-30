@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 
 // Routes
+const ionRoutes = require('./routes/ionRoutes');
 const campaignsRoutes = require('./routes/campaignsRoutes');
 const authRoutes = require('./routes/authRoutes');
 const listRoutes = require('./routes/listRoutes'); // Import list routes
@@ -85,6 +86,8 @@ app.use('/api/unsubscribe', unSubscribeRoutes);
 app.use('/api/templates', templatesRoutes);
 
 app.use('/api/workflow', workflowRoutes);
+
+app.use('/api/ionwave', ionRoutes);
 
 
 

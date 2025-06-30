@@ -54,6 +54,7 @@ const Topbar = () => {
                     <Nav.Link onClick={() => handleNavigation('/lists')}>Lists</Nav.Link>
                     <Nav.Link onClick={() => handleNavigation('/campaigns')}>Campaigns/Workflows</Nav.Link>
                     <Nav.Link onClick={() => handleNavigation('/emailqueued')}>Email/Text Log</Nav.Link>
+                    <Nav.Link onClick={() => handleNavigation('/leads')}>Leads</Nav.Link>
 
 
             {/*        <Nav.Link onClick={() => handleNavigation('/app/signup')}>Sign Up</Nav.Link>*/}

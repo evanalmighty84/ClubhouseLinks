@@ -90,6 +90,7 @@ const Header = () => {
                                 </div>
                             </Nav.Link>
 
+
                             {/* Other static links */}
                             <NavItem to="/aiProjects" icon={stockEmoji} label="Services" />
                             <NavItem to="/ClientPortfolios"        icon={eCommerceEmoji} label="Client Portfolios" />

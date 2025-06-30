@@ -60,6 +60,7 @@ import ConstructionSection from "./components/landing-pages/ConstructionSection"
 import ApparelSection from "./components/landing-pages/ApparelSection";
 import WebsiteLeadSection from "./components/landing-pages/WebsiteLeadSection";
 import ClientPortfolios from "./components/landing-pages/ClientPortfolios";
+import LeadsPage from "./CRMpages/LeadsPage"
 
 import "./index.css";
 import PoolServiceHomepage from "./PoolService/PoolServiceHomePage";
@@ -192,6 +193,7 @@ class App extends Component {
                             <Route path="/ClientPortfolios" element={<ClientPortfolios />} />
                             <Route path="/lists" element={<ProtectedRoute><ListsPage /></ProtectedRoute>} />
                             <Route path="/emailqueued" element={<ProtectedRoute><EmailQueuedPage /></ProtectedRoute>} />
+                            <Route path="/leads" element={<ProtectedRoute><LeadsPage/></ProtectedRoute>} />
                             <Route path="/lists/new" element={<ProtectedRoute><ListForm /></ProtectedRoute>} />
                             <Route path="/lists/:id/edit" element={<ProtectedRoute><ListForm /></ProtectedRoute>} />
                             <Route path="/signup" element={<SignUp />} />
