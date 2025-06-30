@@ -10,6 +10,10 @@
 		"emailreport-cron": "node emailreport_cron/index.js",
 		"sendemail-cron": "node sendemail_cron/index.js"
 	},
+	"puppeteer": {
+		"skip_chromium_download": true
+	},
+
 	"engines": {
 		"node": "20.x",
 		"npm": "10.x"
