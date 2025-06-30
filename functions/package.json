@@ -8,7 +8,7 @@
 		"warmlist-cron": "node warmlist_cron/index.js",
 		"topofmind-cron": "node topofmind_cron/index.js",
 		"emailreport-cron": "node emailreport_cron/index.js",
-		"sendemail-cron": "node sendemail_cron/index.js",
+		"sendemail-cron": "node sendemail_cron/index.js"
 	},
 	"engines": {
 		"node": "20.x",
