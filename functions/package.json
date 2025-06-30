@@ -9,7 +9,6 @@
 		"topofmind-cron": "node topofmind_cron/index.js",
 		"emailreport-cron": "node emailreport_cron/index.js",
 		"sendemail-cron": "node sendemail_cron/index.js",
-		"postinstall": "puppeteer install"
 	},
 	"engines": {
 		"node": "20.x",
