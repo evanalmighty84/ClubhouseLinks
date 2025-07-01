@@ -17,6 +17,7 @@
     "axios": "^1.7.2",
     "bootstrap": "^5.3.3",
     "chart.js": "^3.9.1",
+    "cheerio": "^1.1.0",
     "framer-motion": "^11.15.0",
     "gasp": "^0.0.2",
     "gsap": "^3.12.5",
