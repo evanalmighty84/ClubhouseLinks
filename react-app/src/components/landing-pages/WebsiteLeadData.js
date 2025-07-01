@@ -2,7 +2,7 @@
 
 const websiteLeadData = {
     title: "Website Lead Generation",
-    subtitle: "Turn your site traffic into qualified leads.",
+    subtitle: "",
     description: "We design high-converting websites that automatically capture customer interest and route it directly to your CRM, phone, or inbox. Every click can turn into a client with our optimized lead forms and tracking systems.",
     benefits: [
         "Instant text/email alerts for new leads",
@@ -14,13 +14,13 @@ const websiteLeadData = {
     stats: {
         conversionRate: "3.5x higher",
         avgResponseTime: "Under 5 minutes",
-        clientsServed: "120+ businesses onboarded"
+        clientsServed: "1200+ subscribers captured"
     },
     cta: {
         text: "See It in Action",
         link: "/appstore" // or wherever your demo/live apps are
     },
-    image: "https://res.cloudinary.com/duz4vhtcn/image/upload/v1749152889/nlt_hmdlod.png"
+    image: "https://res.cloudinary.com/duz4vhtcn/image/upload/v1749594165/Untitled_design_7_o9dfvi.png"
 };
 
 export default websiteLeadData;

@@ -170,7 +170,7 @@ class App extends Component {
                             <Route path="/Construction" element={<ConstructionSection/>} />
                             <Route path="/Social" element={<SocialMediaSection />} />
                             <Route path="/Apparel" element={<ApparelSection/>} />
-                            <Route path="/Website" element={<WebsiteLeadSection/>} />
+                            <Route path="/leads/website-leads" element={<WebsiteLeadSection/>} />
                             <Route path="/clubhouseMarketing" element={<Marketing />} />
                             <Route path="/eCommerce" element={<ECommerce />} />
                             <Route path="/onlineReviews" element={<Reviews />} />
