@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/static/css/main.74d2fc72.css",
-    "main.js": "/static/js/main.29bcf35e.js",
+    "main.js": "/static/js/main.a8d90fa2.js",
     "static/media/WideMovieLogo.gif": "/static/media/WideMovieLogo.fb5a2153d857a59ad898.gif",
     "static/media/vecteezy_two-brown-dogs-digging-the-ground-for-hunting-fat-pets_32544191.gif": "/static/media/vecteezy_two-brown-dogs-digging-the-ground-for-hunting-fat-pets_32544191.9a2f7d0191dc928804fa.gif",
     "static/media/Revolutionize Your Pet Grooming Business_ AI-Powered Solutions.mp4": "/static/media/Revolutionize Your Pet Grooming Business_ AI-Powered Solutions.03536c75974482438bf6.mp4",
@@ -98,17 +98,19 @@
     "static/media/React-in-WordPress-Series-1.png": "/static/media/React-in-WordPress-Series-1.53a440ff2e189ccb9663.png",
     "static/media/bootstrap-icons.woff2": "/static/media/bootstrap-icons.deae72ec4e319cf4ba7a.woff2",
     "static/media/happy-african-american-professional-manager-smiling-looking-camera-headshot-portrait.jpg": "/static/media/happy-african-american-professional-manager-smiling-looking-camera-headshot-portrait.ecd390020ae2235c5748.jpg",
+    "static/media/Email-Marketing-Planning-Image-in-Outsource-Workers-Emails-Coming-Out-Computers-Yellow-Mails.png": "/static/media/Email-Marketing-Planning-Image-in-Outsource-Workers-Emails-Coming-Out-Computers-Yellow-Mails.5104063ecfc9c6184292.png",
     "static/media/GrowingBusinessPodcastImage.jpeg": "/static/media/GrowingBusinessPodcastImage.af6aee63e7e973834d11.jpeg",
     "static/media/JasonGardner.jpeg": "/static/media/JasonGardner.198a1d2af7ea92d095c5.jpeg",
     "static/media/bidding-leads.webp": "/static/media/bidding-leads.7974294aec8f2e092700.webp",
+    "static/media/emailcampaign.png": "/static/media/emailcampaign.8a52fcc895f241a867c2.png",
     "static/media/softball.webp": "/static/media/softball.b95b6f380168d7a598e9.webp",
     "static/media/icons8-facebook-business-suite.svg": "/static/media/icons8-facebook-business-suite.f7ceaa166fa73eb83ae4c87efbaa3f4e.svg",
     "index.html": "/index.html",
     "main.74d2fc72.css.map": "/static/css/main.74d2fc72.css.map",
-    "main.29bcf35e.js.map": "/static/js/main.29bcf35e.js.map"
+    "main.a8d90fa2.js.map": "/static/js/main.a8d90fa2.js.map"
   },
   "entrypoints": [
     "static/css/main.74d2fc72.css",
-    "static/js/main.29bcf35e.js"
+    "static/js/main.a8d90fa2.js"
   ]
 }
