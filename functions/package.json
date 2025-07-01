@@ -10,7 +10,7 @@
 		"emailreport-cron": "node emailreport_cron/index.js",
 		"sendemail-cron": "node sendemail_cron/index.js",
 		"ionwave-cron": "node ionwave_cron/index.js",
-		"postinstall": "npx playwright install"
+		"postinstall": ""
 
 	},
 	"engines": {
