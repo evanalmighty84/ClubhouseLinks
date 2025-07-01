@@ -65,6 +65,7 @@ import LeadsPage from "./CRMpages/LeadsPage"
 import "./index.css";
 import PoolServiceHomepage from "./PoolService/PoolServiceHomePage";
 import ContactUs from "./components/landing-pages/ContactSection";
+import EmailLeadsSection from "./components/landing-pages/EmailLeadsSection";
 
 
 const stripePromise = loadStripe("pk_live_4s4TtIY6HXHbiKpHOoFGvQRf");
@@ -169,6 +170,7 @@ class App extends Component {
                             <Route path="/Bids" element={<BiddingSection />} />
                             <Route path="/Construction" element={<ConstructionSection/>} />
                             <Route path="/Social" element={<SocialMediaSection />} />
+                            <Route path="/leads/email-leads" element={<EmailLeadsSection/>} />
                             <Route path="/Apparel" element={<ApparelSection/>} />
                             <Route path="/leads/website-leads" element={<WebsiteLeadSection/>} />
                             <Route path="/clubhouseMarketing" element={<Marketing />} />

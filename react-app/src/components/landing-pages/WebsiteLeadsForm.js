@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Form, Button, Alert, Container, Row, Col, Card } from 'react-bootstrap';
-import CommercialLoan from '../commercialloan.jpeg'
+import CommercialLoan from '../commercialloan2.jpg'
+import heroLogo from '../Untitled_design_7_o9dfvi_c_crop,w_1116,h_628,ar_16_9.png';
+
 import { FaFacebookF } from 'react-icons/fa';
 
 
@@ -36,17 +38,37 @@ const WebsiteLeadsForm = () => {
         <Container className="mt-5">
             <Row className="justify-content-center">
                 <Col md={8}>
-                    <Card className="p-4 shadow">
+                    <Card   className="p-4 shadow"
+                            style={{
+                                background: 'linear-gradient(to right bottom, #fdfcfb, #e2d1c3, #ffcba4, #ffa07a)',
+                                borderRadius: '1rem',
+                                color: '#222',
+                                boxShadow: '0 8px 20px rgba(0, 0, 0, 0.15)'
+                            }}>
+                        <img
+                            src={heroLogo}
+                            alt="Website Lead Example"
+                            style={{
+                                display: 'block',
+                                margin: '0 auto',
+                                height: 'auto',
+                                maxWidth: '300px',
+                                borderRadius: '12px'
+                            }}
+                        />
+
                         <Card.Title className="text-center mb-4" style={{ fontSize: '1.5rem' }}>
-                            <FaFacebookF style={{ color: '#1877F2', marginRight: '0.5rem', verticalAlign: 'middle' }} />
+
                             Get Approved for a Commercial Loan Today!
                         </Card.Title>
+
+
 
                         <Card.Img
                             variant="top"
                             src={CommercialLoan} // Update with actual path
                             style={{
-                                maxHeight: '200px',
+                                maxHeight: '400px',
                                 objectFit: 'cover',
                                 borderRadius: '0.5rem',
                                 marginBottom: '1rem',

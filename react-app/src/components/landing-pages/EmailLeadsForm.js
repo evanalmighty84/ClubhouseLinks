@@ -1,21 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Form, Button, Alert, Container, Row, Col, Card } from 'react-bootstrap';
-import { FaLinkedin } from 'react-icons/fa';
-import socialMediaImg from '../linkedinGraph.png';
-import heroLogo from "../Untitled_design_7_o9dfvi_c_crop,w_1116,h_628,ar_16_9.png";
+import { FaEnvelope } from 'react-icons/fa';
+import emailImage from '../emailcampaign.jpeg'; // your campaign preview image
+import heroLogo from '../Untitled_design_7_o9dfvi_c_crop,w_1116,h_628,ar_16_9.png';
 
-
-const SocialMediaLeadsForm = () => {
-
+const EmailLeadsForm = () => {
     const heroRef = useRef(null);
     const [showLogo, setShowLogo] = useState(false);
+
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         phone: '',
         address: '',
-        message: 'Saw your post on LinkedIn about streamlining HR software — I’d love to learn more about how your solution could support our team.',
+        message: 'I saw your email campaign and wanted to learn more about the offer you mentioned.',
     });
 
     const [status, setStatus] = useState({ success: null, message: '' });
@@ -35,6 +34,7 @@ const SocialMediaLeadsForm = () => {
             setStatus({ success: false, message: 'Something went wrong. Please try again later.' });
         }
     };
+
     useEffect(() => {
         const timer = setTimeout(() => {
             const container = heroRef.current;
@@ -56,22 +56,22 @@ const SocialMediaLeadsForm = () => {
             } else {
                 setShowLogo(true);
             }
-        }, 100); // Adjust delay here (8s)
+        }, 100);
 
         return () => clearTimeout(timer);
     }, []);
+
     return (
-
-
         <Container className="mt-5">
             <Row className="justify-content-center">
                 <Col md={8}>
+                    {/* Animated Logo Header */}
                     <div ref={heroRef} style={{ overflow: 'hidden', textAlign: 'center', marginBottom: '2rem' }}>
                         {showLogo && (
                             <>
                                 <img
                                     src={heroLogo}
-                                    alt="Social Logo"
+                                    alt="Email Logo"
                                     style={{
                                         display: 'block',
                                         margin: '0 auto',
@@ -82,7 +82,7 @@ const SocialMediaLeadsForm = () => {
                                 />
                                 <h2
                                     style={{
-                                        backgroundImage: 'linear-gradient(to right, darkblue, #00c6ff)',
+                                        backgroundImage: 'linear-gradient(to right, #ff7e5f, #feb47b)',
                                         WebkitBackgroundClip: 'text',
                                         color: 'transparent',
                                         WebkitTextFillColor: 'transparent',
@@ -91,51 +91,42 @@ const SocialMediaLeadsForm = () => {
                                         marginTop: '1rem',
                                     }}
                                 >
-                                    Social Media Lead Generation
+                                    Email Campaign Lead Capture
                                 </h2>
                             </>
                         )}
                     </div>
+
+                    {/* Main Form Card */}
                     <Card
                         className="p-4 shadow"
                         style={{
-                            background: 'linear-gradient(to right, #0072b1, #00c6ff)',
+                            background: 'linear-gradient(to right, #ff8a00, #e52e71)',
                             borderRadius: '1rem',
                             color: 'white',
-                            boxShadow: '0 8px 20px rgba(0, 0, 0, 0.2)'
+                            boxShadow: '0 8px 20px rgba(0, 0, 0, 0.2)',
                         }}
                     >
-
-
                         <Card.Img
                             variant="top"
-                            src={socialMediaImg}
+                            src={emailImage}
                             style={{
                                 maxHeight: '200px',
                                 objectFit: 'cover',
                                 borderRadius: '0.5rem',
                                 marginBottom: '1rem',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
                             }}
                         />
+
                         <Card.Title className="text-center mb-2" style={{ fontSize: '1.4rem', fontWeight: '700' }}>
-                            <FaLinkedin style={{ color: '#0077B5', marginRight: '0.5rem', verticalAlign: 'middle' }} />
-                            Connect with Decision-Makers on LinkedIn
+                            <FaEnvelope style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                            Follow Up From Our Recent Email
                         </Card.Title>
-                        <img
-                            src={heroLogo}
-                            alt="Website Lead Example"
-                            style={{
-                                display: 'block',
-                                margin: '0 auto',
-                                height: 'auto',
-                                maxWidth: '300px',
-                                borderRadius: '12px'
-                            }}
-                        />
-                        <p className="text-center" style={{ fontStyle: 'italic', fontWeight: '500', fontSize: '1.1rem', color:'white' }}>
-                         Let’s take the next step here on LinkedIn. Whether you're interested in B2B partnerships,
-                            hiring, or software solutions — we’ll get you connected to the right person, fast.
+
+                        <p className="text-center" style={{ fontStyle: 'italic', fontWeight: '500', fontSize: '1.1rem', color: 'white' }}>
+                            Interested in what you saw in our recent campaign? Leave your details below, and we’ll send you more
+                            info or connect you directly with our team.
                         </p>
 
                         {status.message && (
@@ -154,6 +145,7 @@ const SocialMediaLeadsForm = () => {
                                     onChange={handleChange}
                                     placeholder="Your full name"
                                     required
+                                    style={{ backgroundColor: 'white', color: '#000' }}
                                 />
                             </Form.Group>
 
@@ -166,6 +158,7 @@ const SocialMediaLeadsForm = () => {
                                     onChange={handleChange}
                                     placeholder="you@example.com"
                                     required
+                                    style={{ backgroundColor: 'white', color: '#000' }}
                                 />
                             </Form.Group>
 
@@ -177,6 +170,7 @@ const SocialMediaLeadsForm = () => {
                                     value={formData.phone}
                                     onChange={handleChange}
                                     placeholder="(555) 123-4567"
+                                    style={{ backgroundColor: 'white', color: '#000' }}
                                 />
                             </Form.Group>
 
@@ -188,6 +182,7 @@ const SocialMediaLeadsForm = () => {
                                     value={formData.address}
                                     onChange={handleChange}
                                     placeholder="123 Main St, City, State"
+                                    style={{ backgroundColor: 'white', color: '#000' }}
                                 />
                             </Form.Group>
 
@@ -199,11 +194,22 @@ const SocialMediaLeadsForm = () => {
                                     name="message"
                                     value={formData.message}
                                     onChange={handleChange}
+                                    style={{ backgroundColor: 'white', color: '#000' }}
                                 />
                             </Form.Group>
 
                             <div className="d-grid">
-                                <Button variant="primary" type="submit">Have someone reach out</Button>
+                                <Button
+                                    type="submit"
+                                    style={{
+                                        background: 'linear-gradient(to right, #ff416c, #ff4b2b)',
+                                        border: 'none',
+                                        fontWeight: 'bold',
+                                        color: 'white',
+                                    }}
+                                >
+                                    Submit Lead
+                                </Button>
                             </div>
                         </Form>
                     </Card>
@@ -213,4 +219,4 @@ const SocialMediaLeadsForm = () => {
     );
 };
 
-export default SocialMediaLeadsForm;
+export default EmailLeadsForm;
