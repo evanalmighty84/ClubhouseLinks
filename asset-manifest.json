@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/static/css/main.74d2fc72.css",
-    "main.js": "/static/js/main.3e0ad088.js",
+    "main.js": "/static/js/main.29bcf35e.js",
     "static/media/WideMovieLogo.gif": "/static/media/WideMovieLogo.fb5a2153d857a59ad898.gif",
     "static/media/vecteezy_two-brown-dogs-digging-the-ground-for-hunting-fat-pets_32544191.gif": "/static/media/vecteezy_two-brown-dogs-digging-the-ground-for-hunting-fat-pets_32544191.9a2f7d0191dc928804fa.gif",
     "static/media/Revolutionize Your Pet Grooming Business_ AI-Powered Solutions.mp4": "/static/media/Revolutionize Your Pet Grooming Business_ AI-Powered Solutions.03536c75974482438bf6.mp4",
@@ -69,6 +69,7 @@
     "static/media/frederik-rosar-NDSZcCfnsbY-unsplash.jpg": "/static/media/frederik-rosar-NDSZcCfnsbY-unsplash.92b03ab99f214d03e5f1.jpg",
     "static/media/partner-network.jpg": "/static/media/partner-network.12ed5b33cb29567b1b38.jpg",
     "static/media/Magento-shopify-woocommerce-1024x673.png": "/static/media/Magento-shopify-woocommerce-1024x673.00d01044b6d3833513e2.png",
+    "static/media/commercialloan2.jpg": "/static/media/commercialloan2.b2c81d685e030e435fac.jpg",
     "static/media/img.png": "/static/media/img.7fbb948976a0776011d1.png",
     "static/media/social-lead-generation.png": "/static/media/social-lead-generation.18b0b8a6e886f021bfbb.png",
     "static/media/before-after-fort-worth-pool-remodel.jpg": "/static/media/before-after-fort-worth-pool-remodel.7ba0afb3c924e5328f65.jpg",
@@ -76,6 +77,7 @@
     "static/media/basketball-camp.jpeg": "/static/media/basketball-camp.d2e6894f3252c671f28f.jpeg",
     "static/media/Lexus_RZ_Artistic_Hero.jpeg": "/static/media/Lexus_RZ_Artistic_Hero.684cec6b60e907f3d7a5.jpeg",
     "static/media/Untitled_design_7_o9dfvi_c_crop,w_1116,h_628,ar_16_9.png": "/static/media/Untitled_design_7_o9dfvi_c_crop,w_1116,h_628,ar_16_9.b0d7e3ab143885df0b2e.png",
+    "static/media/linkedinGraph.png": "/static/media/linkedinGraph.d0575018181b371ff7cf.png",
     "static/media/volleyball3.jpeg": "/static/media/volleyball3.ca26193b3f00f049c129.jpeg",
     "static/media/logo.png": "/static/media/logo.a952739ccb50750bc2be.png",
     "static/media/successful-asian-lady-boss-red-blazer-holding-clipboard-with-documens-pen-working-looking-happy-white-background.jpg": "/static/media/successful-asian-lady-boss-red-blazer-holding-clipboard-with-documens-pen-working-looking-happy-white-background.2df0a86ba0ef17cefbd1.jpg",
@@ -100,14 +102,13 @@
     "static/media/JasonGardner.jpeg": "/static/media/JasonGardner.198a1d2af7ea92d095c5.jpeg",
     "static/media/bidding-leads.webp": "/static/media/bidding-leads.7974294aec8f2e092700.webp",
     "static/media/softball.webp": "/static/media/softball.b95b6f380168d7a598e9.webp",
-    "static/media/commercialloan.jpeg": "/static/media/commercialloan.029355d4dc8b82acfd5c.jpeg",
     "static/media/icons8-facebook-business-suite.svg": "/static/media/icons8-facebook-business-suite.f7ceaa166fa73eb83ae4c87efbaa3f4e.svg",
     "index.html": "/index.html",
     "main.74d2fc72.css.map": "/static/css/main.74d2fc72.css.map",
-    "main.3e0ad088.js.map": "/static/js/main.3e0ad088.js.map"
+    "main.29bcf35e.js.map": "/static/js/main.29bcf35e.js.map"
   },
   "entrypoints": [
     "static/css/main.74d2fc72.css",
-    "static/js/main.3e0ad088.js"
+    "static/js/main.29bcf35e.js"
   ]
 }
