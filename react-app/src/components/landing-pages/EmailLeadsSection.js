@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import EmailLeadsForm from './EmailLeadsForm';
 import heroLogo from '../Untitled_design_7_o9dfvi_c_crop,w_1116,h_628,ar_16_9.png';
-import emailCampaignImage from '../emailcampaign.jpeg';
+import emailCampaignImage from '../Email-Marketing-Planning-Image-in-Outsource-Workers-Emails-Coming-Out-Computers-Yellow-Mails.png';
 
 const EmailLeadSection = () => {
     const heroRef = useRef(null);

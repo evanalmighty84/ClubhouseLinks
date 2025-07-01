@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Form, Button, Alert, Container, Row, Col, Card } from 'react-bootstrap';
 import { FaEnvelope } from 'react-icons/fa';
-import emailImage from '../emailcampaign.jpeg'; // your campaign preview image
+import emailImage from '../emailcampaign.png'; // your campaign preview image
 import heroLogo from '../Untitled_design_7_o9dfvi_c_crop,w_1116,h_628,ar_16_9.png';
 
 const EmailLeadsForm = () => {
