@@ -1,0 +1,4 @@
+# .slugignore
+# prevent Heroku from skipping this file in final slug
+!.slugignore
+!functions/Aptfile
