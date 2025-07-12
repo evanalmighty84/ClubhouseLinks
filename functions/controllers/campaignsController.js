@@ -411,6 +411,45 @@ exports.getCampaignsByUser = async (req, res) => {
     }
 };
 
+const pool = require('../db/db');
+
+exports.getSentCampaignsByUser = async (req, res) => {
+    const userId = req.query.userId || req.body.userId;
+
+    if (!userId) {
+        return res.status(400).json({ error: 'Missing userId' });
+    }
+
+    try {
+        const result = await pool.query(`
+            SELECT 
+                ces.id,
+                ces.user_id,
+                ces.subscriber_id,
+                ces.campaign_id,
+                ces.send_time,
+                ces.created_at,
+                s.name AS subscriber_name,
+                s.email AS subscriber_email,
+                c.subject AS campaign_subject,
+                c.content AS template_preview
+            FROM campaign_emails_sent ces
+            INNER JOIN subscribers s ON ces.subscriber_id = s.id
+            INNER JOIN campaigns c ON ces.campaign_id = c.id
+            WHERE ces.user_id = $1
+            ORDER BY ces.send_time DESC
+        `, [userId]);
+
+        res.status(200).json({
+            emails: result.rows,
+            count: result.rows.length,
+        });
+
+    } catch (error) {
+        console.error('Error fetching sent campaigns:', error);
+        res.status(500).json({ error: 'Failed to fetch sent campaign emails.' });
+    }
+};
 
 // Sample query to test database connection
 exports.testDatabaseConnection = async (req, res) => {

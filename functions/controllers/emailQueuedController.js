@@ -1,5 +1,7 @@
 const pool = require("../db/db");
 
+
+// the first one is really getting the recent opened events
 exports.getEmailQueued = async (req, res) => {
     const { userId, status = 'all', page = 1, limit = 10 } = req.body;
 
@@ -77,3 +79,64 @@ exports.getEmailQueued = async (req, res) => {
         res.status(500).json({ error: "Failed to fetch email queue." });
     }
 };
+exports.getPendingEmailQueued = async (req, res) => {
+    const { userId } = req.body;
+
+    try {
+        const result = await pool.query(`
+            SELECT 
+                eq.id, eq.user_id, eq.subscriber_id, eq.template_id, eq.send_time, eq.status, eq.created_at, eq.updated_at,
+                t.content AS template_preview,
+                s.email AS subscriber_email, s.name AS subscriber_name
+            FROM EmailQueue eq
+            INNER JOIN templates t ON eq.template_id = t.id
+            INNER JOIN subscribers s ON eq.subscriber_id = s.id
+            WHERE eq.user_id = $1 AND eq.status = 'pending'
+            ORDER BY eq.send_time DESC;
+        `, [userId]);
+
+        res.status(200).json({ emails: result.rows });
+    } catch (error) {
+        console.error("Error fetching pending emails:", error);
+        res.status(500).json({ error: "Failed to fetch pending emails." });
+    }
+};
+
+exports.getAllEmails = async (req, res) => {
+    const { userId } = req.body;
+
+    try {
+        const queuedResult = await pool.query(`
+            SELECT 
+                eq.id, eq.user_id, eq.subscriber_id, eq.template_id, eq.send_time, eq.status, eq.created_at, eq.updated_at,
+                t.content AS template_preview,
+                s.email AS subscriber_email, s.name AS subscriber_name
+            FROM EmailQueue eq
+            INNER JOIN templates t ON eq.template_id = t.id
+            INNER JOIN subscribers s ON eq.subscriber_id = s.id
+            WHERE eq.user_id = $1
+        `, [userId]);
+
+        const sentResult = await pool.query(`
+            SELECT 
+                ces.id, ces.user_id, ces.subscriber_id, ces.campaign_id, ces.send_time, 'sent' AS status, ces.created_at, ces.updated_at,
+                c.content AS template_preview,
+                s.email AS subscriber_email, s.name AS subscriber_name
+            FROM campaign_emails_sent ces
+            INNER JOIN campaigns c ON ces.campaign_id = c.id
+            INNER JOIN subscribers s ON ces.subscriber_id = s.id
+            WHERE ces.user_id = $1
+        `, [userId]);
+
+        const emails = [...queuedResult.rows, ...sentResult.rows];
+        emails.sort((a, b) => new Date(b.send_time) - new Date(a.send_time));
+
+        res.status(200).json({ emails });
+    } catch (error) {
+        console.error("Error fetching all emails:", error);
+        res.status(500).json({ error: "Failed to fetch all emails." });
+    }
+};
+
+
+

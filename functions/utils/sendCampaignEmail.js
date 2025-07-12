@@ -145,5 +145,20 @@ async function sendCampaignEmail(
 
     console.log(`✅ Sent to subscriber ID ${subscriberId}: ${to}`);
 }
+const insertQuery = `
+  INSERT INTO campaign_emails_sent (
+    user_id, campaign_id, subscriber_id, email, subject, html_preview
+  ) VALUES ($1, $2, $3, $4, $5, $6)
+`;
+
+await pool.query(insertQuery, [
+    userId,
+    campaignId,
+    subscriberId,
+    to,
+    subject,
+    html // or htmlBody if you want pixel/unsubscribe version
+]);
+
 
 module.exports = { sendCampaignEmail };

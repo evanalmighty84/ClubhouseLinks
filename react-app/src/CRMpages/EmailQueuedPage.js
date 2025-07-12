@@ -108,9 +108,9 @@ const EmailQueueList = ({ guestMode = false }) => {
                             {statusFilter === 'all' ? 'All Emails' : `${statusFilter} Emails`}
                         </Dropdown.Toggle>
                         <Dropdown.Menu>
-                            <Dropdown.Item eventKey="all">All</Dropdown.Item>
-                            <Dropdown.Item eventKey="pending">Pending</Dropdown.Item>
-                            <Dropdown.Item eventKey="sent">Sent</Dropdown.Item>
+                            <Dropdown.Item eventKey="all">All Emails</Dropdown.Item>
+                            <Dropdown.Item eventKey="pending">All Pending Emails</Dropdown.Item>
+                            <Dropdown.Item eventKey="sent">All Sent Emails</Dropdown.Item>
                         </Dropdown.Menu>
                     </Dropdown>
                 </Col>
