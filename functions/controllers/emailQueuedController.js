@@ -8,37 +8,40 @@ exports.getEmailQueued = async (req, res) => {
         const offset = (page - 1) * limit;
 
         // Build query conditionally based on status
+// Set up base query and params
         let query = `
-            SELECT 
+            SELECT
                 eq.id, eq.user_id, eq.subscriber_id, eq.template_id, eq.send_time, eq.status, eq.created_at, eq.updated_at,
                 t.content AS template_preview,
                 s.email AS subscriber_email, s.name AS subscriber_name
             FROM EmailQueue eq
-            INNER JOIN templates t ON eq.template_id = t.id
-            INNER JOIN subscribers s ON eq.subscriber_id = s.id
+                     INNER JOIN templates t ON eq.template_id = t.id
+                     INNER JOIN subscribers s ON eq.subscriber_id = s.id
             WHERE eq.user_id = $1
         `;
         const queryParams = [userId];
 
+// Apply optional status filter
         if (status !== 'all') {
-            query += ` AND eq.status = $2`;
             queryParams.push(status);
+            query += ` AND eq.status = $${queryParams.length}`;
         }
 
-        // Order by most recent send_time descending
-        query += ` ORDER BY eq.send_time DESC LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`;
+// Add ordering + pagination with correct placeholders
         queryParams.push(limit, offset);
+        query += ` ORDER BY eq.send_time DESC LIMIT $${queryParams.length - 1} OFFSET $${queryParams.length}`;
 
         // Execute query
         const result = await pool.query(query, queryParams);
 
         // Count total emails for pagination
         const countQuery = `
-            SELECT COUNT(*) 
-            FROM EmailQueue 
-            WHERE user_id = $1 ${status !== 'all' ? 'AND status = $2' : ''}
+            SELECT COUNT(*)
+            FROM EmailQueue
+            WHERE user_id = $1 ${status !== 'all' ? `AND status = $2` : ''}
         `;
         const countParams = status !== 'all' ? [userId, status] : [userId];
+
         const countResult = await pool.query(countQuery, countParams);
         const totalCount = parseInt(countResult.rows[0].count, 10);
 
