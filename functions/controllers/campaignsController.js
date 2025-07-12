@@ -411,7 +411,7 @@ exports.getCampaignsByUser = async (req, res) => {
     }
 };
 
-const pool = require('../db/db');
+
 
 exports.getSentCampaignsByUser = async (req, res) => {
     const userId = req.query.userId || req.body.userId;
