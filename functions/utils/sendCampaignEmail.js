@@ -19,7 +19,7 @@ async function fetchAttachmentFromUrl(url) {
         const filename = path.basename(new URL(url).pathname);
         return { filename, content: Buffer.from(res.data), contentType };
     } catch (err) {
-        console.error('Failed to fetch attachment:', err.message);
+        console.error('❌ Failed to fetch attachment:', err.message);
         return null;
     }
 }
@@ -46,7 +46,6 @@ async function sendCampaignEmail(
     externalTransporter = null,
     attachmentUrls = []
 ) {
-    console.log('Sending campaign email... Subscriber ID:', subscriberId);
     if (!to) {
         throw new Error('No `to` address provided');
     }
@@ -54,11 +53,9 @@ async function sendCampaignEmail(
     // 1) Get or build the transporter
     let transporter = externalTransporter;
     if (!transporter) {
-        // reuse one per user
         if (transporterCache.has(userId)) {
             transporter = transporterCache.get(userId);
         } else {
-            // build a pooled transporter
             const smtpSettings = await getUserSMTPSettings(userId);
             let config;
 
@@ -73,14 +70,11 @@ async function sendCampaignEmail(
                         pass
                     },
                     tls: { rejectUnauthorized: false },
-
-                    // ==== POOL OPTIONS ====
                     pool: true,
                     maxConnections: 5,
                     maxMessages: Infinity
                 };
             } else {
-                // fallback Zoho with pooling too
                 config = {
                     host: 'smtp.zoho.com',
                     port: 587,
@@ -90,8 +84,6 @@ async function sendCampaignEmail(
                         pass: process.env.EMAIL_PASS
                     },
                     tls: { rejectUnauthorized: false },
-
-                    // ==== POOL OPTIONS ====
                     pool: true,
                     maxConnections: 5,
                     maxMessages: Infinity
@@ -112,12 +104,11 @@ async function sendCampaignEmail(
 
     const pixel = `<img src="${appUrl}/api/track/campaign/open/${campaignId}/${subscriberId}?rand=${Math.random()}" width="1" height="1" style="display:none;" alt=""/>`;
     const unsub = `<p style="text-align:center;color:gray">
-                   <a href="${appUrl}/api/unsubscribe/${subscriberId}" style="color:red;">Unsubscribe</a>
-                 </p>`;
+                     <a href="${appUrl}/api/unsubscribe/${subscriberId}" style="color:red;">Unsubscribe</a>
+                   </p>`;
 
     let htmlBody = html;
 
-// try to inject pixel before </body> or </html>
     if (htmlBody.includes('</body>')) {
         htmlBody = htmlBody.replace('</body>', `${pixel}${unsub}</body>`);
     } else if (htmlBody.includes('</html>')) {
@@ -152,7 +143,7 @@ async function sendCampaignEmail(
         }
     });
 
-    console.log('Campaign email sent successfully');
+    console.log(`✅ Sent to subscriber ID ${subscriberId}: ${to}`);
 }
 
 module.exports = { sendCampaignEmail };

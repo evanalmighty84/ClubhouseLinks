@@ -40,9 +40,9 @@ async function sendEmail(to, subject, html) {
 		// 1) find all campaigns created exactly 7 days ago
 		const { rows: campaigns } = await db.query(
 			`
-      SELECT c.id, c.user_id, c.subject, c.content, u.email AS user_email
-      FROM campaigns c
-      JOIN users     u ON u.id = c.user_id
+				SELECT c.id, c.user_id, c.subject, c.content, c.send_count, u.email AS user_email
+				FROM campaigns c
+				JOIN users u ON u.id = c.user_id
       WHERE c.created_at >= $1
         AND c.created_at < ($1 + interval '1 day')
     `,
@@ -76,7 +76,9 @@ async function sendEmail(to, subject, html) {
 			const total_opened  = parseInt(openRows[0].total_opened  || 0, 10);
 			const total_clicked = parseInt(clickRows[0].total_clicked || 0, 10);
 			// fallback sent estimate
-			const total_sent    = total_opened + 5;
+			const total_sent = parseInt(camp.send_count || 0, 10);
+// or camp.send_count
+
 			const open_rate     = total_sent ? ((total_opened  / total_sent)  * 100).toFixed(2) : 0;
 			const click_rate    = total_sent ? ((total_clicked / total_sent)  * 100).toFixed(2) : 0;
 
