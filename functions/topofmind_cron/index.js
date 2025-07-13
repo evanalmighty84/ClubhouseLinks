@@ -35,7 +35,7 @@ require('dotenv').config();
                 LEFT JOIN email_open_events e ON s.id = e.subscriber_id
                 WHERE s.user_id = $1
                 GROUP BY s.id
-                HAVING MAX(e.opened_at) IS NULL OR MAX(e.opened_at) <= NOW() - INTERVAL '${interval_days} days'
+				HAVING MAX(e.opened_at) <= NOW() - INTERVAL '${interval_days} days'
             `, [user_id]);
 
 			const subscribers = subscribersResult.rows;

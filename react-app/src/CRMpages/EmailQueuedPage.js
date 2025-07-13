@@ -108,8 +108,8 @@ const EmailQueueList = ({ guestMode = false }) => {
 
     const statusTitleMap = {
         all: 'All Emails',
-        pending: 'All Pending Emails',
-        sent: 'All Sent Emails',
+        pending: 'Pending Emails',
+        sent: ' Campaign Sent Emails',
         opened: 'Opened Emails'
     };
 
@@ -139,9 +139,9 @@ const EmailQueueList = ({ guestMode = false }) => {
                         </Dropdown.Toggle>
                         <Dropdown.Menu>
                             <Dropdown.Item eventKey="all">All Emails</Dropdown.Item>
-                            <Dropdown.Item eventKey="pending">All Pending Emails</Dropdown.Item>
-                            <Dropdown.Item eventKey="sent">All Sent Emails</Dropdown.Item>
-                            <Dropdown.Item eventKey="opened">Opened Emails</Dropdown.Item>
+                            <Dropdown.Item eventKey="pending">All Pending Automated Emails</Dropdown.Item>
+                            <Dropdown.Item eventKey="sent">All Campaign Sent Emails</Dropdown.Item>
+                            <Dropdown.Item eventKey="opened">All Opened Emails</Dropdown.Item>
                         </Dropdown.Menu>
                     </Dropdown>
                 </Col>
@@ -199,7 +199,7 @@ const EmailQueueList = ({ guestMode = false }) => {
                         ))}
                     </Pagination>
 
-                    {statusFilter === 'all' && recentEvents.length > 0 && (
+                    {statusFilter === 'opened' && recentEvents.length > 0 && (
                         <>
                             <h4 className="mt-4">Recent Email Opens</h4>
                             <Table striped bordered hover responsive>
