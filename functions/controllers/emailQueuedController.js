@@ -102,7 +102,7 @@ exports.getPendingEmailQueued = async (req, res) => {
     }
 };
 
-const pool = require("../db/db");
+
 
 exports.getAllEmails = async (req, res) => {
     const { userId, page = 1, limit = 10 } = req.body;
