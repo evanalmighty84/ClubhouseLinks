@@ -101,9 +101,6 @@ exports.getPendingEmailQueued = async (req, res) => {
         res.status(500).json({ error: "Failed to fetch pending emails." });
     }
 };
-
-
-
 exports.getAllEmails = async (req, res) => {
     const { userId, page = 1, limit = 10 } = req.body;
 
@@ -168,6 +165,30 @@ exports.getAllEmails = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch combined emails.' });
     }
 };
+exports.deleteEmailById = async (req, res) => {
+    const { id } = req.params;
+
+    if (!id) {
+        return res.status(400).json({ error: 'Email queue ID is required' });
+    }
+
+    try {
+        const result = await pool.query(
+            'DELETE FROM emailqueue WHERE id = $1 RETURNING *',
+            [id]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: 'Email not found' });
+        }
+
+        return res.status(200).json({ message: 'Email deleted successfully', deleted: result.rows[0] });
+    } catch (error) {
+        console.error('Error deleting email queue item:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
 
 
 

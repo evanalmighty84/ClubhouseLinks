@@ -6,6 +6,7 @@ const emailQueuedController = require('../controllers/emailQueuedController');
 router.post('/showEmails', emailQueuedController.getEmailQueued);
 router.post('/pendingEmails', emailQueuedController.getPendingEmailQueued);
 router.post('/campaignsandtemplates', emailQueuedController.getAllEmails);
+router.delete('/delete/:id', emailQueuedController.deleteEmailById);
 
 
 
