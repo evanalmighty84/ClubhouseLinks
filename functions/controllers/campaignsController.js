@@ -413,8 +413,10 @@ exports.getCampaignsByUser = async (req, res) => {
 
 
 
+
+
 exports.getSentCampaignsByUser = async (req, res) => {
-    const userId = req.query.userId || req.body.userId;
+    const userId = req.body.userId || req.query.userId;
 
     if (!userId) {
         return res.status(400).json({ error: 'Missing userId' });
@@ -427,17 +429,15 @@ exports.getSentCampaignsByUser = async (req, res) => {
                 ces.user_id,
                 ces.subscriber_id,
                 ces.campaign_id,
-                ces.send_time,
-                ces.created_at,
+                ces.sent_at,
                 s.name AS subscriber_name,
                 s.email AS subscriber_email,
-                c.subject AS campaign_subject,
-                c.content AS template_preview
+                ces.subject AS campaign_subject,
+                ces.html_preview AS template_preview
             FROM campaign_emails_sent ces
             INNER JOIN subscribers s ON ces.subscriber_id = s.id
-            INNER JOIN campaigns c ON ces.campaign_id = c.id
             WHERE ces.user_id = $1
-            ORDER BY ces.send_time DESC
+            ORDER BY ces.sent_at DESC
         `, [userId]);
 
         res.status(200).json({
@@ -450,6 +450,7 @@ exports.getSentCampaignsByUser = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch sent campaign emails.' });
     }
 };
+
 
 // Sample query to test database connection
 exports.testDatabaseConnection = async (req, res) => {

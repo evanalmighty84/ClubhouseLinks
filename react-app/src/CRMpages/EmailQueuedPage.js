@@ -27,7 +27,7 @@ const EmailQueueList = ({ guestMode = false }) => {
         try {
             if (user) {
                 const parsedUser = JSON.parse(user);
-                if (parsedUser && parsedUser.id) {
+                if (parsedUser?.id) {
                     setUserId(parsedUser.id);
                     fetchEmails(parsedUser.id);
                     if (subscribedToText) fetchSmsQueue(parsedUser.id);
@@ -140,7 +140,9 @@ const EmailQueueList = ({ guestMode = false }) => {
                 </Col>
             </Row>
 
-            {loading ? <p className="text-center">Loading...</p> : (
+            {loading ? (
+                <p className="text-center">Loading...</p>
+            ) : (
                 <>
                     <Table striped bordered hover responsive>
                         <thead>
@@ -157,8 +159,12 @@ const EmailQueueList = ({ guestMode = false }) => {
                             <tr key={email.id}>
                                 <td>{index + 1 + (currentPage - 1) * 10}</td>
                                 <td>{email.subscriber_name}<br /><small>{email.subscriber_email}</small></td>
-                                <td>{new Date(email.send_time).toLocaleString()}</td>
-                                <td>{email.status}</td>
+                                <td>{new Date(email.send_time || email.sent_at).toLocaleString()}</td>
+                                <td>
+                                        <span className={`badge bg-${email.status === 'pending' ? 'warning' : 'success'}`}>
+                                            {email.status || 'sent'}
+                                        </span>
+                                </td>
                                 <td>
                                     <Button variant="primary" size="sm" onClick={() => handlePreview(email.template_preview)}>
                                         Preview
@@ -185,6 +191,32 @@ const EmailQueueList = ({ guestMode = false }) => {
                             </Pagination.Item>
                         ))}
                     </Pagination>
+
+                    {statusFilter === 'all' && recentEvents.length > 0 && (
+                        <>
+                            <h4 className="mt-4">Recent Email Opens</h4>
+                            <Table striped bordered hover responsive>
+                                <thead>
+                                <tr>
+                                    <th>Subscriber</th>
+                                    <th>Email</th>
+                                    <th>Opened At</th>
+                                    <th>Time Period</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {recentEvents.map((event, index) => (
+                                    <tr key={index}>
+                                        <td>{event.name}</td>
+                                        <td>{event.email}</td>
+                                        <td>{new Date(event.opened_at).toLocaleString()}</td>
+                                        <td>{event.time_period}</td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </Table>
+                        </>
+                    )}
                 </>
             )}
 
