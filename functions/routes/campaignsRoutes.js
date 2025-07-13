@@ -17,7 +17,7 @@ router.put('/:campaignId', campaignsController.updateCampaignById); // Add this 
 // Get all campaigns by user ID
 router.get('/user/:userId', campaignsController.getCampaignsByUser);
 
-router.get('/user/sent', campaignsController.getSentCampaignsByUser);
+router.post('/user/sent', campaignsController.getSentCampaignsByUser);
 
 // Get stats for all campaigns by user
 router.get('/stats/:userId', campaignsController.getCampaignStatsByUser);

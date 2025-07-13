@@ -42,16 +42,26 @@ const EmailQueueList = ({ guestMode = false }) => {
     const fetchEmails = async (id) => {
         setLoading(true);
         try {
-            const res = await axios.post('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/emailQueue/showEmails', {
+            let endpoint;
+            if (statusFilter === 'all') {
+                endpoint = '/api/emailQueue/campaignsandtemplates';
+            } else if (statusFilter === 'pending') {
+                endpoint = '/api/emailQueue/pendingEmails';
+            } else {
+                endpoint = '/api/campaigns/user/sent';
+            }
+
+            const res = await axios.post(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function${endpoint}`, {
                 userId: id,
                 status: statusFilter,
                 page: currentPage,
                 limit: 10,
             });
+
             const { emails, totalPages, recentEvents } = res.data;
             setEmails(emails);
-            setRecentEvents(recentEvents);
-            setTotalPages(totalPages);
+            setRecentEvents(recentEvents || []);
+            setTotalPages(totalPages || 1);
         } catch (error) {
             console.error('Error fetching email queue:', error);
         } finally {
@@ -80,15 +90,30 @@ const EmailQueueList = ({ guestMode = false }) => {
         setShowPreview(true);
     };
 
+    const handleRemove = async (id) => {
+        if (!window.confirm('Are you sure you want to remove this from your Email Queue?')) return;
+        try {
+            await axios.delete(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/emailQueue/delete/${id}`);
+            fetchEmails(userId);
+        } catch (error) {
+            console.error('Error removing email:', error);
+        }
+    };
+
     const handleSubscribeToText = () => {
         window.location.href = 'https://checkout.clubhouselinks.com/b/14kaGAaUMe786QgbJ0';
     };
+
+    const statusTitle =
+        statusFilter === 'all' ? 'All Emails' :
+            statusFilter === 'pending' ? 'All Pending Emails' :
+                'All Sent Emails';
 
     return (
         <Container fluid style={{ backgroundColor: 'white' }}>
             <Row>
                 <Col>
-                    <h3 style={{ textAlign: 'center', color: 'rgb(255, 112, 67)' }}>Email Queue</h3>
+                    <h3 style={{ textAlign: 'center', color: 'rgb(255, 112, 67)' }}>{statusTitle}</h3>
                 </Col>
             </Row>
 
@@ -100,12 +125,11 @@ const EmailQueueList = ({ guestMode = false }) => {
                 </Row>
             )}
 
-            {/* ---------------- EMAIL ---------------- */}
             <Row className="justify-content-center mb-3">
                 <Col xs={12} sm={8} md={6}>
                     <Dropdown onSelect={handleStatusChange}>
                         <Dropdown.Toggle variant="secondary" className="w-100">
-                            {statusFilter === 'all' ? 'All Emails' : `${statusFilter} Emails`}
+                            {statusTitle}
                         </Dropdown.Toggle>
                         <Dropdown.Menu>
                             <Dropdown.Item eventKey="all">All Emails</Dropdown.Item>
@@ -137,85 +161,18 @@ const EmailQueueList = ({ guestMode = false }) => {
                                 <td>{email.status}</td>
                                 <td>
                                     <Button variant="primary" size="sm" onClick={() => handlePreview(email.template_preview)}>
-                                        Preview Template
+                                        Preview
                                     </Button>
+                                    {email.status === 'pending' && (
+                                        <Button variant="danger" size="sm" onClick={() => handleRemove(email.id)} className="ms-2">
+                                            Remove
+                                        </Button>
+                                    )}
                                 </td>
                             </tr>
                         ))}
                         </tbody>
                     </Table>
-
-                    <h4 className="mt-4">Recent Email Opens</h4>
-                    <Table striped bordered hover responsive>
-                        <thead>
-                        <tr>
-                            <th>Subscriber</th>
-                            <th>Email</th>
-                            <th>Opened At</th>
-                            <th>Time Period</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {recentEvents.map((event, index) => (
-                            <tr key={index}>
-                                <td>{event.name}</td>
-                                <td>{event.email}</td>
-                                <td>{new Date(event.opened_at).toLocaleString()}</td>
-                                <td>{event.time_period}</td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </Table>
-
-                    {/* ---------------- SMS ---------------- */}
-                    {subscribedToText && (
-                        <>
-                            <Row>
-                                <Col>
-                                    <h3 style={{ textAlign: 'center', color: 'rgb(255, 112, 67)' }}>SMS Queue</h3>
-                                </Col>
-                            </Row>
-                            <Row className="mb-3 justify-content-center">
-                                <Col xs={12} sm={8} md={6}>
-                                    <Dropdown onSelect={handleSmsStatusChange}>
-                                        <Dropdown.Toggle variant="secondary" className="w-100">
-                                            {smsStatusFilter.charAt(0).toUpperCase() + smsStatusFilter.slice(1)} Texts
-                                        </Dropdown.Toggle>
-                                        <Dropdown.Menu>
-                                            <Dropdown.Item eventKey="pending">Pending</Dropdown.Item>
-                                            <Dropdown.Item eventKey="sent">Sent</Dropdown.Item>
-                                            <Dropdown.Item eventKey="all">All</Dropdown.Item>
-                                        </Dropdown.Menu>
-                                    </Dropdown>
-                                </Col>
-                            </Row>
-
-                            <Table striped bordered hover responsive>
-                                <thead>
-                                <tr>
-                                    <th>Subscriber ID</th>
-                                    <th>Subscriber Name</th>
-                                    <th>Message</th>
-                                    <th>Scheduled Time</th>
-                                    <th>Status</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {smsQueue
-                                    .filter(sms => smsStatusFilter === 'all' || sms.status === smsStatusFilter)
-                                    .map((sms) => (
-                                        <tr key={sms.id}>
-                                            <td>{sms.subscriber_id}</td>
-                                            <td>{sms.subscriber_name || 'Unknown'}</td>
-                                            <td>{sms.message}</td>
-                                            <td>{new Date(sms.scheduled_time).toLocaleString()}</td>
-                                            <td>{sms.status}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </Table>
-                        </>
-                    )}
 
                     <Pagination className="justify-content-center">
                         {[...Array(totalPages).keys()].map((page) => (
