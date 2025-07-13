@@ -102,41 +102,73 @@ exports.getPendingEmailQueued = async (req, res) => {
     }
 };
 
+const pool = require("../db/db");
+
 exports.getAllEmails = async (req, res) => {
-    const { userId } = req.body;
+    const { userId, page = 1, limit = 10 } = req.body;
+
+    if (!userId) {
+        return res.status(400).json({ error: 'Missing userId' });
+    }
 
     try {
-        const queuedResult = await pool.query(`
+        const offset = (page - 1) * limit;
+
+        // Query queued emails
+        const queuedEmailsQuery = `
             SELECT 
-                eq.id, eq.user_id, eq.subscriber_id, eq.template_id, eq.send_time, eq.status, eq.created_at, eq.updated_at,
+                eq.id,
+                eq.user_id,
+                eq.subscriber_id,
+                eq.send_time,
+                eq.status,
                 t.content AS template_preview,
-                s.email AS subscriber_email, s.name AS subscriber_name
+                s.email AS subscriber_email,
+                s.name AS subscriber_name
             FROM EmailQueue eq
             INNER JOIN templates t ON eq.template_id = t.id
             INNER JOIN subscribers s ON eq.subscriber_id = s.id
             WHERE eq.user_id = $1
-        `, [userId]);
+        `;
 
-        const sentResult = await pool.query(`
+        const queuedEmailsResult = await pool.query(queuedEmailsQuery, [userId]);
+
+        // Query sent campaign emails
+        const sentEmailsQuery = `
             SELECT 
-                ces.id, ces.user_id, ces.subscriber_id, ces.campaign_id, ces.send_time, 'sent' AS status, ces.created_at, ces.updated_at,
-                c.content AS template_preview,
-                s.email AS subscriber_email, s.name AS subscriber_name
+                ces.id,
+                ces.user_id,
+                ces.subscriber_id,
+                ces.sent_at,
+                'sent' AS status,
+                ces.html_preview AS template_preview,
+                s.email AS subscriber_email,
+                s.name AS subscriber_name
             FROM campaign_emails_sent ces
-            INNER JOIN campaigns c ON ces.campaign_id = c.id
             INNER JOIN subscribers s ON ces.subscriber_id = s.id
             WHERE ces.user_id = $1
-        `, [userId]);
+        `;
 
-        const emails = [...queuedResult.rows, ...sentResult.rows];
-        emails.sort((a, b) => new Date(b.send_time) - new Date(a.send_time));
+        const sentEmailsResult = await pool.query(sentEmailsQuery, [userId]);
 
-        res.status(200).json({ emails });
+        // Merge and sort all emails
+        const combined = [...queuedEmailsResult.rows, ...sentEmailsResult.rows];
+        combined.sort((a, b) => new Date(b.send_time || b.sent_at) - new Date(a.send_time || a.sent_at));
+
+        const paginated = combined.slice(offset, offset + limit);
+
+        res.status(200).json({
+            emails: paginated,
+            totalCount: combined.length,
+            totalPages: Math.ceil(combined.length / limit),
+            currentPage: page,
+        });
     } catch (error) {
-        console.error("Error fetching all emails:", error);
-        res.status(500).json({ error: "Failed to fetch all emails." });
+        console.error('Error fetching all emails:', error);
+        res.status(500).json({ error: 'Failed to fetch combined emails.' });
     }
 };
+
 
 
 

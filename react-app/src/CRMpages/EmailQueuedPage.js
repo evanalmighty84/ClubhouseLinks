@@ -47,8 +47,10 @@ const EmailQueueList = ({ guestMode = false }) => {
                 endpoint = '/api/emailQueue/campaignsandtemplates';
             } else if (statusFilter === 'pending') {
                 endpoint = '/api/emailQueue/pendingEmails';
-            } else {
+            } else if (statusFilter === 'sent') {
                 endpoint = '/api/campaigns/user/sent';
+            } else if (statusFilter === 'opened') {
+                endpoint = '/api/emailQueue/showEmails';
             }
 
             const res = await axios.post(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function${endpoint}`, {
@@ -104,10 +106,14 @@ const EmailQueueList = ({ guestMode = false }) => {
         window.location.href = 'https://checkout.clubhouselinks.com/b/14kaGAaUMe786QgbJ0';
     };
 
-    const statusTitle =
-        statusFilter === 'all' ? 'All Emails' :
-            statusFilter === 'pending' ? 'All Pending Emails' :
-                'All Sent Emails';
+    const statusTitleMap = {
+        all: 'All Emails',
+        pending: 'All Pending Emails',
+        sent: 'All Sent Emails',
+        opened: 'Opened Emails'
+    };
+
+    const statusTitle = statusTitleMap[statusFilter] || 'Email Queue';
 
     return (
         <Container fluid style={{ backgroundColor: 'white' }}>
@@ -135,6 +141,7 @@ const EmailQueueList = ({ guestMode = false }) => {
                             <Dropdown.Item eventKey="all">All Emails</Dropdown.Item>
                             <Dropdown.Item eventKey="pending">All Pending Emails</Dropdown.Item>
                             <Dropdown.Item eventKey="sent">All Sent Emails</Dropdown.Item>
+                            <Dropdown.Item eventKey="opened">Opened Emails</Dropdown.Item>
                         </Dropdown.Menu>
                     </Dropdown>
                 </Col>
@@ -159,11 +166,11 @@ const EmailQueueList = ({ guestMode = false }) => {
                             <tr key={email.id}>
                                 <td>{index + 1 + (currentPage - 1) * 10}</td>
                                 <td>{email.subscriber_name}<br /><small>{email.subscriber_email}</small></td>
-                                <td>{new Date(email.send_time || email.sent_at).toLocaleString()}</td>
+                                <td>{new Date(email.send_time || email.sent_at || email.opened_at).toLocaleString()}</td>
                                 <td>
-                                        <span className={`badge bg-${email.status === 'pending' ? 'warning' : 'success'}`}>
-                                            {email.status || 'sent'}
-                                        </span>
+                                    <span className={`badge bg-${email.status === 'pending' ? 'warning' : 'success'}`}>
+                                        {email.status || 'sent'}
+                                    </span>
                                 </td>
                                 <td>
                                     <Button variant="primary" size="sm" onClick={() => handlePreview(email.template_preview)}>
