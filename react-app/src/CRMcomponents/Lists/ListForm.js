@@ -56,6 +56,15 @@ const ListForm = ({ initialList, onSaveSuccess, userId }) => {
         );
     };
 
+    // Handle Select All
+    const handleSelectAll = () => {
+        if (selectedSubscriberIds.length === filteredSubscribers.length) {
+            setSelectedSubscriberIds([]); // Deselect all if all are selected
+        } else {
+            setSelectedSubscriberIds(filteredSubscribers.map((subscriber) => subscriber.id)); // Select all
+        }
+    };
+
     // Filter subscribers based on search query
     const filteredSubscribers = allSubscribers.filter(
         (subscriber) =>
@@ -86,6 +95,11 @@ const ListForm = ({ initialList, onSaveSuccess, userId }) => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
             </Form.Group>
+
+            {/* Select All Button */}
+            <Button variant="secondary" className="mt-3" onClick={handleSelectAll}>
+                {selectedSubscriberIds.length === filteredSubscribers.length ? 'Deselect All' : 'Select All'}
+            </Button>
 
             {/* Subscribers List with Checkboxes */}
             <Form.Group controlId="listSubscribers" className="mt-3">

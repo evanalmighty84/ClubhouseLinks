@@ -4,6 +4,7 @@ const { getUserSMTPSettings } = require('./smtp');
 const { decryptPassword } = require('./encryption');
 const axios = require('axios');
 const path = require('path');
+const pool = require('./../db/db'); // Adjusted path
 require('dotenv').config();
 
 // --- TRANSPORTER CACHE (one per user) ---
