@@ -8,3 +8,8 @@ libxfixes3
 libxrandr2
 libgbm1
 libasound2t64
+libnss3
+libxshmfence1
+libx11-xcb1
+libdrm2
+libxext6
