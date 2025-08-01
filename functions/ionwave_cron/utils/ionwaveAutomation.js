@@ -10,38 +10,45 @@ const runIonWaveAutomation = async () => {
     await page.goto('https://supplier.ionwave.net/', { waitUntil: 'networkidle' });
     console.log('✅ Loaded login page');
 
-    await page.waitForSelector('#txtUserName');
     await page.fill('#txtUserName', process.env.IONWAVE_USERNAME);
-
-    await page.waitForSelector('#txtPassword');
     await page.fill('#txtPassword', process.env.IONWAVE_PASSWORD);
-
     console.log('🔐 Credentials entered');
 
     await page.click('#btnLogin');
     await page.waitForSelector('text=My Bid Invitations', { timeout: 10000 });
     console.log('✅ Logged in successfully');
 
-    const clicked = await page.evaluate(() => {
-        const bids = Array.from(document.querySelectorAll('div')).find(div =>
-            div.textContent.includes('My Bid Invitations')
-        );
-        if (bids) {
-            bids.click();
-            return true;
-        }
-        return false;
+    const bidLink = await page.$eval('a:has-text("My Bid Invitations")', el => el.href);
+    console.log(`📨 Found "My Bid Invitations" link, navigating to: ${bidLink}`);
+    await page.goto(bidLink, { waitUntil: 'networkidle' });
+    console.log('📥 Navigated to My Bid Invitations');
+
+    // Wait for the bids table
+    await page.waitForSelector('table');
+
+    // Extract structured data
+    const bids = await page.$$eval('table tbody tr', rows => {
+        return rows.map(row => {
+            const cells = Array.from(row.querySelectorAll('td'));
+            if (cells.length < 8) return null;
+            return {
+                agency: cells[0].innerText.trim(),
+                bidNumber: cells[1].innerText.trim(),
+                title: cells[2].innerText.trim(),
+                issueDate: cells[3].innerText.trim(),
+                closeDate: cells[4].innerText.trim(),
+                timeLeft: cells[5].innerText.trim(),
+                bidStatus: cells[6].innerText.trim(),
+                responseStatus: cells[7].innerText.trim(),
+            };
+        }).filter(Boolean);
     });
-
-    console.log(clicked ? '📨 Clicked "My Bid Invitations"' : '⚠️ Could not find "My Bid Invitations" button');
-
-    await page.waitForSelector('#divPageMain', { timeout: 10000 });
-    const pageMainHTML = await page.$eval('#divPageMain', el => el.innerHTML);
 
     await browser.close();
     console.log('🧼 Browser closed, job completed successfully');
+    console.log('✅ Parsed Bids:', bids.length);
 
-    return pageMainHTML;
+    return bids;
 };
 
 module.exports = runIonWaveAutomation;

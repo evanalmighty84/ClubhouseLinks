@@ -1,41 +1,38 @@
 import React, { useEffect, useState } from 'react';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const RFPBids = () => {
-    const [bidHtml, setBidHtml] = useState('');
+    const [bids, setBids] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [fallback, setFallback] = useState(false);
 
-    const staticHtml = `
-        <div style="background:#fff; border:1px solid #ccc; border-radius:8px; padding:1rem;">
-            <h4 style="margin-bottom:1rem;">RFP Bids</h4>
-            <div style="display:flex; gap:1rem; flex-wrap:wrap;">
-                <div style="flex:1; min-width:200px; background:#ffdddd; padding:1rem; border-radius:6px;">
-                    <strong style="color:#d80028;">Bids Closing Soon</strong>
-                    <p style="margin:.25rem 0;"><strong>9</strong> active bids</p>
-                    <a href="#" target="_blank" style="color:#d80028;">View &gt;</a>
-                </div>
-                <div style="flex:1; min-width:200px; background:#aaa; padding:1rem; border-radius:6px; color:white;">
-                    <strong>My Bid Invitations</strong>
-                    <p style="margin:.25rem 0;"><strong>24</strong> invitations</p>
-                    <a href="#" target="_blank" style="color:white;">View &gt;</a>
-                </div>
-                <div style="flex:1; min-width:200px; background:#aaa; padding:1rem; border-radius:6px; color:white;">
-                    <strong>Recent Responses</strong>
-                    <p style="margin:.25rem 0;"><strong>1</strong> submitted</p>
-                    <a href="#" target="_blank" style="color:white;">View &gt;</a>
-                </div>
-            </div>
-        </div>
-    `;
+    const fallbackBid = {
+        title: "Annual Contract for Voter Registration Certificate Cards",
+        agency: "Tarrant County, TX",
+        bidNumber: "F2025197",
+        issueDate: "7/3/2025",
+        closeDate: "7/31/2025 02:00 PM (CT)",
+        timeLeft: "5 Mins",
+        status: "Issued",
+        response: "No Response"
+    };
 
     useEffect(() => {
         const fetchBids = async () => {
             try {
-                const res = await fetch('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/ionwave/bids');
+                const res = await fetch('http://localhost:5000/server/crm_function/api/ionwave/bids'); // ✅ LOCAL
                 const data = await res.json();
-                setBidHtml(data.html || staticHtml);
+
+                if (data.success && data.bids.length > 0) {
+                    setBids(data.bids);
+                } else {
+                    setBids([fallbackBid]);
+                    setFallback(true);
+                }
             } catch (err) {
-                console.warn('Fetch failed, using fallback HTML.');
-                setBidHtml(staticHtml);
+                console.error("Fetch error:", err);
+                setBids([fallbackBid]);
+                setFallback(true);
             } finally {
                 setLoading(false);
             }
@@ -44,14 +41,39 @@ const RFPBids = () => {
         fetchBids();
     }, []);
 
-    if (loading) return <p>Loading bid invitations...</p>;
+    if (loading) return <div className="text-center my-4">Loading bid invitations...</div>;
 
     return (
-        <div style={{ padding: '1rem' }}>
-            <h2>IonWave Bids</h2>
-            <div
-                dangerouslySetInnerHTML={{ __html: bidHtml }}
-            />
+        <div className="container my-4">
+            <h2 className="mb-4">IonWave Bids</h2>
+
+            {fallback && (
+                <div className="alert alert-warning" role="alert">
+                    ⚠️ Displaying fallback data. Live data could not be fetched.
+                </div>
+            )}
+
+            <div className="row">
+                {bids.map((bid, index) => (
+                    <div key={index} className="col-md-6 col-lg-4 mb-4">
+                        <div className="card shadow-sm h-100">
+                            <div className="card-body">
+                                <h5 className="card-title">{bid.title}</h5>
+                                <ul className="list-unstyled small mb-0">
+                                    <li><strong>Agency:</strong> {bid.agency}</li>
+                                    <li><strong>Bid #:</strong> {bid.bidNumber}</li>
+                                    <li><strong>Project Name:</strong> {bid.projectName || '—'}</li>
+                                    <li><strong>Issue Date:</strong> {bid.issueDate}</li>
+                                    <li><strong>Close Date:</strong> {bid.closeDate}</li>
+                                    <li><strong>Time Left:</strong> {bid.timeLeft}</li>
+                                    <li><strong>Status:</strong> {bid.status}</li>
+                                    <li><strong>Response:</strong> {bid.response}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 };

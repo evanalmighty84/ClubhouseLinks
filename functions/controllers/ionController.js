@@ -1,24 +1,15 @@
 const runIonWaveAutomation = require('../ionwave_cron/utils/ionwaveAutomation');
-const cheerio = require('cheerio');
+
 exports.getIonWaveBids = async (req, res) => {
     try {
-        const html = await runIonWaveAutomation();
-        const $ = cheerio.load(html);
+        // Directly returns structured bid data now
+        const bids = await runIonWaveAutomation();
 
-        const bids = [];
+        console.log(`✅ Controller received ${bids.length} bids`);
 
-        $('.vendorHomeTile_Container').each((i, el) => {
-            const count = $(el).find('.vendorHomeTile_Count').text().trim();
-            const title = $(el).find('.vendorHomeTile_Title').text().trim();
-            const link = $(el).closest('a').attr('href');
-
-            bids.push({ count, title, link });
-        });
-
-        res.status(200).json({ bids });
+        res.status(200).json({ success: true, bids });
     } catch (err) {
         console.error('❌ Failed to get IonWave bids:', err.message);
-        res.status(500).send({ error: 'Failed to fetch IonWave bid data' });
+        res.status(500).json({ success: false, error: err.message });
     }
 };
-
