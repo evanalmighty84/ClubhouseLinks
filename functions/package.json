@@ -11,7 +11,7 @@
 		"sendemail-cron": "node sendemail_cron/index.js",
 		"ionwave-cron": "node ionwave_cron/index.js",
 		"outlookcleaner_cron": "node outlookcleaner_cron/index.js",
-		"postinstall": ""
+		"postinstall": "npx playwright install --with-deps"
 	},
 	"engines": {
 		"node": "20.x",
