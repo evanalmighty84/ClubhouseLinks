@@ -5,7 +5,7 @@ const runIonWaveAutomation = require('./utils/ionwaveAutomation');
     try {
         await runIonWaveAutomation();
     } catch (err) {
-        console.error('❌ IonWave automation job failed:', err);
+        console.error('❌ IonWave automation job failed :(:', err);
         process.exit(1);
     }
 })();
