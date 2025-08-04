@@ -25,6 +25,22 @@ const runIonWaveAutomation = async () => {
 
     // Wait for the bids table
     await page.waitForSelector('table');
+    function calculateTimeLeft(closeDateStr) {
+        const trimmed = closeDateStr.replace(' (CT)', '');
+        const parsedDate = new Date(`${trimmed} UTC-5`); // Interpret as Central Time
+
+        const now = new Date();
+        const diffMs = parsedDate - now;
+
+        if (diffMs <= 0) return 'Expired';
+
+        const diffMins = Math.floor(diffMs / 1000 / 60);
+        const days = Math.floor(diffMins / 1440);
+        const hours = Math.floor((diffMins % 1440) / 60);
+        const minutes = diffMins % 60;
+
+        return `${days}d ${hours}h ${minutes}m`;
+    }
 
     // Extract structured data
     const bids = await page.$$eval('table tbody tr', rows => {
@@ -37,7 +53,8 @@ const runIonWaveAutomation = async () => {
                 agency: cells[2].innerText.trim(),        // Was title
                 projectName: cells[3].innerText.trim(),   // Was issue date
                 issueDate: cells[4].innerText.trim(),     // Was close date
-                timeLeft: cells[5].innerText.trim(),      // Correct
+                closeDate: cells[5].innerText.trim(),
+                timeLeft: calculateTimeLeft(cells[5].innerText.trim()), // Correct
                 bidStatus: cells[6].innerText.trim(),     // Correct
                 responseStatus: cells[7].innerText.trim() // Correct
             };
