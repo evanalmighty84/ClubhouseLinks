@@ -32,15 +32,16 @@ const runIonWaveAutomation = async () => {
             const cells = Array.from(row.querySelectorAll('td'));
             if (cells.length < 8) return null;
             return {
-                agency: cells[0].innerText.trim(),
-                bidNumber: cells[1].innerText.trim(),
-                title: cells[2].innerText.trim(),
-                issueDate: cells[3].innerText.trim(),
-                closeDate: cells[4].innerText.trim(),
-                timeLeft: cells[5].innerText.trim(),
-                bidStatus: cells[6].innerText.trim(),
-                responseStatus: cells[7].innerText.trim(),
+                title: cells[0].innerText.trim(),         // Was agency
+                bidNumber: cells[1].innerText.trim(),     // Was bid #
+                agency: cells[2].innerText.trim(),        // Was title
+                projectName: cells[3].innerText.trim(),   // Was issue date
+                issueDate: cells[4].innerText.trim(),     // Was close date
+                timeLeft: cells[5].innerText.trim(),      // Correct
+                bidStatus: cells[6].innerText.trim(),     // Correct
+                responseStatus: cells[7].innerText.trim() // Correct
             };
+
         }).filter(Boolean);
     });
 
