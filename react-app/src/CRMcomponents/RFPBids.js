@@ -20,7 +20,7 @@ const RFPBids = () => {
     useEffect(() => {
         const fetchBids = async () => {
             try {
-                const res = await fetch('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/ionwave/bids'); // ✅ LOCAL
+                const res = await fetch('https://upbeat-spontaneity-production.up.railway.app/server/crm_function/api/ionwave/bids'); // ✅ LOCAL
                 const data = await res.json();
 
                 if (data.success && data.bids.length > 0) {
