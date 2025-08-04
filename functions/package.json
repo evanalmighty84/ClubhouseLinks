@@ -4,7 +4,7 @@
 	"main": "index.js",
 	"author": "evanligon7@gmail.com",
 	"scripts": {
-		"start": "node ionwave_cron/index.js",
+		"start": "node server.js",
 		"hotlist-cron": "node hotlist_cron/index.js",
 		"warmlist-cron": "node warmlist_cron/index.js",
 		"topofmind-cron": "node topofmind_cron/index.js",
