@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 
 // Routes
 const ionRoutes = require('./routes/ionRoutes');
+const nextDoorRoutes = require('./routes/nextDoorRoutes');
 const campaignsRoutes = require('./routes/campaignsRoutes');
 const authRoutes = require('./routes/authRoutes');
 const listRoutes = require('./routes/listRoutes'); // Import list routes
@@ -89,6 +90,11 @@ app.use('/api/workflow', workflowRoutes);
 
 app.use('/api/ionwave', ionRoutes);
 
+app.use('/api/nextdoor', nextDoorRoutes);
+
+app.use('/api/test', (req, res) => {
+    res.send('✅ CRM app is responding');
+});
 
 
 // Export the app module for Zoho Catalyst to handle the server initialization

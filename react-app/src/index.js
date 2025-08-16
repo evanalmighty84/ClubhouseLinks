@@ -123,7 +123,8 @@ const ConditionalHeader = () => {
         "/lists",
         "/emailqueued",
         "/lists/new",
-        "/settings"
+        "/settings",
+        "/leads",
     ];
     const shouldHideHeader = hideHeaderRoutes.includes(location.pathname);
     const showTopBar = showTopBarRoutes.some(route =>
