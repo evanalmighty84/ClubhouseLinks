@@ -4,6 +4,8 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import '../CRMstyles/Settings.css'; // Custom styles
 
+const API_BASE = 'https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api';
+
 const Settings = () => {
     const [smtpSettings, setSmtpSettings] = useState({
         smtp_host: '',
@@ -15,25 +17,59 @@ const Settings = () => {
 
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
-    const [industry, setIndustry] = useState('');
+
+    // NEW: industries state
+    const [industryOptions, setIndustryOptions] = useState([]);
+    const [selectedIndustries, setSelectedIndustries] = useState([]);
 
     const userId = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).id : null;
 
     useEffect(() => {
         if (userId) {
             fetchSmtpSettings(userId);
+            fetchIndustryOptions().then(() => preloadUserIndustries(userId))
+            // (Optional) if you add GET /users/:id/industries, preload selections here.
         }
     }, [userId]);
 
     const fetchSmtpSettings = async (userId) => {
         try {
-            const response = await axios.get(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/smtp/smtp-settings/${userId}`);
+            const response = await axios.get(
+                `https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/smtp/smtp-settings/${userId}`
+            );
             if (response.data) {
                 setSmtpSettings(response.data);
             }
         } catch (error) {
             console.error('Error fetching SMTP settings:', error);
             toast.error('Failed to load SMTP settings');
+        }
+    };
+
+    // NEW: fetch industry options from backend (GET)
+    const fetchIndustryOptions = async () => {
+        try {
+            const res = await axios.get(`${API_BASE}/users/industries`);
+            setIndustryOptions(res.data?.industries || []);
+        } catch (e) {
+            console.error('Error fetching industries:', e);
+            toast.error('Failed to load industries');
+        }
+    };
+    const preloadUserIndustries = async (id) => {
+        try {
+            const res = await axios.get(`${API_BASE}/users/${id}/industries`);
+            const saved = res.data?.userIndustriesArrayNormalized || res.data?.userIndustriesArrayRaw || [];
+            setSelectedIndustries(saved);
+
+            // If user has legacy values not in options, include them so they render checked
+            setIndustryOptions((opts) => Array.from(new Set([...(opts || []), ...saved])));
+        } catch (e) {
+            // it's okay if user has none yet
+            if (e?.response?.status !== 404) {
+                console.error('Error preloading user industries:', e);
+                toast.error('Failed to preload industries');
+            }
         }
     };
 
@@ -54,10 +90,13 @@ const Settings = () => {
     const handleSmtpSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/smtp/smtp-settings', {
-                ...smtpSettings,
-                userId,
-            });
+            await axios.post(
+                'https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/smtp/smtp-settings',
+                {
+                    ...smtpSettings,
+                    userId,
+                }
+            );
             toast.success('SMTP settings saved successfully!');
         } catch (error) {
             console.error('Error saving SMTP settings:', error);
@@ -65,14 +104,15 @@ const Settings = () => {
         }
     };
 
+    // Password submit (unchanged logic)
     const handlePasswordSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/users/update-settings', {
+            await axios.post(`${API_BASE}/users/update-settings`, {
                 userId,
                 currentPassword,
                 newPassword,
-                industry // optional if you want to allow updating the industry
+                // no industries here; industries live in their own tab now
             });
             toast.success('Password updated successfully!');
             setCurrentPassword('');
@@ -80,6 +120,40 @@ const Settings = () => {
         } catch (error) {
             console.error('Error updating password:', error);
             toast.error('Failed to update password');
+        }
+    };
+
+    // NEW: industries handlers + submit
+    const allSelected =
+        industryOptions.length > 0 && selectedIndustries.length === industryOptions.length;
+
+    const handleIndustryToggle = (value) => {
+        setSelectedIndustries((prev) =>
+            prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+        );
+    };
+
+    const handleSelectAllIndustries = (e) => {
+        if (e.target.checked) setSelectedIndustries(industryOptions);
+        else setSelectedIndustries([]);
+    };
+
+    const handleIndustrySubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const { data } = await axios.post(`${API_BASE}/users/update-settings`, {
+                userId,
+                industries: selectedIndustries, // industries-only; backend conditionally updates without password
+            });
+            // reflect canonical/normalized values if backend returns them
+            if (Array.isArray(data?.userIndustriesArrayNormalized)) {
+                setSelectedIndustries(data.userIndustriesArrayNormalized);
+            }
+            toast.success('Industries updated successfully!');
+        } catch (error) {
+            console.error('Error updating industries:', error);
+            const msg = error?.response?.data?.error || error?.message || 'Failed to update industries';
+            toast.error(msg);
         }
     };
 
@@ -99,27 +173,33 @@ const Settings = () => {
                             <Nav.Item>
                                 <Nav.Link eventKey="form">Update SMTP Settings</Nav.Link>
                             </Nav.Item>
+                            {/* NEW tab */}
+                            <Nav.Item>
+                                <Nav.Link eventKey="industries">Update Industries</Nav.Link>
+                            </Nav.Item>
                             <Nav.Item>
                                 <Nav.Link eventKey="password">User Password Settings</Nav.Link>
                             </Nav.Item>
                         </Nav>
                     </Col>
+
                     <Col sm={9}>
                         <Tab.Content>
                             <Tab.Pane eventKey="overview">
                                 <Card className="p-3">
                                     <h4>Why Update SMTP Settings?</h4>
                                     <p>
-                                        By updating your SMTP settings, you can send emails from your personalized or company email address, ensuring better recognition and trust among your clients.
+                                        By updating your SMTP settings, you can send emails from your personalized or company email
+                                        address, ensuring better recognition and trust among your clients.
                                     </p>
+                                    <p>If you don't update, emails will be sent from the default "Clubhouse Links" email address.</p>
                                     <p>
-                                        If you don't update, emails will be sent from the default "Clubhouse Links" email address.
-                                    </p>
-                                    <p>
-                                        Services like Gmail, Apple, Outlook, and Yahoo allow app-specific passwords for added security. Follow the setup instructions in the next tab.
+                                        Services like Gmail, Apple, Outlook, and Yahoo allow app-specific passwords for added security.
+                                        Follow the setup instructions in the next tab.
                                     </p>
                                 </Card>
                             </Tab.Pane>
+
                             <Tab.Pane eventKey="setup">
                                 <Card className="p-3">
                                     <h4>Setup Instructions</h4>
@@ -142,6 +222,7 @@ const Settings = () => {
                                     </ol>
                                 </Card>
                             </Tab.Pane>
+
                             <Tab.Pane eventKey="form">
                                 <Form onSubmit={handleSmtpSubmit}>
                                     <Row>
@@ -218,7 +299,43 @@ const Settings = () => {
                                 </Form>
                             </Tab.Pane>
 
-                            {/* --------- User Password Settings Tab --------- */}
+                            {/* NEW: industries-only tab */}
+                            <Tab.Pane eventKey="industries">
+                                <Card className="p-3">
+                                    <h4>Update Industries</h4>
+                                    <div className="mt-2 mb-3">
+                                        <h5 className="mb-2">Select Your Industries (choose all that apply)</h5>
+                                        <Form.Check
+                                            type="checkbox"
+                                            id="industries-select-all"
+                                            label="Select All"
+                                            checked={allSelected}
+                                            onChange={handleSelectAllIndustries}
+                                            className="mb-2"
+                                        />
+                                        <Form onSubmit={handleIndustrySubmit}>
+                                            <div className="industry-grid mb-3">
+                                                {industryOptions.map((ind) => (
+                                                    <Form.Check
+                                                        key={ind}
+                                                        type="checkbox"
+                                                        id={`industry-${ind}`}
+                                                        label={ind}
+                                                        checked={selectedIndustries.includes(ind)}
+                                                        onChange={() => handleIndustryToggle(ind)}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <Button className="mt-1" variant="primary" type="submit">
+                                                Save Industries
+                                            </Button>
+                                        </Form>
+
+                                    </div>
+                                </Card>
+                            </Tab.Pane>
+
+                            {/* Password tab unchanged */}
                             <Tab.Pane eventKey="password">
                                 <Card className="p-3">
                                     <h4>Change Password</h4>

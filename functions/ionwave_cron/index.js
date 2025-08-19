@@ -1,7 +1,8 @@
 require('dotenv').config();
 const { chromium } = require('playwright');
 const runIonWaveAutomation = require('./utils/ionwaveAutomation');
-const runAutomation = require('./utils/nextdoorAutomation');
+const runAutomation = require('./utils/recent/nextdoorAutomationPlano');
+const { runMelissaAutomation }= require('./utils/melissaLookup');
 
 (async () => {
     try {
@@ -11,8 +12,11 @@ const runAutomation = require('./utils/nextdoorAutomation');
 /*        console.log('\n📩 Running IonWave Automation...');
         await runIonWaveAutomation();*/
 
-        console.log('\n🏘️ Running Nextdoor Automation...');
+      console.log('\n🏘️ Running Nextdoor Automation...');
         await runAutomation();
+
+/*        console.log('running Melissa Automation')
+        await runMelissaAutomation();*/
 
         console.log('\n✅ All automations completed');
     } catch (err) {

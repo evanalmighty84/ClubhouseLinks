@@ -8,3 +8,17 @@
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
+.industry-list {
+    display: flex;
+    flex-direction: column; /* stack vertically */
+    align-items: flex-start; /* left align checkboxes + labels */
+    gap: 6px; /* add spacing between options */
+}
+.industry-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px 20px;
+    justify-items: start; /* make checkboxes hug the left side */
+}
+
+

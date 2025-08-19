@@ -1,35 +1,50 @@
 const pool = require('../db/db');
 
+// controllers/nextdoor.js
 exports.getNextDoorLeads = async (req, res) => {
     const { userId } = req.params;
 
     try {
-        // Step 1: Get user's industries
+        // 1) User industries
         const userResult = await pool.query(
             'SELECT industry FROM users WHERE id = $1',
             [userId]
         );
-
         const industryArray = userResult.rows[0]?.industry;
 
         if (!Array.isArray(industryArray) || industryArray.length === 0) {
             console.log('⚠️ No industries found for user:', userId);
-            return res.json([]);
+            return res.json({ hot: [], warm: [] });
         }
 
-        // Normalize input to lowercase to match `lead_type`
-        const normalizedIndustries = industryArray.map(ind => ind.toLowerCase());
+        const normalizedIndustries = industryArray.map((s) => String(s).toLowerCase());
 
-        // Step 2: Query matching messages
-        const leadsResult = await pool.query(
-            `SELECT * FROM nextdoor_messages WHERE LOWER(lead_type) = ANY($1)`,
-            [normalizedIndustries]
-        );
+        // 2) HOT: everything in recent_nextdoor_messages for those industries
+        const hotSql = `
+      SELECT rnm.*
+      FROM recent_nextdoor_messages rnm
+      WHERE LOWER(rnm.lead_type) = ANY($1)
+      ORDER BY COALESCE(rnm.message_sent_at, NOW() - INTERVAL '100 years') DESC, rnm.id DESC
+    `;
+        const { rows: hot } = await pool.query(hotSql, [normalizedIndustries]);
 
-        console.log(`✅ Found ${leadsResult.rows.length} matching leads`);
-        res.json(leadsResult.rows);
+        // 3) WARM: from nextdoor_messages, excluding any still present in recent_nextdoor_messages
+        const warmSql = `
+      SELECT nm.*
+      FROM nextdoor_messages nm
+      LEFT JOIN recent_nextdoor_messages rnm
+        ON rnm.post_url = nm.post_url
+      WHERE LOWER(nm.lead_type) = ANY($1)
+        AND rnm.post_url IS NULL
+      ORDER BY COALESCE(nm.message_sent_at, NOW() - INTERVAL '100 years') DESC, nm.id DESC
+    `;
+        const { rows: warm } = await pool.query(warmSql, [normalizedIndustries]);
+
+        console.log(`✅ Found ${hot.length} hot and ${warm.length} warm leads`);
+        return res.json({ hot, warm });
     } catch (err) {
         console.error('❌ Error fetching nextdoor leads:', err);
-        res.status(500).json({ error: 'Failed to fetch leads' });
+        return res.status(500).json({ error: 'Failed to fetch leads' });
     }
 };
+
