@@ -1,7 +1,6 @@
 # Git & env
 .git
 .gitignore
-.env*
 *.log
 
 # Dependencies (any depth)
