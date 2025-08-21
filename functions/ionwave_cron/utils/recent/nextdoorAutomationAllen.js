@@ -254,8 +254,8 @@ const runNextdoorAutomation = async () => {
 
     try {
         await page.goto('https://nextdoor.com/login/?ucl=1', { waitUntil: 'domcontentloaded' });
-        await page.fill('input[data-testid="email-address-input"]', process.env.NEXTDOOR_USERNAME2);
-        await page.fill('input[data-testid="password-input"]', process.env.NEXTDOOR_PASSWORD2);
+        await page.fill('input[data-testid="email-address-input"]', process.env.NEXTDOOR_USERNAME3);
+        await page.fill('input[data-testid="password-input"]', process.env.NEXTDOOR_PASSWORD3);
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
             page.click('button[data-testid="signin_button"]')

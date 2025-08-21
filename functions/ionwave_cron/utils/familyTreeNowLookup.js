@@ -44,7 +44,7 @@ async function inferCityWithGPT({ neighborhood, baseCity, state }) {
 }
 
 // ------------ FamilyTree Lookup ------------
-const FTL_HOME = 'https://familytreelookup.com/'; // home has #First, #Last, #CityStateZip
+const FTL_HOME = 'https://familytreenow.com/'; // home has #First, #Last, #CityStateZip
 
 function fmtCityState({ city, state }) {
     if (!city) return (state || '').trim();

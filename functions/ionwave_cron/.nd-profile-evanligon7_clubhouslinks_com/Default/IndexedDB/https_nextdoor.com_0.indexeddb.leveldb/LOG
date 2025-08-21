@@ -1,0 +1,7 @@
+2025/08/20-17:33:59.155 8a0fd Reusing MANIFEST /Users/administrator/WebstormProjects/BrandNewHomePage/functions/ionwave_cron/.nd-profile-evanligon7_clubhouslinks_com/Default/IndexedDB/https_nextdoor.com_0.indexeddb.leveldb/MANIFEST-000001
+2025/08/20-17:33:59.156 8a0fd Recovering log #3
+2025/08/20-17:33:59.156 8a0fd Reusing old log /Users/administrator/WebstormProjects/BrandNewHomePage/functions/ionwave_cron/.nd-profile-evanligon7_clubhouslinks_com/Default/IndexedDB/https_nextdoor.com_0.indexeddb.leveldb/000003.log 
+2025/08/20-17:34:01.582 8a0fd Level-0 table #5: started
+2025/08/20-17:34:01.606 8a0fd Level-0 table #5: 12815 bytes OK
+2025/08/20-17:34:01.640 8a0fd Delete type=0 #3
+2025/08/20-17:34:01.643 8a0fd Manual compaction at level-0 from '\x00\x02\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x03\x00\x00\x00' @ 0 : 0; will stop at (end)
