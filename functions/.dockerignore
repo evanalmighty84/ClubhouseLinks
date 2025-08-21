@@ -1,0 +1,36 @@
+# Git stuff
+.git
+.gitignore
+
+# Dependencies
+node_modules
+*.log
+
+# Build artifacts
+dist
+build
+.next
+.cache
+coverage
+
+# Playwright / Puppeteer junk
+playwright-report
+test-results
+screenshots
+videos
+downloads
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+
+
+# Big files we don’t need inside the image
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.pdf
+*.heic
+uploads
