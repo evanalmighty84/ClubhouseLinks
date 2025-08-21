@@ -1,36 +1,34 @@
-# Git stuff
+# Git & env
 .git
 .gitignore
-
-# Dependencies
-node_modules
+.env*
 *.log
 
-# Build artifacts
-dist
-build
-.next
-.cache
-coverage
+# Dependencies (any depth)
+**/node_modules
 
-# Playwright / Puppeteer junk
-playwright-report
-test-results
-screenshots
-videos
-downloads
+# Common build outputs (any depth)
+**/dist
+**/build
+**/.next
+**/.cache
+**/coverage
+
+# Playwright artifacts (any depth)
+**/playwright-report
+**/test-results
+**/screenshots
+**/videos
+**/downloads
 
 # OS junk
 .DS_Store
 Thumbs.db
 
-
-
-# Big files we don’t need inside the image
-*.png
-*.jpg
-*.jpeg
-*.webp
-*.pdf
-*.heic
+# Big assets you don't need in the image
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.webp
+**/*.pdf
 uploads
