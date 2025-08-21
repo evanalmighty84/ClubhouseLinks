@@ -14,6 +14,13 @@
 **/.cache
 **/coverage
 
+# Playwright/Nextdoor profiles
+.nd-profile*
+nd-profile
+**/.nd-profile*
+**/nd-profile
+
+
 # Playwright artifacts (any depth)
 **/playwright-report
 **/test-results
