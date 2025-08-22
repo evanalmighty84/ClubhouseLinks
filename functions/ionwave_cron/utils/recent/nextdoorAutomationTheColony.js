@@ -146,11 +146,19 @@ async function ensureLoggedIn(page) {
 
     console.log(`🔐 Filling login using selectors: email="${emailSel}", pass="${passSel}", btn="${btnSel}"`);
 
-    await page.fill(emailSel, String(process.env.NEXTDOOR_USERNAME));
-    await page.fill(passSel,  String(process.env.NEXTDOOR_PASSWORD));
+    await page.locator(emailSel).click();
+    await page.keyboard.type(process.env.NEXTDOOR_USERNAME, { delay: 40 });
+    await page.locator(passSel).click();
+    await page.keyboard.type(process.env.NEXTDOOR_PASSWORD, { delay: 45 });
+
 
     // Click, then wait for *any* sign of progress (URL change, feed, or address page)
     await Promise.allSettled([ page.click(btnSel) ]);
+    const cookies = await page.context().cookies();
+    const hasSession = cookies.some(c =>
+        /nextdoor\.com$/.test(c.domain) && /session|auth|ndsid/i.test(c.name)
+    );
+    console.log('🍪 Session cookie present?', hasSession);
 
     await Promise.race([
         page.waitForURL(/news_feed|choose_address|login/i, { timeout: 60000 }),
