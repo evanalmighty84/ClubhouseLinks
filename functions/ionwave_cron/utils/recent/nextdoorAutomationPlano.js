@@ -83,7 +83,7 @@ async function clearNextdoorStorage(context, phase = 'startup') {
             } catch {}
         });
         await p.close();
- //test
+ //test2
         console.log(`🧼 Cleared Nextdoor storage (${phase}).`);
     } catch (e) {
         console.warn(`⚠️ Failed to clear storage (${phase}):`, e.message);
