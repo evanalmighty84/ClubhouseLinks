@@ -67,6 +67,21 @@ else
   echo "🌐 Proxy: $(redact "$PROXY_URL_AFTERNOON")"
 fi
 
+
+echo "🔎 Checking proxy reachability at ${PROXY_URL_MORNING:-$PROXY_URL_AFTERNOON} ..."
+HOST="${PROXY_URL_MORNING:-$PROXY_URL_AFTERNOON}"
+HOST="${HOST#http://}"     # strip scheme
+HOST="${HOST%/}"           # strip trailing slash
+PHOST="${HOST%%:*}"
+PPORT="${HOST##*:}"
+
+if (exec 3<>/dev/tcp/$PHOST/$PPORT) 2>/dev/null; then
+  echo "✅ Proxy reachable"
+  exec 3>&-
+else
+  echo "❌ Proxy NOT reachable from app"
+fi
+
 # 3) Run your cron script
 npm run nextdoor-cron
 
