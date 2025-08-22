@@ -91,12 +91,14 @@ async function clearNextdoorStorage(context, phase = 'startup') {
 }
 
 async function ensureLoggedIn(page) {
+    // Go straight to feed; if already signed-in this is enough
     await page.goto('https://nextdoor.com/news_feed/', { waitUntil: 'domcontentloaded' });
     if (await page.locator('input[aria-label="Search Nextdoor"], [data-testid="home-feed"]').first().count()) {
         console.log('✅ Already on feed');
         return;
     }
 
+    // Otherwise go to login
     await page.goto('https://nextdoor.com/login/?next=/news_feed/', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(1200);
 
@@ -118,16 +120,15 @@ async function ensureLoggedIn(page) {
         'button:has-text("Sign in")',
         'button[type="submit"]',
     ];
+
     const findFirst = async (arr) => {
-        for (const s of arr) {
-            if (await page.locator(s).first().count()) return s;
-        }
+        for (const s of arr) if (await page.locator(s).first().count()) return s;
         return null;
     };
 
     const emailSel = await findFirst(emailSelectors);
-    const passSel = await findFirst(passSelectors);
-    const btnSel = await findFirst(loginBtnSelectors);
+    const passSel  = await findFirst(passSelectors);
+    const btnSel   = await findFirst(loginBtnSelectors);
 
     if (!emailSel || !passSel || !btnSel) {
         console.log('ℹ️ Login inputs/buttons not found; checking if auto-signed-in or blocked…');
@@ -136,8 +137,8 @@ async function ensureLoggedIn(page) {
             return;
         }
         if (/\/choose_address/i.test(page.url())) {
-            console.log('ℹ️ Address interstitial detected');
-            await handleChooseAddress(page);
+            console.log('ℹ️ Address interstitial detected on arrival — attempting to skip');
+            await skipAddressIfPresent(page);
             return;
         }
         throw new Error('Login form not found (selectors may have changed).');
@@ -145,75 +146,79 @@ async function ensureLoggedIn(page) {
 
     console.log(`🔐 Filling login using selectors: email="${emailSel}", pass="${passSel}", btn="${btnSel}"`);
 
-    // after you click the login button:
-    await page.fill(emailSel, process.env.NEXTDOOR_USERNAME);
-    await page.fill(passSel, process.env.NEXTDOOR_PASSWORD);
-    await Promise.all([
-        page.waitForLoadState('networkidle'),
-        page.click(btnSel)
+    await page.fill(emailSel, String(process.env.NEXTDOOR_USERNAME));
+    await page.fill(passSel,  String(process.env.NEXTDOOR_PASSWORD));
+
+    // Click, then wait for *any* sign of progress (URL change, feed, or address page)
+    await Promise.allSettled([ page.click(btnSel) ]);
+
+    await Promise.race([
+        page.waitForURL(/news_feed|choose_address|login/i, { timeout: 60000 }),
+        page.waitForLoadState('domcontentloaded',          { timeout: 60000 }),
+        page.waitForSelector('[data-testid="home-feed"], input[aria-label="Search Nextdoor"]', { timeout: 60000 }),
     ]);
 
-// Now wait for either feed OR address interstitial
+    console.log('➡️ Post-login URL:', page.url());
+
+    // Resolve where we landed
     const feedSel = '[data-testid="home-feed"], input[aria-label="Search Nextdoor"], main[role="main"]';
-    const addrInputSel = [
-        'input[name*=address i]',
-        'input[placeholder*=address i]',
-        'input[autocomplete*=address-line1]',
-        'input[type=text][aria-label*=address i]'
-    ].join(', ');
-
-    try {
-        await Promise.race([
-            page.waitForSelector(feedSel, { timeout: 30000 }),
-            page.waitForSelector(addrInputSel, { timeout: 30000 })
-        ]);
-    } catch (err) {
-        throw new Error('Neither feed nor address interstitial became visible after login.');
+    if (await page.locator(feedSel).first().count()) {
+        console.log('✅ Feed visible after login');
+        return;
     }
-
-// If address interstitial showed up
-    if (await page.$(addrInputSel)) {
-        console.log('ℹ️ Address interstitial detected');
-        const addr = process.env.NEXTDOOR_ADDRESS;
-        if (!addr) throw new Error('NEXTDOOR_ADDRESS not set, but address interstitial appeared.');
-        await page.fill(addrInputSel, addr);
-        // try several buttons, same as your loginBtnSelectors style
-        const addrBtnSelectors = [
-            'button:has-text("Continue")',
-            'button:has-text("Next")',
-            '[data-testid="submit"]',
-        ];
-        const addrBtnSel = await findFirst(addrBtnSelectors);
-        if (!addrBtnSel) throw new Error('Could not find continue button on address interstitial.');
-        await Promise.all([
-            page.waitForSelector(feedSel, { timeout: 30000 }),
-            page.click(addrBtnSel)
-        ]);
-    }
-
-
-    await page.fill(emailSel, process.env.NEXTDOOR_USERNAME2);
-    await page.fill(passSel, process.env.NEXTDOOR_PASSWORD2);
-
-    await Promise.all([page.waitForNavigation({ waitUntil: 'domcontentloaded' }), page.click(btnSel)]);
 
     if (/\/choose_address/i.test(page.url())) {
-        console.log('ℹ️ Address interstitial after login');
-        await handleChooseAddress(page);
-    }
-
-    if (!(await page.locator('input[aria-label="Search Nextdoor"], [data-testid="home-feed"]').first().count())) {
-        await page.goto('https://nextdoor.com/news_feed/', { waitUntil: 'domcontentloaded' });
-        if (!(await page.locator('input[aria-label="Search Nextdoor"], [data-testid="home-feed"]').first().count())) {
-            try {
-                await page.screenshot({ path: `login_debug_${Date.now()}.png`, fullPage: true });
-            } catch {}
-            throw new Error('Login appears to have failed (feed not visible).');
+        console.log('ℹ️ Address interstitial detected — attempting to skip');
+        await skipAddressIfPresent(page);
+        if (await page.locator(feedSel).first().count()) {
+            console.log('✅ Reached feed after skipping address');
+            return;
         }
     }
 
-    console.log('✅ Logged in and feed visible');
+    // One last push directly to feed
+    await page.goto('https://nextdoor.com/news_feed/', { waitUntil: 'domcontentloaded' });
+    if (await page.locator(feedSel).first().count()) {
+        console.log('✅ Feed visible after direct nav');
+        return;
+    }
+
+    try {
+        await page.screenshot({ path: `login_timeout_${Date.now()}.png`, fullPage: true });
+    } catch {}
+    console.log('📸 Saved screenshot before throwing error:', page.url());
+    throw new Error('Login appears to have failed (feed not visible).');
 }
+
+/** Try to bypass the address interstitial without requiring NEXTDOOR_ADDRESS. */
+async function skipAddressIfPresent(page) {
+    // If a text input is present and you *want* to fill later, you can extend this.
+    // For now, try to *skip* it.
+    const skipBtns = [
+        'button:has-text("Skip for now")',
+        'button:has-text("Skip")',
+        'button:has-text("Not now")',
+        'button:has-text("Do this later")',
+        'button:has-text("Continue")',
+        '[data-testid="skip"], [data-testid="continue"], [data-test="skip"]',
+    ];
+
+    const findFirst = async (arr) => {
+        for (const s of arr) if (await page.locator(s).first().count()) return s;
+        return null;
+    };
+
+    const btnSel = await findFirst(skipBtns);
+    if (btnSel) {
+        await Promise.allSettled([ page.click(btnSel) ]);
+        await page.waitForLoadState('domcontentloaded', { timeout: 30000 }).catch(() => {});
+        return;
+    }
+
+    // Fallback: go to the feed explicitly
+    await page.goto('https://nextdoor.com/news_feed/', { waitUntil: 'domcontentloaded' }).catch(() => {});
+}
+
 
 function parseName(author = '') {
     const parts = author.trim().split(/\s+/).filter(Boolean);
@@ -484,7 +489,9 @@ const runNextdoorAutomation = async () => {
         context = await browser.newContext(); // create a fresh context
     }
 
-    await clearNextdoorStorage(context,'startup')
+    if (process.env.CLEAR_STORAGE_ON_START === '1') {
+        await clearNextdoorStorage(context, 'startup');
+    }
 
 // small stealth tweaks
     await context.addInitScript(() => {
@@ -497,6 +504,9 @@ const runNextdoorAutomation = async () => {
     });
 
     const page = await context.newPage();
+    page.setDefaultTimeout(45000);
+    page.setDefaultNavigationTimeout(60000);
+
 
 
     try {
