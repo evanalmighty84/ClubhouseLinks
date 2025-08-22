@@ -2,13 +2,11 @@
 set -euo pipefail
 
 # -------- config you can tweak --------
-# -------- config you can tweak --------
 # Default proxy hosts (can be overridden via env)
 : "${PROXY_HOST_MORNING:=planorailway}"
 : "${PROXY_HOST_AFTERNOON:=planorailway}"
 : "${PROXY_PORT:=8888}"
 # -------------------------------------
---------
 
 SLOT="${1:-morning}"   # morning | afternoon
 
