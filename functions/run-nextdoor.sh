@@ -1,23 +1,25 @@
 #!/bin/sh
 set -eu
 
-# -------- config you can tweak --------
-# If PROXY_URL_* are set, they win. Otherwise we build from HOST + PORT (+ optional auth).
-PROXY_HOST_MORNING=${PROXY_HOST_MORNING:-planorailway}
-PROXY_HOST_AFTERNOON=${PROXY_HOST_AFTERNOON:-planorailway}
-PROXY_PORT=${PROXY_PORT:-8888}
+# ===== URL-only config =====
+# Set these in Railway:
+#   PROXY_URL_MORNING = http://planorailway:8888
+#   PROXY_URL_AFTERNOON = http://planorailway:8888
+# (Optional) If you set PROXY_USER and PROXY_PASS, we'll inject them into the URL if not present.
+
+DEFAULT_PROXY_URL="http://planorailway:8888"
 
 HEADLESS=${HEADLESS:-1}
 USE_CHROME=${USE_CHROME:-0}
 export HEADLESS USE_CHROME
-# -------------------------------------
+# ===========================
 
 SLOT="${1:-morning}"   # morning | afternoon
 
-# ensure we're in functions/
+# Run from this script's directory
 cd "$(dirname "$0")"
 
-# 1) Temp profile dir (avoid /data bloat)
+# Temp profile dir to avoid /data bloat
 unset ND_PROFILE_DIR ND_PROFILE_DIR_MORNING ND_PROFILE_DIR_AFTERNOON
 TMPDIR="$(mktemp -d)"
 if [ "$SLOT" = "morning" ]; then
@@ -28,53 +30,39 @@ else
   export RUN_SLOT="afternoon"
 fi
 
-# Build URL helper (adds auth if provided)
-build_proxy_url() {
-  host="$1"; port="$2"
-  u="${PROXY_USER:-}"; p="${PROXY_PASS:-}"
-  if [ -n "$u" ] && [ -n "$p" ]; then
-    echo "http://$u:$p@$host:$port"
-  else
-    echo "http://$host:$port"
-  fi
-}
-
-# Choose URL for this slot (prefer explicit PROXY_URL_*)
+# Choose URL for slot (fall back to DEFAULT_PROXY_URL)
 if [ "$RUN_SLOT" = "morning" ]; then
-  URL="${PROXY_URL_MORNING:-}"
-  HOST="${PROXY_HOST_MORNING:-$PROXY_HOST_MORNING}"
+  URL="${PROXY_URL_MORNING:-$DEFAULT_PROXY_URL}"
 else
-  URL="${PROXY_URL_AFTERNOON:-}"
-  HOST="${PROXY_HOST_AFTERNOON:-$PROXY_HOST_AFTERNOON}"
-fi
-PORT="$PROXY_PORT"
-
-# If URL not provided, build it
-if [ -z "$URL" ]; then
-  URL="$(build_proxy_url "$HOST" "$PORT")"
+  URL="${PROXY_URL_AFTERNOON:-$DEFAULT_PROXY_URL}"
 fi
 
-# Export back so downstream Node code can read it if it expects PROXY_URL_*
+# If PROXY_USER/PASS provided and URL has no creds, inject them
+if [ -n "${PROXY_USER:-}" ] && [ -n "${PROXY_PASS:-}" ] && ! printf %s "$URL" | grep -q '@'; then
+  scheme="$(printf %s "$URL" | sed -E 's#^([a-zA-Z]+)://.*#\1#')"
+  rest="$(printf %s "$URL"   | sed -E 's#^[a-zA-Z]+://##')"
+  URL="${scheme}://${PROXY_USER}:${PROXY_PASS}@${rest}"
+fi
+
+# Export effective URL back out in case the Node code reads it
 if [ "$RUN_SLOT" = "morning" ]; then
   export PROXY_URL_MORNING="$URL"
 else
   export PROXY_URL_AFTERNOON="$URL"
 fi
 
-# Pretty-print (redact password)
-redact() {
-  echo "$1" | sed -E 's#://([^:]+):([^@]+)@#://\1:****@#'
-}
+# Redact creds for logging
+redact() { echo "$1" | sed -E 's#://([^:]+):([^@]+)@#://\1:****@#'; }
 
 echo "🏃 Running Nextdoor automation..."
 echo "🕒 Slot: $RUN_SLOT"
 echo "📁 Profile dir: $TMPDIR"
 echo "🌐 Proxy: $(redact "$URL")"
 
-# 2) Reachability checks (favor IPv6 because Railway private DNS is AAAA-only)
+# ---- Reachability checks (favor IPv6) ----
 echo "🔎 Checking proxy reachability at $(redact "$URL") ..."
 
-# Strip scheme and creds → host:port
+# Strip scheme & creds -> host:port
 HOSTPORT="$(printf %s "$URL" \
   | sed -E 's#^[a-zA-Z]+://##' \
   | sed -E 's#^[^@]+@##' \
@@ -82,27 +70,26 @@ HOSTPORT="$(printf %s "$URL" \
 
 PHOST="${HOSTPORT%%:*}"
 PPORT="${HOSTPORT##*:}"
-# If there was no colon, PPORT would equal PHOST; fix that by falling back to $PORT
-if [ "$PPORT" = "$PHOST" ]; then
-  PPORT="$PORT"
-fi
+# If no explicit port, assume 8888
+[ "$PPORT" = "$PHOST" ] && PPORT="8888"
 
-# TCP probe (force IPv6)
+# TCP probe (force IPv6 path since Railway private DNS is AAAA-only)
 if nc -6 -z "$PHOST" "$PPORT" >/dev/null 2>&1; then
   echo "✅ TCP reachable ($PHOST:$PPORT over IPv6)"
 else
   echo "❌ Proxy NOT reachable at TCP level ($PHOST:$PPORT)"
 fi
 
-# HTTP proxy sanity (force IPv6 path)
+# HTTP proxy sanity check
 if curl -6 -sS -x "$URL" --connect-timeout 8 -I http://example.com >/dev/null 2>&1; then
   echo "✅ Proxy usable for HTTP requests"
 else
   echo "❌ Proxy not usable for HTTP (curl via proxy failed)"
 fi
+# ------------------------------------------
 
-# 3) Run your cron script
+# Run your cron task
 npm run nextdoor-cron
 
-# 4) Cleanup
+# Cleanup
 rm -rf "$TMPDIR" || true
