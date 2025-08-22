@@ -1,4 +1,4 @@
-// nextdoorAutomationPlano.js
+// nextdoorAutomationTheColony.js
 require('dotenv').config();
 const path = require('path');
 const { chromium } = require('playwright');
@@ -19,7 +19,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // const MAX_DMS_PER_DAY = 7;
 // const DM_PAUSE_MS = 1500;
 
-const CITY = 'Plano';
+const CITY = 'The Colony';
 
 const SEARCH_TERMS = [
     { label: 'Pool Cleaner',     query: 'pool cleaner',     type: 'pool',     needsMostRecent: true },
@@ -144,6 +144,53 @@ async function ensureLoggedIn(page) {
     }
 
     console.log(`🔐 Filling login using selectors: email="${emailSel}", pass="${passSel}", btn="${btnSel}"`);
+
+    // after you click the login button:
+    await page.fill(emailSel, process.env.NEXTDOOR_USERNAME);
+    await page.fill(passSel, process.env.NEXTDOOR_PASSWORD);
+    await Promise.all([
+        page.waitForLoadState('networkidle'),
+        page.click(btnSel)
+    ]);
+
+// Now wait for either feed OR address interstitial
+    const feedSel = '[data-testid="home-feed"], input[aria-label="Search Nextdoor"], main[role="main"]';
+    const addrInputSel = [
+        'input[name*=address i]',
+        'input[placeholder*=address i]',
+        'input[autocomplete*=address-line1]',
+        'input[type=text][aria-label*=address i]'
+    ].join(', ');
+
+    try {
+        await Promise.race([
+            page.waitForSelector(feedSel, { timeout: 30000 }),
+            page.waitForSelector(addrInputSel, { timeout: 30000 })
+        ]);
+    } catch (err) {
+        throw new Error('Neither feed nor address interstitial became visible after login.');
+    }
+
+// If address interstitial showed up
+    if (await page.$(addrInputSel)) {
+        console.log('ℹ️ Address interstitial detected');
+        const addr = process.env.NEXTDOOR_ADDRESS;
+        if (!addr) throw new Error('NEXTDOOR_ADDRESS not set, but address interstitial appeared.');
+        await page.fill(addrInputSel, addr);
+        // try several buttons, same as your loginBtnSelectors style
+        const addrBtnSelectors = [
+            'button:has-text("Continue")',
+            'button:has-text("Next")',
+            '[data-testid="submit"]',
+        ];
+        const addrBtnSel = await findFirst(addrBtnSelectors);
+        if (!addrBtnSel) throw new Error('Could not find continue button on address interstitial.');
+        await Promise.all([
+            page.waitForSelector(feedSel, { timeout: 30000 }),
+            page.click(addrBtnSel)
+        ]);
+    }
+
 
     await page.fill(emailSel, process.env.NEXTDOOR_USERNAME2);
     await page.fill(passSel, process.env.NEXTDOOR_PASSWORD2);
