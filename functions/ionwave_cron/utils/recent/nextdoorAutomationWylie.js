@@ -20,7 +20,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // const MAX_DMS_PER_DAY = 7;
 // const DM_PAUSE_MS = 1500;
 
-const CITY = 'The Colony';
+const CITY = 'Wylie';
 
 const SEARCH_TERMS = [
     { label: 'Pool Cleaner',     query: 'pool cleaner',     type: 'pool',     needsMostRecent: true },
