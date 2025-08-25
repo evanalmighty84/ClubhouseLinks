@@ -12,6 +12,7 @@ const fs = require('fs');
 
 // 👉 adjust import path if needed
 const { personSearchAndScrape } = require('../melissaLookup');
+const os = require("os");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -119,6 +120,21 @@ async function clearNextdoorStorage(context, phase = 'startup') {
         console.warn(`⚠️ Failed to clear storage (${phase}):`, e.message);
     }
 }
+const cloudinary = require('cloudinary').v2;
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+async function saveScreenshot(page, label = 'login') {
+    const path = `/tmp/${label}_${Date.now()}.png`;
+    await page.screenshot({ path, fullPage: true });
+    const res = await cloudinary.uploader.upload(path, { folder: 'nextdoor-screenshots' });
+    console.log(`📸 Screenshot uploaded: ${res.secure_url}`);
+    return res.secure_url;
+}
+
 
 async function ensureLoggedIn(page) {
     // 1) already signed in?
@@ -184,7 +200,7 @@ async function ensureLoggedIn(page) {
         }
         throw new Error('Login form not found (and feed did not appear).');
     }
-
+//Test
     console.log(`🔐 Filling login: email="${emailSel}", pass="${passSel}", btn="${btnSel}"`);
 
     await page.locator(emailSel).click();
@@ -213,7 +229,8 @@ async function ensureLoggedIn(page) {
     }
 
     // still no luck – capture context and fail
-    try { await page.screenshot({ path: `login_timeout_${Date.now()}.png`, fullPage: true }); } catch {}
+    try { await saveScreenshot(page, 'login_timeout')
+    } catch {}
     console.log('📸 Saved screenshot before throwing error:', page.url());
     throw new Error('Login appears to have failed (feed not visible).');
 }
@@ -278,16 +295,16 @@ async function upsertMessage(
 ) {
     await pool.query(
         `INSERT INTO ${table}
-       (post_url, author, location, city, lead_type, phone, email, physical_address)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-     ON CONFLICT (post_url) DO UPDATE
-       SET author = COALESCE(EXCLUDED.author, ${table}.author),
-           location = COALESCE(EXCLUDED.location, ${table}.location),
-           city = COALESCE(EXCLUDED.city, ${table}.city),
-           lead_type = COALESCE(EXCLUDED.lead_type, ${table}.lead_type),
-           phone = COALESCE(EXCLUDED.phone, ${table}.phone),
-           email = COALESCE(EXCLUDED.email, ${table}.email),
-           physical_address = COALESCE(EXCLUDED.physical_address, ${table}.physical_address)`,
+         (post_url, author, location, city, lead_type, phone, email, physical_address)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+             ON CONFLICT (post_url) DO UPDATE
+                                           SET author = COALESCE(EXCLUDED.author, ${table}.author),
+                                           location = COALESCE(EXCLUDED.location, ${table}.location),
+                                           city = COALESCE(EXCLUDED.city, ${table}.city),
+                                           lead_type = COALESCE(EXCLUDED.lead_type, ${table}.lead_type),
+                                           phone = COALESCE(EXCLUDED.phone, ${table}.phone),
+                                           email = COALESCE(EXCLUDED.email, ${table}.email),
+                                           physical_address = COALESCE(EXCLUDED.physical_address, ${table}.physical_address)`,
         [url, author, location, city, leadType, phone, email, physical_address]
     );
 }
