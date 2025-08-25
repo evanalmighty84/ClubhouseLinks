@@ -34,8 +34,7 @@ const SEARCH_TERMS = [
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 
-const FEED_SEL =
-    '[data-testid="home-feed"], input[aria-label="Search Nextdoor"], main[role="main"]';
+
 
 // One place to decide “am I on the feed?”
 const FEED_SEL =
