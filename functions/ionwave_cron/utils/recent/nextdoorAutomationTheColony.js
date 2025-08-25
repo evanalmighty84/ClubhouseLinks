@@ -458,26 +458,44 @@ async function melissaTX(author) {
 
 /* --------------------------------- Main ----------------------------------- */
 
-const runNextdoorAutomation = async () => {
-    console.log('🏡  Running Nextdoor Automation...');
+const runNextdoorAutomation = async () => {console.log('🏡  Running Nextdoor Automation...');
 
     const useChrome = process.env.USE_CHROME === '1';
     const headless  = process.env.HEADLESS === '1';
 
 // --- slot-aware env (defaults to morning) ---
+// --- slot-aware env (defaults to morning) ---
     const SLOT = (process.env.RUN_SLOT || 'morning').toLowerCase();   // "morning" | "afternoon"
-    const PROXY_URL = process.env[`PROXY_URL_${SLOT.toUpperCase()}`] || process.env.PROXY_URL || '';
-    const ND_PROFILE_DIR =
+
+// --- HARD DISABLE any proxies (even if inherited from the shell) ---
+    ['HTTP_PROXY','HTTPS_PROXY','http_proxy','https_proxy','ALL_PROXY','all_proxy','NO_PROXY','no_proxy']
+        .forEach(k => { if (process.env[k]) delete process.env[k]; });
+
+// Force-off: do not read any PROXY_URL* vars
+    const PROXY_URL = ''; // <— always empty so Playwright won’t use a proxy
+
+// --- portable profile dir resolution (Railway uses /data, local uses OS tmp) ---
+    const os = require('os');
+    const baseDefault = fs.existsSync('/data') ? '/data' : os.tmpdir();
+
+    let ND_PROFILE_DIR =
         process.env[`ND_PROFILE_DIR_${SLOT.toUpperCase()}`] ||
-        process.env.ND_PROFILE_DIR || // optional global override
-        undefined; // if undefined, Playwright will create a temp profile (not persisted)
+        process.env.ND_PROFILE_DIR ||
+        path.join(baseDefault, `.nd-profile-${SLOT}`);
 
-// Log what we resolved (safe values only)
+    try {
+        fs.mkdirSync(ND_PROFILE_DIR, { recursive: true });
+    } catch (err) {
+        console.error(`⚠️ Failed to ensure profile dir ${ND_PROFILE_DIR}:`, err);
+        // Last-resort: unique temp dir
+        ND_PROFILE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), `.nd-profile-${SLOT}-`));
+    }
+
     console.log(`🕒 Slot: ${SLOT}`);
-    console.log(`🌐 Proxy: ${PROXY_URL ? 'enabled' : 'disabled'}`);
-    console.log(`📁 Profile dir: ${ND_PROFILE_DIR || '(ephemeral)'}`);
+    console.log('🌐 Proxy: disabled'); // guaranteed
+    console.log(`📁 Profile dir resolved: ${ND_PROFILE_DIR}`);
 
-// --- shared launch options ---
+// --- shared launch options (no proxy field at all) ---
     const baseLaunchOpts = {
         headless,
         viewport: { width: 1400, height: 900 },
@@ -491,36 +509,18 @@ const runNextdoorAutomation = async () => {
             '--disable-blink-features=AutomationControlled',
             ...(headless ? ['--no-sandbox', '--disable-dev-shm-usage'] : []),
         ],
-        ...(PROXY_URL ? { proxy: { server: PROXY_URL } } : {}),
+        // 👇 no "proxy" key here at all
     };
 
-// --- use a persistent context when we have a profile dir ---
 
-
-    let context;
-    if (ND_PROFILE_DIR) {
-        try {
-            fs.mkdirSync(ND_PROFILE_DIR, { recursive: true });
-        } catch (err) {
-            console.error(`⚠️ Failed to ensure profile dir ${ND_PROFILE_DIR}:`, err);
-        }
-
-        const opts = useChrome
-            ? { ...baseLaunchOpts, channel: 'chrome' }
-            : baseLaunchOpts;
-
-        context = await chromium.launchPersistentContext(ND_PROFILE_DIR, opts);
-    } else {
-        // fall back to non-persistent browser (no profile saved)
-        const browser = useChrome
-            ? await chromium.launch({ ...baseLaunchOpts, channel: 'chrome' })
-            : await chromium.launch(baseLaunchOpts);
-        context = await browser.newContext(); // create a fresh context
-    }
+// --- always use a persistent context with the resolved dir ---
+    const opts = useChrome ? { ...baseLaunchOpts, channel: 'chrome' } : baseLaunchOpts;
+    const context = await chromium.launchPersistentContext(ND_PROFILE_DIR, opts);
 
     if (process.env.CLEAR_STORAGE_ON_START === '1') {
         await clearNextdoorStorage(context, 'startup');
     }
+
 
 // small stealth tweaks
     await context.addInitScript(() => {
