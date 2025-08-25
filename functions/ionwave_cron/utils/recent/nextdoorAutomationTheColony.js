@@ -27,6 +27,10 @@ const SEARCH_TERMS = [
     { label: 'Pool Maintenance', query: 'pool maintenance', type: 'pool',     needsMostRecent: true }
 ];
 
+// --- optionally clear storage on startup (defaults OFF) ---
+
+
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 
@@ -61,27 +65,6 @@ async function waitForFeed(page, totalMs = 90_000) {
 
 /* ------------------------- Helpers: Stealth + Login ------------------------ */
 
-async function handleChooseAddress(page) {
-    if (!/\/choose_address/i.test(page.url())) return;
-    try {
-        await page.fill('input[placeholder*="address" i], input[name*="address"]', '1707 Hastings Court');
-        await page.fill('input[placeholder*="zip" i], input[name*="zip"]', '75023');
-
-        const nextBtn = page.locator('button:has-text("Continue"), button:has-text("Next")').first();
-        if (await nextBtn.count()) {
-            await Promise.all([page.waitForLoadState('domcontentloaded'), nextBtn.click()]);
-        }
-
-        const confirm = page.locator('button:has-text("Confirm neighborhood"), button:has-text("Join")').first();
-        if (await confirm.count()) {
-            await Promise.all([page.waitForLoadState('domcontentloaded'), confirm.click()]);
-        }
-
-        console.log('✅ Address submitted/confirmed');
-    } catch (e) {
-        console.warn('⚠️ Address autofill failed:', e.message);
-    }
-}
 
 /** Wipe cookies + site storage for Nextdoor so each run is “clean”. */
 async function clearNextdoorStorage(context, phase = 'startup') {
@@ -475,23 +458,21 @@ async function melissaTX(author) {
 
 /* --------------------------------- Main ----------------------------------- */
 
-const runNextdoorAutomation = async () => {console.log('🏡  Running Nextdoor Automation...');
+const runNextdoorAutomation = async () => {
+    console.log('🏡  Running Nextdoor Automation...');
 
     const useChrome = process.env.USE_CHROME === '1';
     const headless  = process.env.HEADLESS === '1';
 
-// --- slot-aware env (defaults to morning) ---
-// --- slot-aware env (defaults to morning) ---
-    const SLOT = (process.env.RUN_SLOT || 'morning').toLowerCase();   // "morning" | "afternoon"
+    // --- slot-aware env (defaults to morning) ---
+    const SLOT = (process.env.RUN_SLOT || 'morning').toLowerCase();
 
-// --- HARD DISABLE any proxies (even if inherited from the shell) ---
+    // --- HARD DISABLE any proxies (even if inherited from the shell) ---
     ['HTTP_PROXY','HTTPS_PROXY','http_proxy','https_proxy','ALL_PROXY','all_proxy','NO_PROXY','no_proxy']
         .forEach(k => { if (process.env[k]) delete process.env[k]; });
+    const PROXY_URL = ''; // guaranteed empty
 
-// Force-off: do not read any PROXY_URL* vars
-    const PROXY_URL = ''; // <— always empty so Playwright won’t use a proxy
-
-// --- portable profile dir resolution (Railway uses /data, local uses OS tmp) ---
+    // --- portable profile dir resolution ---
     const os = require('os');
     const baseDefault = fs.existsSync('/data') ? '/data' : os.tmpdir();
 
@@ -504,15 +485,14 @@ const runNextdoorAutomation = async () => {console.log('🏡  Running Nextdoor A
         fs.mkdirSync(ND_PROFILE_DIR, { recursive: true });
     } catch (err) {
         console.error(`⚠️ Failed to ensure profile dir ${ND_PROFILE_DIR}:`, err);
-        // Last-resort: unique temp dir
         ND_PROFILE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), `.nd-profile-${SLOT}-`));
     }
 
     console.log(`🕒 Slot: ${SLOT}`);
-    console.log('🌐 Proxy: disabled'); // guaranteed
+    console.log('🌐 Proxy: disabled');
     console.log(`📁 Profile dir resolved: ${ND_PROFILE_DIR}`);
 
-// --- shared launch options (no proxy field at all) ---
+    // --- launch (no proxy key at all) ---
     const baseLaunchOpts = {
         headless,
         viewport: { width: 1400, height: 900 },
@@ -526,23 +506,19 @@ const runNextdoorAutomation = async () => {console.log('🏡  Running Nextdoor A
             '--disable-blink-features=AutomationControlled',
             ...(headless ? ['--no-sandbox', '--disable-dev-shm-usage'] : []),
         ],
-        // 👇 no "proxy" key here at all
     };
 
-
-// --- always use a persistent context with the resolved dir ---
     const opts = useChrome ? { ...baseLaunchOpts, channel: 'chrome' } : baseLaunchOpts;
     const context = await chromium.launchPersistentContext(ND_PROFILE_DIR, opts);
 
+    // ✅ only now that context exists:
     if (process.env.CLEAR_STORAGE_ON_START === '1') {
         await clearNextdoorStorage(context, 'startup');
     }
 
-
-// small stealth tweaks
+    // small stealth tweaks
     await context.addInitScript(() => {
         Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-        // Supply minimal chrome object to reduce detection
         // @ts-ignore
         window.chrome = window.chrome || { runtime: {} };
         Object.defineProperty(navigator, 'platform', { get: () => 'MacIntel' });
@@ -550,12 +526,11 @@ const runNextdoorAutomation = async () => {console.log('🏡  Running Nextdoor A
     });
 
     const page = await context.newPage();
-    page.setDefaultTimeout(45000);
-    page.setDefaultNavigationTimeout(60000);
-
-
+    page.setDefaultTimeout(45_000);
+    page.setDefaultNavigationTimeout(60_000);
 
     try {
+        // Ensures we land on the feed (no need to check-and-return again)
         await ensureLoggedIn(page);
 
         for (const { label, query, type, needsMostRecent } of SEARCH_TERMS) {
@@ -605,32 +580,31 @@ const runNextdoorAutomation = async () => {console.log('🏡  Running Nextdoor A
                 console.log('📇 Melissa:', r);
                 phone = r.phone; email = r.email; physical_address = r.physical_address;
 
-                await saveMessagedPost(
-                    {
-                        url: lead.url,
-                        author,
-                        location,
-                        city: CITY,
-                        leadType: type,
-                        phone,
-                        email,
-                        physical_address,
-                    }
-                );
+                await saveMessagedPost({
+                    url: lead.url,
+                    author,
+                    location,
+                    city: CITY,
+                    leadType: type,
+                    phone,
+                    email,
+                    physical_address,
+                });
             }
         }
     } catch (err) {
         console.error('❌ Fatal error:', err);
     } finally {
-        // 🔴 NEW: also wipe on shutdown
-        await clearNextdoorStorage(context, 'shutdown');
-
+        if (process.env.CLEAR_STORAGE_ON_SHUTDOWN === '1') {
+            await clearNextdoorStorage(context, 'shutdown');
+        }
         console.log('🧼 Closing browser...');
         await new Promise(r => setTimeout(r, 30_000));
         await context.close();
         console.log('✅ All automations completed');
     }
 };
+
 
 if (require.main === module) runNextdoorAutomation();
 module.exports = runNextdoorAutomation;
