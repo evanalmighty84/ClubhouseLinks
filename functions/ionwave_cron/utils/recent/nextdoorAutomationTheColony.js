@@ -154,6 +154,7 @@ async function ensureLoggedIn(page) {
 
     // Click, then wait for *any* sign of progress (URL change, feed, or address page)
     await Promise.allSettled([ page.click(btnSel) ]);
+    await page.waitForTimeout(7000);
     const cookies = await page.context().cookies();
     const hasSession = cookies.some(c =>
         /nextdoor\.com$/.test(c.domain) && /session|auth|ndsid/i.test(c.name)
@@ -588,6 +589,7 @@ const runNextdoorAutomation = async () => {
         await clearNextdoorStorage(context, 'shutdown');
 
         console.log('🧼 Closing browser...');
+        await new Promise(r => setTimeout(r, 30_000));
         await context.close();
         console.log('✅ All automations completed');
     }
