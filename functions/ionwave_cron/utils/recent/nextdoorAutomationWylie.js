@@ -120,6 +120,21 @@ async function clearNextdoorStorage(context, phase = 'startup') {
         console.warn(`⚠️ Failed to clear storage (${phase}):`, e.message);
     }
 }
+const cloudinary = require('cloudinary').v2;
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+async function saveScreenshot(page, label = 'login') {
+    const path = `/tmp/${label}_${Date.now()}.png`;
+    await page.screenshot({ path, fullPage: true });
+    const res = await cloudinary.uploader.upload(path, { folder: 'nextdoor-screenshots' });
+    console.log(`📸 Screenshot uploaded: ${res.secure_url}`);
+    return res.secure_url;
+}
+
 
 async function ensureLoggedIn(page) {
     // 1) already signed in?
@@ -214,7 +229,8 @@ async function ensureLoggedIn(page) {
     }
 
     // still no luck – capture context and fail
-    try { await page.screenshot({ path: `login_timeout_${Date.now()}.png`, fullPage: true }); } catch {}
+    try { await saveScreenshot(page, 'login_timeout')
+     } catch {}
     console.log('📸 Saved screenshot before throwing error:', page.url());
     throw new Error('Login appears to have failed (feed not visible).');
 }
