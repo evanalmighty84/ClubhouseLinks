@@ -28,6 +28,36 @@ const SEARCH_TERMS = [
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+
+const FEED_SEL =
+    '[data-testid="home-feed"], input[aria-label="Search Nextdoor"], main[role="main"]';
+
+async function waitForFeed(page, totalMs = 90_000) {
+    const deadline = Date.now() + totalMs;
+    while (Date.now() < deadline) {
+        // feed visible?
+        if (await page.locator(FEED_SEL).first().count()) return true;
+
+        // address interstitial?
+        if (/\/choose_address/i.test(page.url())) {
+            console.log('ℹ️ Address interstitial detected — attempting to skip');
+            await skipAddressIfPresent(page);
+            await page.waitForTimeout(1500);
+        }
+
+        // stuck on login? shove to feed again
+        if (/\/login/i.test(page.url())) {
+            await page.goto('https://nextdoor.com/news_feed/', { waitUntil: 'domcontentloaded' }).catch(() => {});
+            await page.waitForTimeout(2000);
+        } else {
+            // let SPA settle
+            await page.waitForTimeout(1500);
+        }
+    }
+    return false;
+}
+
+
 /* ------------------------- Helpers: Stealth + Login ------------------------ */
 
 async function handleChooseAddress(page) {
@@ -91,113 +121,103 @@ async function clearNextdoorStorage(context, phase = 'startup') {
 }
 
 async function ensureLoggedIn(page) {
-    // Go straight to feed; if already signed-in this is enough
+    // 1) already signed in?
     await page.goto('https://nextdoor.com/news_feed/', { waitUntil: 'domcontentloaded' });
-    if (await page.locator('input[aria-label="Search Nextdoor"], [data-testid="home-feed"]').first().count()) {
+    if (await page.locator(FEED_SEL).first().count()) {
         console.log('✅ Already on feed');
         return;
     }
 
-    // Otherwise go to login
+    // 2) go to login (force allow_login if splash)
     await page.goto('https://nextdoor.com/login/?next=/news_feed/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(1200);
-
-    const emailSelectors = [
-        'input[data-testid="email-address-input"]',
-        'input[name="email"]',
-        'input[type="email"]',
-        'input[placeholder*="Email" i]',
-    ];
-    const passSelectors = [
-        'input[data-testid="password-input"]',
-        'input[name="password"]',
-        'input[type="password"]',
-        'input[placeholder*="Password" i]',
-    ];
-    const loginBtnSelectors = [
-        'button[data-testid="signin_button"]',
-        'button:has-text("Log in")',
-        'button:has-text("Sign in")',
-        'button[type="submit"]',
-    ];
-
-    const findFirst = async (arr) => {
-        for (const s of arr) if (await page.locator(s).first().count()) return s;
-        return null;
-    };
-
-    const emailSel = await findFirst(emailSelectors);
-    const passSel  = await findFirst(passSelectors);
-    const btnSel   = await findFirst(loginBtnSelectors);
-
-    if (!emailSel || !passSel || !btnSel) {
-        console.log('ℹ️ Login inputs/buttons not found; checking if auto-signed-in or blocked…');
-        if (await page.locator('input[aria-label="Search Nextdoor"], [data-testid="home-feed"]').first().count()) {
-            console.log('✅ Feed visible after redirect');
-            return;
-        }
-        if (/\/choose_address/i.test(page.url())) {
-            console.log('ℹ️ Address interstitial detected on arrival — attempting to skip');
-            await skipAddressIfPresent(page);
-            return;
-        }
-        throw new Error('Login form not found (selectors may have changed).');
+    if (await page.locator('text=New here? Join Nextdoor').first().count()) {
+        console.log('ℹ️ Got join splash, forcing login form…');
+        await page.goto('https://nextdoor.com/login/?allow_login=true&next=/news_feed/', { waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(1200);
     }
 
-    console.log(`🔐 Filling login using selectors: email="${emailSel}", pass="${passSel}", btn="${btnSel}"`);
+    // cookie consent (best-effort)
+    try {
+        await page.locator([
+            'button:has-text("Accept")',
+            'button:has-text("I agree")',
+            'button:has-text("Allow all")',
+            '[data-testid="cookie-accept"]'
+        ].join(',')).first().click({ timeout: 1500 });
+    } catch {}
+
+    // selectors (flexible)
+    const emailSel = await (async () => {
+        for (const s of [
+            'input[data-testid="email-address-input"]',
+            'input[name="email"]',
+            'input[type="email"]',
+            'input[placeholder*="Email" i]'
+        ]) if (await page.locator(s).first().count()) return s;
+        return null;
+    })();
+    const passSel = await (async () => {
+        for (const s of [
+            'input[data-testid="password-input"]',
+            'input[name="password"]',
+            'input[type="password"]',
+            'input[placeholder*="Password" i]'
+        ]) if (await page.locator(s).first().count()) return s;
+        return null;
+    })();
+    const btnSel = await (async () => {
+        for (const s of [
+            'button[data-testid="signin_button"]',
+            'button:has-text("Log in")',
+            'button:has-text("Sign in")',
+            'button[type="submit"]'
+        ]) if (await page.locator(s).first().count()) return s;
+        return null;
+    })();
+
+    // if the form isn’t there, maybe we’ve been auto-signed in or blocked – try feed
+    if (!emailSel || !passSel || !btnSel) {
+        console.log('ℹ️ Login form not found, checking feed/interstitial…');
+        if (await waitForFeed(page, 30_000)) {
+            console.log('✅ Feed became visible without manual login');
+            return;
+        }
+        throw new Error('Login form not found (and feed did not appear).');
+    }
+
+    console.log(`🔐 Filling login: email="${emailSel}", pass="${passSel}", btn="${btnSel}"`);
 
     await page.locator(emailSel).click();
     await page.keyboard.type(process.env.NEXTDOOR_USERNAME, { delay: 40 });
     await page.locator(passSel).click();
     await page.keyboard.type(process.env.NEXTDOOR_PASSWORD, { delay: 45 });
 
+    // click and give the site a moment to start redirecting
+    await Promise.allSettled([page.click(btnSel)]);
+    await page.waitForTimeout(5_000);            // ← this was the missing piece
 
-    // Click, then wait for *any* sign of progress (URL change, feed, or address page)
-    await Promise.allSettled([ page.click(btnSel) ]);
-    await page.waitForTimeout(7000);
-    const cookies = await page.context().cookies();
-    const hasSession = cookies.some(c =>
-        /nextdoor\.com$/.test(c.domain) && /session|auth|ndsid/i.test(c.name)
-    );
-    console.log('🍪 Session cookie present?', hasSession);
-
-    await Promise.race([
-        page.waitForURL(/news_feed|choose_address|login/i, { timeout: 60000 }),
-        page.waitForLoadState('domcontentloaded',          { timeout: 60000 }),
-        page.waitForSelector('[data-testid="home-feed"], input[aria-label="Search Nextdoor"]', { timeout: 60000 }),
-    ]);
-
+    // be patient and forgiving while we transition to the feed
+    const ok = await waitForFeed(page, 90_000);
     console.log('➡️ Post-login URL:', page.url());
-
-    // Resolve where we landed
-    const feedSel = '[data-testid="home-feed"], input[aria-label="Search Nextdoor"], main[role="main"]';
-    if (await page.locator(feedSel).first().count()) {
+    if (ok) {
         console.log('✅ Feed visible after login');
         return;
     }
 
-    if (/\/choose_address/i.test(page.url())) {
-        console.log('ℹ️ Address interstitial detected — attempting to skip');
-        await skipAddressIfPresent(page);
-        if (await page.locator(feedSel).first().count()) {
-            console.log('✅ Reached feed after skipping address');
-            return;
-        }
-    }
-
-    // One last push directly to feed
-    await page.goto('https://nextdoor.com/news_feed/', { waitUntil: 'domcontentloaded' });
-    if (await page.locator(feedSel).first().count()) {
-        console.log('✅ Feed visible after direct nav');
+    // last try: push to feed and wait briefly, then soft-continue
+    await page.goto('https://nextdoor.com/news_feed/', { waitUntil: 'domcontentloaded' }).catch(() => {});
+    await page.waitForTimeout(5_000);
+    if (await page.locator(FEED_SEL).first().count()) {
+        console.log('⚠️ Feed detected after forced nav — continuing.');
         return;
     }
 
-    try {
-        await page.screenshot({ path: `login_timeout_${Date.now()}.png`, fullPage: true });
-    } catch {}
+    // still no luck – capture context and fail
+    try { await page.screenshot({ path: `login_timeout_${Date.now()}.png`, fullPage: true }); } catch {}
     console.log('📸 Saved screenshot before throwing error:', page.url());
     throw new Error('Login appears to have failed (feed not visible).');
 }
+
 
 /** Try to bypass the address interstitial without requiring NEXTDOOR_ADDRESS. */
 async function skipAddressIfPresent(page) {
