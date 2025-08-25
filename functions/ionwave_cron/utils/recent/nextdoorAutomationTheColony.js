@@ -37,30 +37,53 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const FEED_SEL =
     '[data-testid="home-feed"], input[aria-label="Search Nextdoor"], main[role="main"]';
 
-async function waitForFeed(page, totalMs = 90_000) {
+// One place to decide “am I on the feed?”
+const FEED_SEL =
+    '[data-testid="home-feed"], input[aria-label="Search Nextdoor"], main[role="main"]';
+
+/**
+ * Be patient and proactive: if we're stuck on /login?next=/news_feed/,
+ * shove to /news_feed/ and re-check; loop until the feed renders or we give up.
+ */
+async function waitForFeed(page, totalMs = 120_000) {
     const deadline = Date.now() + totalMs;
+
     while (Date.now() < deadline) {
-        // feed visible?
+        // 1) Feed visible?
         if (await page.locator(FEED_SEL).first().count()) return true;
 
-        // address interstitial?
-        if (/\/choose_address/i.test(page.url())) {
+        const url = page.url();
+
+        // 2) If we're on /login?next=/news_feed/, nudge to the feed explicitly
+        if (/\/login\/?\?next=\/news_feed/i.test(url)) {
+            await page.goto('https://nextdoor.com/news_feed/', { waitUntil: 'domcontentloaded' }).catch(() => {});
+            await page.waitForTimeout(2500);
+            continue;
+        }
+
+        // 3) Address interstitial? Try to skip.
+        if (/\/choose_address/i.test(url)) {
             console.log('ℹ️ Address interstitial detected — attempting to skip');
             await skipAddressIfPresent(page);
             await page.waitForTimeout(1500);
+            continue;
         }
 
-        // stuck on login? shove to feed again
-        if (/\/login/i.test(page.url())) {
+        // 4) Regular login page? Try pushing to /news_feed/ anyway.
+        if (/\/login/i.test(url)) {
             await page.goto('https://nextdoor.com/news_feed/', { waitUntil: 'domcontentloaded' }).catch(() => {});
             await page.waitForTimeout(2000);
-        } else {
-            // let SPA settle
-            await page.waitForTimeout(1500);
+            continue;
         }
+
+        // 5) Let SPA settle a bit.
+        await page.waitForTimeout(1200);
     }
     return false;
 }
+
+
+
 
 
 /* ------------------------- Helpers: Stealth + Login ------------------------ */
@@ -120,22 +143,22 @@ async function saveScreenshot(page, label = 'login') {
 
 
 async function ensureLoggedIn(page) {
-    // 1) already signed in?
+    // Try feed first; we might already be signed in with the persisted profile
     await page.goto('https://nextdoor.com/news_feed/', { waitUntil: 'domcontentloaded' });
     if (await page.locator(FEED_SEL).first().count()) {
         console.log('✅ Already on feed');
         return;
     }
 
-    // 2) go to login (force allow_login if splash)
+    // Go to login; if we get the “Join” splash, force allow_login
     await page.goto('https://nextdoor.com/login/?next=/news_feed/', { waitUntil: 'domcontentloaded' });
     if (await page.locator('text=New here? Join Nextdoor').first().count()) {
         console.log('ℹ️ Got join splash, forcing login form…');
         await page.goto('https://nextdoor.com/login/?allow_login=true&next=/news_feed/', { waitUntil: 'domcontentloaded' });
-        await page.waitForTimeout(1200);
+        await page.waitForTimeout(1000);
     }
 
-    // cookie consent (best-effort)
+    // Try to accept cookies (best-effort)
     try {
         await page.locator([
             'button:has-text("Accept")',
@@ -145,65 +168,61 @@ async function ensureLoggedIn(page) {
         ].join(',')).first().click({ timeout: 1500 });
     } catch {}
 
-    // selectors (flexible)
-    const emailSel = await (async () => {
-        for (const s of [
-            'input[data-testid="email-address-input"]',
-            'input[name="email"]',
-            'input[type="email"]',
-            'input[placeholder*="Email" i]'
-        ]) if (await page.locator(s).first().count()) return s;
+    // Resolve selectors
+    const findFirst = async (arr) => {
+        for (const s of arr) if (await page.locator(s).first().count()) return s;
         return null;
-    })();
-    const passSel = await (async () => {
-        for (const s of [
-            'input[data-testid="password-input"]',
-            'input[name="password"]',
-            'input[type="password"]',
-            'input[placeholder*="Password" i]'
-        ]) if (await page.locator(s).first().count()) return s;
-        return null;
-    })();
-    const btnSel = await (async () => {
-        for (const s of [
-            'button[data-testid="signin_button"]',
-            'button:has-text("Log in")',
-            'button:has-text("Sign in")',
-            'button[type="submit"]'
-        ]) if (await page.locator(s).first().count()) return s;
-        return null;
-    })();
+    };
+    const emailSel = await findFirst([
+        'input[data-testid="email-address-input"]',
+        'input[name="email"]',
+        'input[type="email"]',
+        'input[placeholder*="Email" i]',
+    ]);
+    const passSel = await findFirst([
+        'input[data-testid="password-input"]',
+        'input[name="password"]',
+        'input[type="password"]',
+        'input[placeholder*="Password" i]',
+    ]);
+    const btnSel = await findFirst([
+        'button[data-testid="signin_button"]',
+        'button:has-text("Log in")',
+        'button:has-text("Sign in")',
+        'button[type="submit"]',
+    ]);
 
-    // if the form isn’t there, maybe we’ve been auto-signed in or blocked – try feed
+    // If we don't see the form, wait-and-nudge feed anyway
     if (!emailSel || !passSel || !btnSel) {
-        console.log('ℹ️ Login form not found, checking feed/interstitial…');
-        if (await waitForFeed(page, 30_000)) {
+        console.log('ℹ️ Login form not found, waiting for feed or redirect…');
+        const ok = await waitForFeed(page, 90_000);
+        if (ok) {
             console.log('✅ Feed became visible without manual login');
             return;
         }
-        throw new Error('Login form not found (and feed did not appear).');
+        // Fall through to a final attempt/screenshot below
+    } else {
+        // Fill & submit
+        console.log(`🔐 Filling login: email="${emailSel}", pass="${passSel}", btn="${btnSel}"`);
+        await page.locator(emailSel).click();
+        await page.keyboard.type(process.env.NEXTDOOR_USERNAME, { delay: 40 });
+        await page.locator(passSel).click();
+        await page.keyboard.type(process.env.NEXTDOOR_PASSWORD, { delay: 45 });
+
+        await Promise.allSettled([page.click(btnSel)]);
+        // Give Nextdoor time to start its redirect
+        await page.waitForTimeout(5_000);
     }
-//Test
-    console.log(`🔐 Filling login: email="${emailSel}", pass="${passSel}", btn="${btnSel}"`);
 
-    await page.locator(emailSel).click();
-    await page.keyboard.type(process.env.NEXTDOOR_USERNAME, { delay: 40 });
-    await page.locator(passSel).click();
-    await page.keyboard.type(process.env.NEXTDOOR_PASSWORD, { delay: 45 });
-
-    // click and give the site a moment to start redirecting
-    await Promise.allSettled([page.click(btnSel)]);
-    await page.waitForTimeout(5_000);            // ← this was the missing piece
-
-    // be patient and forgiving while we transition to the feed
-    const ok = await waitForFeed(page, 90_000);
+    // Unified waiter after either path above
+    const ok = await waitForFeed(page, 120_000);
     console.log('➡️ Post-login URL:', page.url());
     if (ok) {
         console.log('✅ Feed visible after login');
         return;
     }
 
-    // last try: push to feed and wait briefly, then soft-continue
+    // One last hard push, then give up with a screenshot
     await page.goto('https://nextdoor.com/news_feed/', { waitUntil: 'domcontentloaded' }).catch(() => {});
     await page.waitForTimeout(5_000);
     if (await page.locator(FEED_SEL).first().count()) {
@@ -211,9 +230,7 @@ async function ensureLoggedIn(page) {
         return;
     }
 
-    // still no luck – capture context and fail
-    try { await saveScreenshot(page, 'login_timeout')
-    } catch {}
+    try { await saveScreenshot(page, 'login_timeout'); } catch {}
     console.log('📸 Saved screenshot before throwing error:', page.url());
     throw new Error('Login appears to have failed (feed not visible).');
 }
