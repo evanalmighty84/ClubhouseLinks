@@ -27,66 +27,61 @@ const SEARCH_TERMS = [
     { label: 'Pool Maintenance', query: 'pool maintenance', type: 'pool',     needsMostRecent: true }
 ];
 
-// --- optionally clear storage on startup (defaults OFF) ---
-
-
-
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 
-
-
-// One place to decide “am I on the feed?”
 const FEED_SEL =
     '[data-testid="home-feed"], input[aria-label="Search Nextdoor"], main[role="main"]';
 
-/**
- * Be patient and proactive: if we're stuck on /login?next=/news_feed/,
- * shove to /news_feed/ and re-check; loop until the feed renders or we give up.
- */
-async function waitForFeed(page, totalMs = 120_000) {
+async function waitForFeed(page, totalMs = 90_000) {
     const deadline = Date.now() + totalMs;
-
     while (Date.now() < deadline) {
-        // 1) Feed visible?
+        // feed visible?
         if (await page.locator(FEED_SEL).first().count()) return true;
 
-        const url = page.url();
-
-        // 2) If we're on /login?next=/news_feed/, nudge to the feed explicitly
-        if (/\/login\/?\?next=\/news_feed/i.test(url)) {
-            await page.goto('https://nextdoor.com/news_feed/', { waitUntil: 'domcontentloaded' }).catch(() => {});
-            await page.waitForTimeout(2500);
-            continue;
-        }
-
-        // 3) Address interstitial? Try to skip.
-        if (/\/choose_address/i.test(url)) {
+        // address interstitial?
+        if (/\/choose_address/i.test(page.url())) {
             console.log('ℹ️ Address interstitial detected — attempting to skip');
             await skipAddressIfPresent(page);
             await page.waitForTimeout(1500);
-            continue;
         }
 
-        // 4) Regular login page? Try pushing to /news_feed/ anyway.
-        if (/\/login/i.test(url)) {
+        // stuck on login? shove to feed again
+        if (/\/login/i.test(page.url())) {
             await page.goto('https://nextdoor.com/news_feed/', { waitUntil: 'domcontentloaded' }).catch(() => {});
             await page.waitForTimeout(2000);
-            continue;
+        } else {
+            // let SPA settle
+            await page.waitForTimeout(1500);
         }
-
-        // 5) Let SPA settle a bit.
-        await page.waitForTimeout(1200);
     }
     return false;
 }
 
 
-
-
-
 /* ------------------------- Helpers: Stealth + Login ------------------------ */
 
+async function handleChooseAddress(page) {
+    if (!/\/choose_address/i.test(page.url())) return;
+    try {
+        await page.fill('input[placeholder*="address" i], input[name*="address"]', '1707 Hastings Court');
+        await page.fill('input[placeholder*="zip" i], input[name*="zip"]', '75023');
+
+        const nextBtn = page.locator('button:has-text("Continue"), button:has-text("Next")').first();
+        if (await nextBtn.count()) {
+            await Promise.all([page.waitForLoadState('domcontentloaded'), nextBtn.click()]);
+        }
+
+        const confirm = page.locator('button:has-text("Confirm neighborhood"), button:has-text("Join")').first();
+        if (await confirm.count()) {
+            await Promise.all([page.waitForLoadState('domcontentloaded'), confirm.click()]);
+        }
+
+        console.log('✅ Address submitted/confirmed');
+    } catch (e) {
+        console.warn('⚠️ Address autofill failed:', e.message);
+    }
+}
 
 /** Wipe cookies + site storage for Nextdoor so each run is “clean”. */
 async function clearNextdoorStorage(context, phase = 'startup') {
@@ -142,22 +137,22 @@ async function saveScreenshot(page, label = 'login') {
 
 
 async function ensureLoggedIn(page) {
-    // Try feed first; we might already be signed in with the persisted profile
+    // 1) already signed in?
     await page.goto('https://nextdoor.com/news_feed/', { waitUntil: 'domcontentloaded' });
     if (await page.locator(FEED_SEL).first().count()) {
         console.log('✅ Already on feed');
         return;
     }
 
-    // Go to login; if we get the “Join” splash, force allow_login
+    // 2) go to login (force allow_login if splash)
     await page.goto('https://nextdoor.com/login/?next=/news_feed/', { waitUntil: 'domcontentloaded' });
     if (await page.locator('text=New here? Join Nextdoor').first().count()) {
         console.log('ℹ️ Got join splash, forcing login form…');
         await page.goto('https://nextdoor.com/login/?allow_login=true&next=/news_feed/', { waitUntil: 'domcontentloaded' });
-        await page.waitForTimeout(1000);
+        await page.waitForTimeout(1200);
     }
 
-    // Try to accept cookies (best-effort)
+    // cookie consent (best-effort)
     try {
         await page.locator([
             'button:has-text("Accept")',
@@ -167,61 +162,65 @@ async function ensureLoggedIn(page) {
         ].join(',')).first().click({ timeout: 1500 });
     } catch {}
 
-    // Resolve selectors
-    const findFirst = async (arr) => {
-        for (const s of arr) if (await page.locator(s).first().count()) return s;
+    // selectors (flexible)
+    const emailSel = await (async () => {
+        for (const s of [
+            'input[data-testid="email-address-input"]',
+            'input[name="email"]',
+            'input[type="email"]',
+            'input[placeholder*="Email" i]'
+        ]) if (await page.locator(s).first().count()) return s;
         return null;
-    };
-    const emailSel = await findFirst([
-        'input[data-testid="email-address-input"]',
-        'input[name="email"]',
-        'input[type="email"]',
-        'input[placeholder*="Email" i]',
-    ]);
-    const passSel = await findFirst([
-        'input[data-testid="password-input"]',
-        'input[name="password"]',
-        'input[type="password"]',
-        'input[placeholder*="Password" i]',
-    ]);
-    const btnSel = await findFirst([
-        'button[data-testid="signin_button"]',
-        'button:has-text("Log in")',
-        'button:has-text("Sign in")',
-        'button[type="submit"]',
-    ]);
+    })();
+    const passSel = await (async () => {
+        for (const s of [
+            'input[data-testid="password-input"]',
+            'input[name="password"]',
+            'input[type="password"]',
+            'input[placeholder*="Password" i]'
+        ]) if (await page.locator(s).first().count()) return s;
+        return null;
+    })();
+    const btnSel = await (async () => {
+        for (const s of [
+            'button[data-testid="signin_button"]',
+            'button:has-text("Log in")',
+            'button:has-text("Sign in")',
+            'button[type="submit"]'
+        ]) if (await page.locator(s).first().count()) return s;
+        return null;
+    })();
 
-    // If we don't see the form, wait-and-nudge feed anyway
+    // if the form isn’t there, maybe we’ve been auto-signed in or blocked – try feed
     if (!emailSel || !passSel || !btnSel) {
-        console.log('ℹ️ Login form not found, waiting for feed or redirect…');
-        const ok = await waitForFeed(page, 90_000);
-        if (ok) {
+        console.log('ℹ️ Login form not found, checking feed/interstitial…');
+        if (await waitForFeed(page, 30_000)) {
             console.log('✅ Feed became visible without manual login');
             return;
         }
-        // Fall through to a final attempt/screenshot below
-    } else {
-        // Fill & submit
-        console.log(`🔐 Filling login: email="${emailSel}", pass="${passSel}", btn="${btnSel}"`);
-        await page.locator(emailSel).click();
-        await page.keyboard.type(process.env.NEXTDOOR_USERNAME, { delay: 40 });
-        await page.locator(passSel).click();
-        await page.keyboard.type(process.env.NEXTDOOR_PASSWORD, { delay: 45 });
-
-        await Promise.allSettled([page.click(btnSel)]);
-        // Give Nextdoor time to start its redirect
-        await page.waitForTimeout(5_000);
+        throw new Error('Login form not found (and feed did not appear).');
     }
+//Test
+    console.log(`🔐 Filling login: email="${emailSel}", pass="${passSel}", btn="${btnSel}"`);
 
-    // Unified waiter after either path above
-    const ok = await waitForFeed(page, 120_000);
+    await page.locator(emailSel).click();
+    await page.keyboard.type(process.env.NEXTDOOR_USERNAME, { delay: 40 });
+    await page.locator(passSel).click();
+    await page.keyboard.type(process.env.NEXTDOOR_PASSWORD, { delay: 45 });
+
+    // click and give the site a moment to start redirecting
+    await Promise.allSettled([page.click(btnSel)]);
+    await page.waitForTimeout(5_000);            // ← this was the missing piece
+
+    // be patient and forgiving while we transition to the feed
+    const ok = await waitForFeed(page, 90_000);
     console.log('➡️ Post-login URL:', page.url());
     if (ok) {
         console.log('✅ Feed visible after login');
         return;
     }
 
-    // One last hard push, then give up with a screenshot
+    // last try: push to feed and wait briefly, then soft-continue
     await page.goto('https://nextdoor.com/news_feed/', { waitUntil: 'domcontentloaded' }).catch(() => {});
     await page.waitForTimeout(5_000);
     if (await page.locator(FEED_SEL).first().count()) {
@@ -229,7 +228,9 @@ async function ensureLoggedIn(page) {
         return;
     }
 
-    try { await saveScreenshot(page, 'login_timeout'); } catch {}
+    // still no luck – capture context and fail
+    try { await saveScreenshot(page, 'login_timeout')
+    } catch {}
     console.log('📸 Saved screenshot before throwing error:', page.url());
     throw new Error('Login appears to have failed (feed not visible).');
 }
@@ -294,16 +295,16 @@ async function upsertMessage(
 ) {
     await pool.query(
         `INSERT INTO ${table}
-         (post_url, author, location, city, lead_type, phone, email, physical_address)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-             ON CONFLICT (post_url) DO UPDATE
-                                           SET author = COALESCE(EXCLUDED.author, ${table}.author),
-                                           location = COALESCE(EXCLUDED.location, ${table}.location),
-                                           city = COALESCE(EXCLUDED.city, ${table}.city),
-                                           lead_type = COALESCE(EXCLUDED.lead_type, ${table}.lead_type),
-                                           phone = COALESCE(EXCLUDED.phone, ${table}.phone),
-                                           email = COALESCE(EXCLUDED.email, ${table}.email),
-                                           physical_address = COALESCE(EXCLUDED.physical_address, ${table}.physical_address)`,
+       (post_url, author, location, city, lead_type, phone, email, physical_address)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+     ON CONFLICT (post_url) DO UPDATE
+       SET author = COALESCE(EXCLUDED.author, ${table}.author),
+           location = COALESCE(EXCLUDED.location, ${table}.location),
+           city = COALESCE(EXCLUDED.city, ${table}.city),
+           lead_type = COALESCE(EXCLUDED.lead_type, ${table}.lead_type),
+           phone = COALESCE(EXCLUDED.phone, ${table}.phone),
+           email = COALESCE(EXCLUDED.email, ${table}.email),
+           physical_address = COALESCE(EXCLUDED.physical_address, ${table}.physical_address)`,
         [url, author, location, city, leadType, phone, email, physical_address]
     );
 }
@@ -474,21 +475,23 @@ async function melissaTX(author) {
 
 /* --------------------------------- Main ----------------------------------- */
 
-const runNextdoorAutomation = async () => {
-    console.log('🏡  Running Nextdoor Automation...');
+const runNextdoorAutomation = async () => {console.log('🏡  Running Nextdoor Automation...');
 
     const useChrome = process.env.USE_CHROME === '1';
     const headless  = process.env.HEADLESS === '1';
 
-    // --- slot-aware env (defaults to morning) ---
-    const SLOT = (process.env.RUN_SLOT || 'morning').toLowerCase();
+// --- slot-aware env (defaults to morning) ---
+// --- slot-aware env (defaults to morning) ---
+    const SLOT = (process.env.RUN_SLOT || 'morning').toLowerCase();   // "morning" | "afternoon"
 
-    // --- HARD DISABLE any proxies (even if inherited from the shell) ---
+// --- HARD DISABLE any proxies (even if inherited from the shell) ---
     ['HTTP_PROXY','HTTPS_PROXY','http_proxy','https_proxy','ALL_PROXY','all_proxy','NO_PROXY','no_proxy']
         .forEach(k => { if (process.env[k]) delete process.env[k]; });
-    const PROXY_URL = ''; // guaranteed empty
 
-    // --- portable profile dir resolution ---
+// Force-off: do not read any PROXY_URL* vars
+    const PROXY_URL = ''; // <— always empty so Playwright won’t use a proxy
+
+// --- portable profile dir resolution (Railway uses /data, local uses OS tmp) ---
     const os = require('os');
     const baseDefault = fs.existsSync('/data') ? '/data' : os.tmpdir();
 
@@ -501,14 +504,15 @@ const runNextdoorAutomation = async () => {
         fs.mkdirSync(ND_PROFILE_DIR, { recursive: true });
     } catch (err) {
         console.error(`⚠️ Failed to ensure profile dir ${ND_PROFILE_DIR}:`, err);
+        // Last-resort: unique temp dir
         ND_PROFILE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), `.nd-profile-${SLOT}-`));
     }
 
     console.log(`🕒 Slot: ${SLOT}`);
-    console.log('🌐 Proxy: disabled');
+    console.log('🌐 Proxy: disabled'); // guaranteed
     console.log(`📁 Profile dir resolved: ${ND_PROFILE_DIR}`);
 
-    // --- launch (no proxy key at all) ---
+// --- shared launch options (no proxy field at all) ---
     const baseLaunchOpts = {
         headless,
         viewport: { width: 1400, height: 900 },
@@ -522,19 +526,23 @@ const runNextdoorAutomation = async () => {
             '--disable-blink-features=AutomationControlled',
             ...(headless ? ['--no-sandbox', '--disable-dev-shm-usage'] : []),
         ],
+        // 👇 no "proxy" key here at all
     };
 
+
+// --- always use a persistent context with the resolved dir ---
     const opts = useChrome ? { ...baseLaunchOpts, channel: 'chrome' } : baseLaunchOpts;
     const context = await chromium.launchPersistentContext(ND_PROFILE_DIR, opts);
 
-    // ✅ only now that context exists:
     if (process.env.CLEAR_STORAGE_ON_START === '1') {
         await clearNextdoorStorage(context, 'startup');
     }
 
-    // small stealth tweaks
+
+// small stealth tweaks
     await context.addInitScript(() => {
         Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+        // Supply minimal chrome object to reduce detection
         // @ts-ignore
         window.chrome = window.chrome || { runtime: {} };
         Object.defineProperty(navigator, 'platform', { get: () => 'MacIntel' });
@@ -542,11 +550,12 @@ const runNextdoorAutomation = async () => {
     });
 
     const page = await context.newPage();
-    page.setDefaultTimeout(45_000);
-    page.setDefaultNavigationTimeout(60_000);
+    page.setDefaultTimeout(45000);
+    page.setDefaultNavigationTimeout(60000);
+
+
 
     try {
-        // Ensures we land on the feed (no need to check-and-return again)
         await ensureLoggedIn(page);
 
         for (const { label, query, type, needsMostRecent } of SEARCH_TERMS) {
@@ -596,31 +605,32 @@ const runNextdoorAutomation = async () => {
                 console.log('📇 Melissa:', r);
                 phone = r.phone; email = r.email; physical_address = r.physical_address;
 
-                await saveMessagedPost({
-                    url: lead.url,
-                    author,
-                    location,
-                    city: CITY,
-                    leadType: type,
-                    phone,
-                    email,
-                    physical_address,
-                });
+                await saveMessagedPost(
+                    {
+                        url: lead.url,
+                        author,
+                        location,
+                        city: CITY,
+                        leadType: type,
+                        phone,
+                        email,
+                        physical_address,
+                    }
+                );
             }
         }
     } catch (err) {
         console.error('❌ Fatal error:', err);
     } finally {
-        if (process.env.CLEAR_STORAGE_ON_SHUTDOWN === '1') {
-            await clearNextdoorStorage(context, 'shutdown');
-        }
+        // 🔴 NEW: also wipe on shutdown
+        await clearNextdoorStorage(context, 'shutdown');
+
         console.log('🧼 Closing browser...');
         await new Promise(r => setTimeout(r, 30_000));
         await context.close();
         console.log('✅ All automations completed');
     }
 };
-
 
 if (require.main === module) runNextdoorAutomation();
 module.exports = runNextdoorAutomation;
