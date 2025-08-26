@@ -210,7 +210,18 @@ async function ensureLoggedIn(page) {
 
     // click and give the site a moment to start redirecting
     await Promise.allSettled([page.click(btnSel)]);
-    await page.waitForTimeout(5_000);            // ← this was the missing piece
+    await page.waitForTimeout(5_000);
+
+    // Try up to ~60s total to land on the feed, even if the site stalls at ?next=/news_feed/
+    for (let i = 0; i < 6; i++) {
+        if (await page.locator(FEED_SEL).first().count()) {
+            console.log('✅ Feed visible after login');
+            break;
+        }
+        await page.goto('https://nextdoor.com/news_feed/', { waitUntil: 'domcontentloaded' }).catch(() => {});
+        await page.waitForTimeout(5_000);
+    }
+// ← this was the missing piece
 
     // be patient and forgiving while we transition to the feed
     const ok = await waitForFeed(page, 90_000);
@@ -492,21 +503,23 @@ const runNextdoorAutomation = async () => {console.log('🏡  Running Nextdoor A
     const PROXY_URL = ''; // <— always empty so Playwright won’t use a proxy
 
 // --- portable profile dir resolution (Railway uses /data, local uses OS tmp) ---
-    const os = require('os');
-    const baseDefault = fs.existsSync('/data') ? '/data' : os.tmpdir();
+    // --- portable, per-account profile dir (Railway => /data volume; local => OS tmp) ---
+    const ndUser = (process.env.NEXTDOOR_USERNAME || '').trim().toLowerCase();
+    const acctKey = ndUser.replace(/[^a-z0-9]+/g, '-').slice(0, 40) || 'default';
 
+    const baseDefault = fs.existsSync('/data') ? '/data' : os.tmpdir();
     let ND_PROFILE_DIR =
         process.env[`ND_PROFILE_DIR_${SLOT.toUpperCase()}`] ||
         process.env.ND_PROFILE_DIR ||
-        path.join(baseDefault, `.nd-profile-${SLOT}`);
+        path.join(baseDefault, `.nd-profile-${SLOT}-${acctKey}`);
 
-    try {
-        fs.mkdirSync(ND_PROFILE_DIR, { recursive: true });
-    } catch (err) {
+    try { fs.mkdirSync(ND_PROFILE_DIR, { recursive: true }); } catch (err) {
         console.error(`⚠️ Failed to ensure profile dir ${ND_PROFILE_DIR}:`, err);
-        // Last-resort: unique temp dir
         ND_PROFILE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), `.nd-profile-${SLOT}-`));
     }
+
+
+
 
     console.log(`🕒 Slot: ${SLOT}`);
     console.log('🌐 Proxy: disabled'); // guaranteed
@@ -621,15 +634,18 @@ const runNextdoorAutomation = async () => {console.log('🏡  Running Nextdoor A
         }
     } catch (err) {
         console.error('❌ Fatal error:', err);
-    } finally {
-        // 🔴 NEW: also wipe on shutdown
+    } } finally {
+    // Only clear storage if you explicitly want to
+    if (process.env.CLEAR_STORAGE_ON_SHUTDOWN === '1') {
         await clearNextdoorStorage(context, 'shutdown');
-
-        console.log('🧼 Closing browser...');
-        await new Promise(r => setTimeout(r, 30_000));
-        await context.close();
-        console.log('✅ All automations completed');
     }
+
+    console.log('🧼 Closing browser...');
+    await new Promise(r => setTimeout(r, 30_000));
+    await context.close();
+    console.log('✅ All automations completed');
+}
+
 };
 
 if (require.main === module) runNextdoorAutomation();

@@ -13,7 +13,7 @@
 		"ionwave-cron": "node ionwave_cron/index.js",
 		"outlookcleaner_cron": "node outlookcleaner_cron/index.js",
 		"postinstall": "npx playwright install chromium",
-		"nextdoor-cron": "node ionwave_cron/utils/recent/nextdoorAutomationAllen.js"
+		"nextdoor-cron": "node ionwave_cron/utils/recent/nextdoorAutomationTheColony.js"
 	},
 	"engines": {
 		"node": "20.x",
