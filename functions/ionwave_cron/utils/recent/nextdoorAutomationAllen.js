@@ -1,153 +1,378 @@
-// index.js
+// nextdoorAutomationAllen.js
 require('dotenv').config();
+const path = require('path');
 const { chromium } = require('playwright');
 const OpenAI = require('openai');
 const pool = require('./../../../db/db');
+const fs = require('fs');
 
-// 👉 adjust this path if needed
+
+
+
+
+// 👉 adjust import path if needed
 const { personSearchAndScrape } = require('../melissaLookup');
+const os = require("os");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const MAX_DMS_PER_DAY = 7;
-const DM_PAUSE_MS = 1500;
+/* =================== DISABLED: DM-related constants =================== */
+// const MAX_DMS_PER_DAY = 7;
+// const DM_PAUSE_MS = 1500;
+
 const CITY = 'Allen';
 
 const SEARCH_TERMS = [
-    { label: 'Pool Cleaner',      query: 'pool cleaner',      type: 'pool',      needsMostRecent: true },
-    { label: 'Pool Maintenance',  query: 'pool maintenance',  type: 'pool',      needsMostRecent: true },
-    { label: 'Handyman Plumber',  query: 'handyman plumber',  type: 'handyman',  needsMostRecent: true }
+    { label: 'Pool Cleaner',     query: 'pool cleaner',     type: 'pool',     needsMostRecent: true },
+    { label: 'Pool Maintenance', query: 'pool maintenance', type: 'pool',     needsMostRecent: true }
 ];
 
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-const dmTemplate = (name, type = 'pool') => {
-    const greeting = `Hey${name ? ' ' + name : ''},`;
-    const body = type === 'handyman'
-        ? `I think I can help out with your handyman or plumbing needs.`
-        : `I think I can help out with your pool.`;
-    return `${greeting} ${body} What’s the best number to reach you at?`;
-};
-async function upsertMessage(table, {
-    url, author, location, city = CITY, leadType,
-    phone = null, email = null, physical_address = null
-}, didSendMessage) {
-    if (didSendMessage) {
-        // sent → set message_sent=true and message_sent_at=NOW(); update on conflict
-        await pool.query(
-            `INSERT INTO ${table}
-         (post_url, author, location, city, lead_type,
-          message_sent, message_sent_at, phone, email, physical_address)
-       VALUES ($1,$2,$3,$4,$5,true,NOW(),$6,$7,$8)
-       ON CONFLICT (post_url) DO UPDATE
-         SET message_sent     = EXCLUDED.message_sent,
-             message_sent_at  = EXCLUDED.message_sent_at,
-             phone            = COALESCE(EXCLUDED.phone, ${table}.phone),
-             email            = COALESCE(EXCLUDED.email, ${table}.email),
-             physical_address = COALESCE(EXCLUDED.physical_address, ${table}.physical_address)`,
-            [url, author, location, city, leadType, phone, email, physical_address]
-        );
-    } else {
-        // not sent → record lead once; keep message_sent=false; keep contact fields if present
-        await pool.query(
-            `INSERT INTO ${table}
-         (post_url, author, location, city, lead_type, message_sent,
-          phone, email, physical_address)
-       VALUES ($1,$2,$3,$4,$5,false,$6,$7,$8)
-       ON CONFLICT (post_url) DO NOTHING`,
-            [url, author, location, city, leadType, phone, email, physical_address]
-        );
+
+const FEED_SEL =
+    '[data-testid="home-feed"], input[aria-label="Search Nextdoor"], main[role="main"]';
+
+async function waitForFeed(page, totalMs = 90_000) {
+    const deadline = Date.now() + totalMs;
+    while (Date.now() < deadline) {
+        // feed visible?
+        if (await page.locator(FEED_SEL).first().count()) return true;
+
+        // address interstitial?
+        if (/\/choose_address/i.test(page.url())) {
+            console.log('ℹ️ Address interstitial detected — attempting to skip');
+            await skipAddressIfPresent(page);
+            await page.waitForTimeout(1500);
+        }
+
+        // stuck on login? shove to feed again
+        if (/\/login/i.test(page.url())) {
+            await page.goto('https://nextdoor.com/news_feed/', { waitUntil: 'domcontentloaded' }).catch(() => {});
+            await page.waitForTimeout(2000);
+        } else {
+            // let SPA settle
+            await page.waitForTimeout(1500);
+        }
+    }
+    return false;
+}
+
+
+/* ------------------------- Helpers: Stealth + Login ------------------------ */
+
+async function handleChooseAddress(page) {
+    if (!/\/choose_address/i.test(page.url())) return;
+    try {
+        await page.fill('input[placeholder*="address" i], input[name*="address"]', '1707 Hastings Court');
+        await page.fill('input[placeholder*="zip" i], input[name*="zip"]', '75023');
+
+        const nextBtn = page.locator('button:has-text("Continue"), button:has-text("Next")').first();
+        if (await nextBtn.count()) {
+            await Promise.all([page.waitForLoadState('domcontentloaded'), nextBtn.click()]);
+        }
+
+        const confirm = page.locator('button:has-text("Confirm neighborhood"), button:has-text("Join")').first();
+        if (await confirm.count()) {
+            await Promise.all([page.waitForLoadState('domcontentloaded'), confirm.click()]);
+        }
+
+        console.log('✅ Address submitted/confirmed');
+    } catch (e) {
+        console.warn('⚠️ Address autofill failed:', e.message);
     }
 }
+
+/** Wipe cookies + site storage for Nextdoor so each run is “clean”. */
+async function clearNextdoorStorage(context, phase = 'startup') {
+    try {
+        // 1) Cookies/permissions at the context level
+        await context.clearCookies();
+        await context.clearPermissions();
+
+        // 2) Open a temp page on Nextdoor origin to clear localStorage/sessionStorage/indexedDB/caches
+        const p = await context.newPage();
+        await p.goto('https://nextdoor.com/', { waitUntil: 'domcontentloaded' });
+        await p.evaluate(async () => {
+            try { localStorage.clear(); } catch {}
+            try { sessionStorage.clear(); } catch {}
+            try {
+                if (indexedDB && indexedDB.databases) {
+                    const dbs = await indexedDB.databases();
+                    for (const db of dbs) {
+                        if (db && db.name) {
+                            try { indexedDB.deleteDatabase(db.name); } catch {}
+                        }
+                    }
+                }
+            } catch {}
+            try {
+                if (typeof caches !== 'undefined' && caches.keys) {
+                    const keys = await caches.keys();
+                    await Promise.all(keys.map(k => caches.delete(k)));
+                }
+            } catch {}
+        });
+        await p.close();
+        //test2
+        console.log(`🧼 Cleared Nextdoor storage (${phase}).`);
+    } catch (e) {
+        console.warn(`⚠️ Failed to clear storage (${phase}):`, e.message);
+    }
+}
+const cloudinary = require('cloudinary').v2;
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+async function saveScreenshot(page, label = 'login') {
+    const path = `/tmp/${label}_${Date.now()}.png`;
+    await page.screenshot({ path, fullPage: true });
+    const res = await cloudinary.uploader.upload(path, { folder: 'nextdoor-screenshots' });
+    console.log(`📸 Screenshot uploaded: ${res.secure_url}`);
+    return res.secure_url;
+}
+
+
+async function ensureLoggedIn(page) {
+    // 1) already signed in?
+    await page.goto('https://nextdoor.com/news_feed/', { waitUntil: 'domcontentloaded' });
+    if (await page.locator(FEED_SEL).first().count()) {
+        console.log('✅ Already on feed');
+        return;
+    }
+
+    // 2) go to login (force allow_login if splash)
+    await page.goto('https://nextdoor.com/login/?next=/news_feed/', { waitUntil: 'domcontentloaded' });
+    if (await page.locator('text=New here? Join Nextdoor').first().count()) {
+        console.log('ℹ️ Got join splash, forcing login form…');
+        await page.goto('https://nextdoor.com/login/?allow_login=true&next=/news_feed/', { waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(1200);
+    }
+
+    // cookie consent (best-effort)
+    try {
+        await page.locator([
+            'button:has-text("Accept")',
+            'button:has-text("I agree")',
+            'button:has-text("Allow all")',
+            '[data-testid="cookie-accept"]'
+        ].join(',')).first().click({ timeout: 1500 });
+    } catch {}
+
+    // selectors (flexible)
+    const emailSel = await (async () => {
+        for (const s of [
+            'input[data-testid="email-address-input"]',
+            'input[name="email"]',
+            'input[type="email"]',
+            'input[placeholder*="Email" i]'
+        ]) if (await page.locator(s).first().count()) return s;
+        return null;
+    })();
+    const passSel = await (async () => {
+        for (const s of [
+            'input[data-testid="password-input"]',
+            'input[name="password"]',
+            'input[type="password"]',
+            'input[placeholder*="Password" i]'
+        ]) if (await page.locator(s).first().count()) return s;
+        return null;
+    })();
+    const btnSel = await (async () => {
+        for (const s of [
+            'button[data-testid="signin_button"]',
+            'button:has-text("Log in")',
+            'button:has-text("Sign in")',
+            'button[type="submit"]'
+        ]) if (await page.locator(s).first().count()) return s;
+        return null;
+    })();
+
+    // if the form isn’t there, maybe we’ve been auto-signed in or blocked – try feed
+    if (!emailSel || !passSel || !btnSel) {
+        console.log('ℹ️ Login form not found, checking feed/interstitial…');
+        if (await waitForFeed(page, 30_000)) {
+            console.log('✅ Feed became visible without manual login');
+            return;
+        }
+        throw new Error('Login form not found (and feed did not appear).');
+    }
+//Test
+    console.log(`🔐 Filling login: email="${emailSel}", pass="${passSel}", btn="${btnSel}"`);
+
+    await page.locator(emailSel).click();
+    await page.keyboard.type(process.env.NEXTDOOR_USERNAME3, { delay: 40 });
+    await page.locator(passSel).click();
+    await page.keyboard.type(process.env.NEXTDOOR_PASSWORD3, { delay: 45 });
+
+    // click and give the site a moment to start redirecting
+    await Promise.allSettled([page.click(btnSel)]);
+    await page.waitForTimeout(5_000);            // ← this was the missing piece
+
+    // be patient and forgiving while we transition to the feed
+    const ok = await waitForFeed(page, 90_000);
+    console.log('➡️ Post-login URL:', page.url());
+    if (ok) {
+        console.log('✅ Feed visible after login');
+        return;
+    }
+
+    // last try: push to feed and wait briefly, then soft-continue
+    await page.goto('https://nextdoor.com/news_feed/', { waitUntil: 'domcontentloaded' }).catch(() => {});
+    await page.waitForTimeout(5_000);
+    if (await page.locator(FEED_SEL).first().count()) {
+        console.log('⚠️ Feed detected after forced nav — continuing.');
+        return;
+    }
+
+    // still no luck – capture context and fail
+    try { await saveScreenshot(page, 'login_timeout')
+    } catch {}
+    console.log('📸 Saved screenshot before throwing error:', page.url());
+    throw new Error('Login appears to have failed (feed not visible).');
+}
+
+
+/** Try to bypass the address interstitial without requiring NEXTDOOR_ADDRESS. */
+async function skipAddressIfPresent(page) {
+    // If a text input is present and you *want* to fill later, you can extend this.
+    // For now, try to *skip* it.
+    const skipBtns = [
+        'button:has-text("Skip for now")',
+        'button:has-text("Skip")',
+        'button:has-text("Not now")',
+        'button:has-text("Do this later")',
+        'button:has-text("Continue")',
+        '[data-testid="skip"], [data-testid="continue"], [data-test="skip"]',
+    ];
+
+    const findFirst = async (arr) => {
+        for (const s of arr) if (await page.locator(s).first().count()) return s;
+        return null;
+    };
+
+    const btnSel = await findFirst(skipBtns);
+    if (btnSel) {
+        await Promise.allSettled([ page.click(btnSel) ]);
+        await page.waitForLoadState('domcontentloaded', { timeout: 30000 }).catch(() => {});
+        return;
+    }
+
+    // Fallback: go to the feed explicitly
+    await page.goto('https://nextdoor.com/news_feed/', { waitUntil: 'domcontentloaded' }).catch(() => {});
+}
+
+
+function parseName(author = '') {
+    const parts = author.trim().split(/\s+/).filter(Boolean);
+    const first = parts[0] || '';
+    const last = parts.length > 1 ? parts[parts.length - 1] : '';
+    return { first, last };
+}
+
+function isValidPersonName(author = '') {
+    const { first, last } = parseName(author);
+    return first.length >= 1 && last.length >= 2;
+}
+
+/* -------------------------- Messaging + Persistence ------------------------ */
+
+/* =================== DISABLED: DM template & sending ===================
+// const dmTemplate = (name, type = 'pool') => { ... }
+// async function sendDMOnProfile(page, messageText) { ... }
+*/
+
+/**
+ * Insert/Upsert post WITHOUT any message_sent fields.
+ * Keeps enrichment fields updated on conflict.
+ */
+async function upsertMessage(
+    table,
+    { url, author, location, city = CITY, leadType, phone = null, email = null, physical_address = null }
+) {
+    await pool.query(
+        `INSERT INTO ${table}
+       (post_url, author, location, city, lead_type, phone, email, physical_address)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+     ON CONFLICT (post_url) DO UPDATE
+       SET author = COALESCE(EXCLUDED.author, ${table}.author),
+           location = COALESCE(EXCLUDED.location, ${table}.location),
+           city = COALESCE(EXCLUDED.city, ${table}.city),
+           lead_type = COALESCE(EXCLUDED.lead_type, ${table}.lead_type),
+           phone = COALESCE(EXCLUDED.phone, ${table}.phone),
+           email = COALESCE(EXCLUDED.email, ${table}.email),
+           physical_address = COALESCE(EXCLUDED.physical_address, ${table}.physical_address)`,
+        [url, author, location, city, leadType, phone, email, physical_address]
+    );
+}
+
+async function saveMessagedPost(post) {
+    const { url, author, location, leadType } = post;
+
+    if (!isValidPersonName(post.author)) {
+        console.log(`⏭️ Not saving weak name "${post.author}"`);
+        return;
+    }
+
+    try {
+        console.log(
+            `💾 Saving (no DM logic): url=${url}, author=${author}, loc=${location}, leadType=${leadType}`
+        );
+        await upsertMessage('nextdoor_messages', post);
+        await upsertMessage('recent_nextdoor_messages', post);
+    } catch (err) {
+        console.error('❌ DB save failed:', err.message);
+    }
+}
+
+/* ----------------------------- Search Utilities ---------------------------- */
 
 async function clickMostRecentFilter(page) {
     try {
-        const sortByDropdown = page.locator('div[role="button"][aria-label="Sort By"]');
-        await sortByDropdown.waitFor({ timeout: 8000 });
-        await sortByDropdown.click();
-        await page.waitForTimeout(1000);
-        const mostRecentOption = page.locator('div[role="menuitem"] span:text("Most Recent")');
-        await mostRecentOption.waitFor({ timeout: 5000 });
-        await mostRecentOption.click();
-        await page.waitForTimeout(2000);
-    } catch {}
-}
-
-async function filterNewLeads(posts) {
-    const urls = posts.map(p => p.url);
-    const { rows } = await pool.query(
-        'SELECT post_url FROM nextdoor_messages WHERE post_url = ANY($1)',
-        [urls]
-    );
-    const seen = new Set(rows.map(r => r.post_url));
-    return posts.filter(p => !seen.has(p.url));
-}
-
-// ---------- DAILY CAP HELPERS ----------
-async function getTodaysDMCount(city) {
-    const { rows } = await pool.query(
-        `SELECT COUNT(*) FROM nextdoor_messages
-     WHERE city = $1 AND message_sent = true AND message_sent_at::date = CURRENT_DATE`,
-        [city]
-    );
-    return parseInt(rows[0].count || '0', 10);
-}
-
-// ---------- MELISSA (TX-only) ----------
-async function melissaTX(browser, author) {
-    const name = (author || '').trim();
-    if (!name || name.split(' ').length < 2) {
-        return { phone: null, email: null, physical_address: null };
-    }
-    try {
-        return await personSearchAndScrape(browser, { name, state: 'TX', city: '', zip: '' });
-    } catch (e) {
-        console.warn('⚠️ Melissa lookup failed:', e.message);
-        return { phone: null, email: null, physical_address: null };
+        const sortBy = page.locator('div[role="button"][aria-label="Sort By"]');
+        await sortBy.waitFor({ timeout: 8000 });
+        await sortBy.click();
+        await page.waitForTimeout(800);
+        const mostRecent = page.locator('div[role="menuitem"] span:text("Most Recent")');
+        await mostRecent.waitFor({ timeout: 5000 });
+        await mostRecent.click();
+        await page.waitForTimeout(1500);
+    } catch {
+        /* non-fatal */
     }
 }
-
-// ---------- SAVE ----------
-async function saveMessagedPost(post, didSendMessage = false) {
-    const { url, author, location, leadType } = post;
-    try {
-        console.log(
-            `💾 Saving to DB: URL=${url}, Author=${author}, Location=${location}, ` +
-            `LeadType=${leadType}, MessageSent=${didSendMessage}`
-        );
-
-        // write to BOTH tables exactly once
-        await upsertMessage('nextdoor_messages', post, didSendMessage);
-        await upsertMessage('recent_nextdoor_messages', post, didSendMessage);
-    } catch (err) {
-        console.error('❌ Failed to save messaged post:', err.message);
-    }
-}
-
 
 async function goToPostsTab(page, searchTerm) {
     const ariaTab = page.getByRole('tab', { name: /^Posts$/i });
-    if (await ariaTab.count()) { await ariaTab.first().click(); return; }
+    if (await ariaTab.count()) {
+        await ariaTab.first().click();
+        return;
+    }
 
     const testId = page.locator('[data-testid="tab-posts"]');
-    if (await testId.count()) { await testId.first().click(); return; }
-
-    const tablist = page.locator('div[role="tablist"][aria-orientation="horizontal"]');
-    if (await tablist.count()) {
-        await tablist.evaluate(el => el.scrollLeft = el.scrollWidth);
-        await sleep(200);
+    if (await testId.count()) {
+        await testId.first().click();
+        return;
     }
 
     const textLink = page.locator('a,button', { hasText: /^Posts$/i }).first();
-    if (await textLink.count()) { await textLink.click(); return; }
+    if (await textLink.count()) {
+        await textLink.click();
+        return;
+    }
 
-    await page.goto(`https://nextdoor.com/search/posts/?query=${encodeURIComponent(searchTerm)}`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`https://nextdoor.com/search/posts/?query=${encodeURIComponent(searchTerm)}`, {
+        waitUntil: 'domcontentloaded',
+    });
 }
 
 async function scrapePostsOnPage(page, limit = 30) {
     for (let i = 0; i < 4; i++) {
         await page.mouse.wheel(0, 1600);
-        await sleep(350);
+        await sleep(300);
     }
     const posts = await page.$$eval('a[href*="/p/"], a[href*="/posting/"]', (links) => {
         const seen = new Set(), out = [];
@@ -165,43 +390,21 @@ async function scrapePostsOnPage(page, limit = 30) {
     });
     return posts.slice(0, limit);
 }
-async function pruneOldRecent() {
-    await pool.query(`
-    DELETE FROM recent_nextdoor_messages
-    WHERE message_sent = true
-      AND message_sent_at < NOW() - INTERVAL '7 days'
-  `);
+
+async function filterNewLeads(posts) {
+    const urls = posts.map((p) => p.url);
+    const { rows } = await pool.query('SELECT post_url FROM nextdoor_messages WHERE post_url = ANY($1)', [urls]);
+    const seen = new Set(rows.map((r) => r.post_url));
+    return posts.filter((p) => !seen.has(p.url));
 }
 
-async function classifyPosts(posts, labelType = 'pool') {
-    if (!posts.length) return [];
-    const SYSTEM_PROMPTS = {
-        pool: `Label each post as "lead" if the author is seeking pool service/cleaning/repair or a recommendation/quote; otherwise "not_lead". Return ONLY JSON in input order: [{"label":"lead"|"not_lead","reason":"..."}]. Be strict.`,
-        handyman: `Label each post as "lead" if the author is seeking handyman or plumbing services, repairs, help with fixtures, installations, or recommendations; otherwise "not_lead". Return ONLY JSON in input order: [{"label":"lead"|"not_lead","reason":"..."}]. Be strict.`
-    };
-    const system = SYSTEM_PROMPTS[labelType] || SYSTEM_PROMPTS.pool;
-    const user = `Posts:\n${posts.map((p, i) => `#${i + 1}\n${p.text}`).join('\n')}`;
+/* --------------------------- GPT Lead Classifier --------------------------- */
 
-    const resp = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        temperature: 0,
-        messages: [{ role: 'system', content: system }, { role: 'user', content: user }]
-    });
-
-    const raw = resp.choices?.[0]?.message?.content || '[]';
-    try { return JSON.parse(raw); }
-    catch {
-        const m = raw.match(/\[[\s\S]*\]/);
-        return m ? JSON.parse(m[0]) : posts.map(() => ({ label: 'not_lead', reason: 'parse error' }));
-    }
-}
-
-const sendDM = async (page, postUrl, messageText) => {
+async function getAuthorAndLocation(page, postUrl) {
     await page.goto(postUrl, { waitUntil: 'domcontentloaded' });
-    await sleep(3000);
+    await sleep(2500);
 
-    let author = 'UNKNOWN';
-    let location = 'UNKNOWN';
+    let author = 'UNKNOWN', location = 'UNKNOWN';
 
     try {
         const authorEl = page.locator('a[href*="/profile/"] span.Text_detailTitle__1cj4dca1c').first();
@@ -215,56 +418,145 @@ const sendDM = async (page, postUrl, messageText) => {
         location = await locationEl.innerText();
     } catch {}
 
+    return { author, location };
+}
+
+async function classifyPosts(posts, labelType = 'pool') {
+    if (!posts.length) return [];
+
+    const SYSTEM_PROMPTS = {
+        pool: `You’re classifying neighborhood posts. Label "lead" ONLY if the author is seeking pool/spa/hot tub service (cleaning, maintenance, equipment like pump/chlorinator/filter, green pool, quotes or recommendations for a pool pro).
+If it's about plumbing (toilets, sinks, faucets, water heaters, sewer, general leaks not clearly about a pool) or irrigation/sprinklers, label "not_lead".
+Return ONLY JSON in input order: [{"label":"lead"|"not_lead","reason":"..."}]. Be strict.`,
+        handyman: `You’re classifying neighborhood posts. Label "lead" ONLY if the author is seeking handyman or plumbing help (repairs, leaks, faucets, toilets, water heater, mounting, drywall, doors, tile, general recommendations).
+If it's about pool/spa/hot tub maintenance or equipment, label "not_lead".
+Return ONLY JSON in input order: [{"label":"lead"|"not_lead","reason":"..."}]. Be strict.`,
+    };
+
+    const system = SYSTEM_PROMPTS[labelType] || SYSTEM_PROMPTS.pool;
+    const user = `Posts:\n${posts.map((p, i) => `#${i + 1}\n${p.text}`).join('\n')}`;
+
+    const resp = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        temperature: 0,
+        messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+    });
+
+    const raw = resp.choices?.[0]?.message?.content || '[]';
     try {
-        const authorNameLink = page.locator('a[href*="/profile/"] span.Text_detailTitle__1cj4dca1c').first();
-        await authorNameLink.waitFor({ timeout: 10000 });
-        await authorNameLink.click();
-        await sleep(3000);
+        return JSON.parse(raw);
     } catch {
-        return { status: 'author_click_failed', author, location };
+        const m = raw.match(/\[[\s\S]*\]/);
+        return m ? JSON.parse(m[0]) : posts.map(() => ({ label: 'not_lead', reason: 'parse error' }));
     }
+}
 
-    const buttonSelectors = [
-        'button:has-text("Message")',
-        'div[data-part="button"] div:has-text("Message")',
-        'text=Message'
-    ];
+/* --------------------------- Melissa (TX only) ---------------------------- */
 
-    for (const selector of buttonSelectors) {
-        try {
-            const messageButton = page.locator(selector);
-            await messageButton.first().waitFor({ timeout: 10000 });
-            await messageButton.first().click();
-            await sleep(1000);
-            await page.fill('textarea', messageText);
-            await page.keyboard.press('Enter');
-            return { status: 'dm_sent', author, location };
-        } catch {}
+async function melissaTX(author) {
+    const name = (author || '').trim();
+    if (!name || name.split(' ').length < 2) return { phone: null, email: null, physical_address: null };
+
+    let b;
+    try {
+        const headless = process.env.HEADLESS === '1';
+        const useChrome = process.env.USE_CHROME === '1';
+        b = useChrome
+            ? await chromium.launch({ channel: 'chrome', headless })
+            : await chromium.launch({ headless });
+        return await personSearchAndScrape(b, { name, state: 'TX', city: '', zip: '' });
+    } catch (e) {
+        console.warn('⚠️ Melissa lookup failed:', e.message);
+        return { phone: null, email: null, physical_address: null };
+    } finally {
+        if (b) await b.close();
     }
+}
 
-    return { status: 'no_message_button', author, location };
-};
+/* --------------------------------- Main ----------------------------------- */
 
-const runNextdoorAutomation = async () => {
-    console.log('🚀 Starting Nextdoor automation...');
+const runNextdoorAutomation = async () => {console.log('🏡  Running Nextdoor Automation...');
 
-    const browser = await chromium.launch({ headless: false });
-    const context = await browser.newContext({ viewport: { width: 1400, height: 900 } });
-    const page = await context.newPage();
+    const useChrome = process.env.USE_CHROME === '1';
+    const headless  = process.env.HEADLESS === '1';
+
+// --- slot-aware env (defaults to morning) ---
+// --- slot-aware env (defaults to morning) ---
+    const SLOT = (process.env.RUN_SLOT || 'morning').toLowerCase();   // "morning" | "afternoon"
+
+// --- HARD DISABLE any proxies (even if inherited from the shell) ---
+    ['HTTP_PROXY','HTTPS_PROXY','http_proxy','https_proxy','ALL_PROXY','all_proxy','NO_PROXY','no_proxy']
+        .forEach(k => { if (process.env[k]) delete process.env[k]; });
+
+// Force-off: do not read any PROXY_URL* vars
+    const PROXY_URL = ''; // <— always empty so Playwright won’t use a proxy
+
+// --- portable profile dir resolution (Railway uses /data, local uses OS tmp) ---
+    const os = require('os');
+    const baseDefault = fs.existsSync('/data') ? '/data' : os.tmpdir();
+
+    let ND_PROFILE_DIR =
+        process.env[`ND_PROFILE_DIR_${SLOT.toUpperCase()}`] ||
+        process.env.ND_PROFILE_DIR ||
+        path.join(baseDefault, `.nd-profile-${SLOT}`);
 
     try {
-        await page.goto('https://nextdoor.com/login/?ucl=1', { waitUntil: 'domcontentloaded' });
-        await page.fill('input[data-testid="email-address-input"]', process.env.NEXTDOOR_USERNAME3);
-        await page.fill('input[data-testid="password-input"]', process.env.NEXTDOOR_PASSWORD3);
-        await Promise.all([
-            page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
-            page.click('button[data-testid="signin_button"]')
-        ]);
-        console.log('✅ Logged in');
-        await pruneOldRecent();
-        // current DM count for today (hard cap logic will re-check after each DM)
-        let dmCountToday = await getTodaysDMCount(CITY);
-        console.log(`📊 ${dmCountToday} DMs sent today in ${CITY}`);
+        fs.mkdirSync(ND_PROFILE_DIR, { recursive: true });
+    } catch (err) {
+        console.error(`⚠️ Failed to ensure profile dir ${ND_PROFILE_DIR}:`, err);
+        // Last-resort: unique temp dir
+        ND_PROFILE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), `.nd-profile-${SLOT}-`));
+    }
+
+    console.log(`🕒 Slot: ${SLOT}`);
+    console.log('🌐 Proxy: disabled'); // guaranteed
+    console.log(`📁 Profile dir resolved: ${ND_PROFILE_DIR}`);
+
+// --- shared launch options (no proxy field at all) ---
+    const baseLaunchOpts = {
+        headless,
+        viewport: { width: 1400, height: 900 },
+        geolocation: { latitude: 33.0602, longitude: -96.7349 },
+        permissions: ['geolocation'],
+        timezoneId: 'America/Chicago',
+        locale: 'en-US',
+        userAgent:
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        args: [
+            '--disable-blink-features=AutomationControlled',
+            ...(headless ? ['--no-sandbox', '--disable-dev-shm-usage'] : []),
+        ],
+        // 👇 no "proxy" key here at all
+    };
+
+
+// --- always use a persistent context with the resolved dir ---
+    const opts = useChrome ? { ...baseLaunchOpts, channel: 'chrome' } : baseLaunchOpts;
+    const context = await chromium.launchPersistentContext(ND_PROFILE_DIR, opts);
+
+    if (process.env.CLEAR_STORAGE_ON_START === '1') {
+        await clearNextdoorStorage(context, 'startup');
+    }
+
+
+// small stealth tweaks
+    await context.addInitScript(() => {
+        Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+        // Supply minimal chrome object to reduce detection
+        // @ts-ignore
+        window.chrome = window.chrome || { runtime: {} };
+        Object.defineProperty(navigator, 'platform', { get: () => 'MacIntel' });
+        Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+    });
+
+    const page = await context.newPage();
+    page.setDefaultTimeout(45000);
+    page.setDefaultNavigationTimeout(60000);
+
+
+
+    try {
+        await ensureLoggedIn(page);
 
         for (const { label, query, type, needsMostRecent } of SEARCH_TERMS) {
             console.log(`🔍 Searching for: ${label}`);
@@ -273,50 +565,48 @@ const runNextdoorAutomation = async () => {
             await page.fill('input[aria-label="Search Nextdoor"]', query);
             await page.keyboard.press('Enter');
             await page.waitForLoadState('domcontentloaded');
-            await sleep(4000);
+            await sleep(3000);
 
             await goToPostsTab(page, query);
             if (needsMostRecent) await clickMostRecentFilter(page);
-            await sleep(3000);
+            await sleep(2000);
 
             const posts = await scrapePostsOnPage(page, 30);
             const labels = await classifyPosts(posts, type);
             const enriched = posts.map((p, i) => ({ ...p, ...(labels[i] || {}) }));
-            const leads = enriched.filter(p => p.label === 'lead');
-            const newLeads = await filterNewLeads(leads);
+            const leads = enriched.filter((p) => p.label === 'lead');
+            const keywordTighten =
+                type === 'pool'
+                    ? (p) => /\b(pool|spa|chlorine|skimmer|pump|filter|backwash|algae|acid|resurface|pebble|tiles?)\b/i.test(p.text)
+                    : () => true;
+
+            const newLeads = await filterNewLeads(leads.filter(keywordTighten));
 
             if (!newLeads.length) {
-                console.log(`⚠️ No clear leads found for: ${label}`);
+                console.log(`⚠️ No clear new leads for: ${label}`);
                 continue;
             }
 
             for (const [i, lead] of newLeads.entries()) {
-                // HARD CAP check before attempting
-                dmCountToday = await getTodaysDMCount(CITY);
-                if (dmCountToday >= MAX_DMS_PER_DAY) {
-                    console.log(`🚫 DM limit (${MAX_DMS_PER_DAY}) reached for ${CITY}. Skipping remaining leads.`);
-                    break;
+                console.log(`(${i + 1}/${newLeads.length}) Visiting -> ${lead.url}`);
+
+                const { author, location } = await getAuthorAndLocation(page, lead.url);
+                lead.author = author;
+                lead.location = location;
+                lead.leadType = type;
+
+                if (!isValidPersonName(author)) {
+                    console.log(`⏭️ Skipping weak name "${author}" (needs a real last name)`);
+                    continue;
                 }
 
-                const name = (lead.author || '').split(' ')[0] || '';
-                const text = dmTemplate(name, type);
-                console.log(`(${i + 1}/${newLeads.length}) Contacting: ${lead.url}`);
+                let phone = null, email = null, physical_address = null;
+                const r = await melissaTX(author);
+                console.log('📇 Melissa:', r);
+                phone = r.phone; email = r.email; physical_address = r.physical_address;
 
-                try {
-                    const { status, author, location } = await sendDM(page, lead.url, text);
-                    console.log(`✅ DM Status: ${status}`);
-                    lead.author = author;
-                    lead.location = location;
-                    lead.leadType = type;
-
-                    // Only spend Melissa credit if we actually DM'd them
-                    let phone = null, email = null, physical_address = null;
-                    if (status === 'dm_sent') {
-                        const r = await melissaTX(browser, author);
-                        phone = r.phone; email = r.email; physical_address = r.physical_address;
-                    }
-
-                    await saveMessagedPost({
+                await saveMessagedPost(
+                    {
                         url: lead.url,
                         author,
                         location,
@@ -324,27 +614,20 @@ const runNextdoorAutomation = async () => {
                         leadType: type,
                         phone,
                         email,
-                        physical_address
-                    }, status === 'dm_sent');
-
-                    // Re-check count from DB to guarantee the 7/day cap
-                    if (status === 'dm_sent') {
-                        dmCountToday = await getTodaysDMCount(CITY);
+                        physical_address,
                     }
-                } catch (err) {
-                    console.error(`❌ DM failed: ${err.message}`);
-                    try { await page.screenshot({ path: `dm_fail_${i + 1}.png`, fullPage: true }); } catch {}
-                }
-
-                await sleep(DM_PAUSE_MS);
+                );
             }
         }
-
     } catch (err) {
         console.error('❌ Fatal error:', err);
     } finally {
+        // 🔴 NEW: also wipe on shutdown
+        await clearNextdoorStorage(context, 'shutdown');
+
         console.log('🧼 Closing browser...');
-        await browser.close();
+        await new Promise(r => setTimeout(r, 30_000));
+        await context.close();
         console.log('✅ All automations completed');
     }
 };
