@@ -4,7 +4,7 @@
 	"main": "index.js",
 	"author": "evanligon7@gmail.com",
 	"scripts": {
-		"start": "bash -lc './run-nextdoor.sh morning && sleep 3600'",
+		"start": "node server.js",
 		"hotlist-cron": "node hotlist_cron/index.js",
 		"warmlist-cron": "node warmlist_cron/index.js",
 		"topofmind-cron": "node topofmind_cron/index.js",
@@ -13,7 +13,8 @@
 		"ionwave-cron": "node ionwave_cron/index.js",
 		"outlookcleaner_cron": "node outlookcleaner_cron/index.js",
 		"postinstall": "npx playwright install chromium",
-		"nextdoor-cron": "node ionwave_cron/utils/recent/nextdoorAutomationWylie.js"
+		"nextdoor-cron": "node ionwave_cron/utils/recent/nextdoorAutomationWylie.js",
+		"sh-script": "bash -lc './run-nextdoor.sh morning && sleep 3600'"
 	},
 	"engines": {
 		"node": "20.x",
