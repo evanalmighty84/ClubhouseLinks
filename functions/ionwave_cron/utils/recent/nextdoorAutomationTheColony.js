@@ -634,7 +634,7 @@ const runNextdoorAutomation = async () => {console.log('🏡  Running Nextdoor A
         }
     } catch (err) {
         console.error('❌ Fatal error:', err);
-    } } finally {
+    }  finally {
     // Only clear storage if you explicitly want to
     if (process.env.CLEAR_STORAGE_ON_SHUTDOWN === '1') {
         await clearNextdoorStorage(context, 'shutdown');
