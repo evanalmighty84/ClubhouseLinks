@@ -14,6 +14,8 @@ router.get('/all/:userId', smsController.getAllSMS);
 
 router.post('/status-callback', smsController.twilioStatusCallback);
 
+router.post('/alert-lead', smsController.notifyUsersForLead);
+
 router.post(
     '/incoming',
     express.urlencoded({ extended: false }), // only this route needs form support

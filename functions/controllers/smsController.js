@@ -4,6 +4,8 @@ const pool = require('../db/db');
 
 dotenv.config();
 
+const smsSessions = new Map(); // Simple in-memory session tracking
+
 /* ---------- helpers: canonicalization ---------- */
 const CANON = {
     'pool': 'pool',
@@ -187,8 +189,8 @@ function formatUSPhone(num = '') {
 
 
 
-dotenv.config(); // Load environment variables from .env
-const smsSessions = new Map(); // Simple in-memory session tracking
+
+
 
 // Existing - Send SMS immediately
 exports.sendSMS = async (req, res) => {
