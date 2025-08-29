@@ -1,8 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-
-// Routes
 const ionRoutes = require('./routes/ionRoutes');
 const nextDoorRoutes = require('./routes/nextDoorRoutes');
 const campaignsRoutes = require('./routes/campaignsRoutes');

@@ -2,6 +2,191 @@ const dotenv = require('dotenv');
 const { client, messagingServiceSid } = require('../utils/twilioClient');
 const pool = require('../db/db');
 
+dotenv.config();
+
+/* ---------- helpers: canonicalization ---------- */
+const CANON = {
+    'pool': 'pool',
+    'handyman': 'handyman',
+    'plumber': 'plumber',
+    'house cleaner': 'house cleaner',   // keep the label EXACTLY as you store it in users.industry
+    'house_cleaner': 'house cleaner',   // normalize inbound variants -> canonical
+    'housecleaner': 'house cleaner',
+    'roofer': 'roofer',
+    'painter': 'painter',
+    'lawncare': 'lawncare',
+    'electrician': 'electrician',
+    'golf instructor': 'golf instructor',
+    'pet sitter': 'pet sitter',
+    'junk removal': 'junk removal',
+    'general contractor': 'general contractor',
+    'realtor': 'realtor',
+    'insurance': 'insurance',
+};
+
+function canonIndustry(s = '') {
+    const k = String(s || '').trim().toLowerCase();
+    return CANON[k] || k; // fall back to lower
+}
+
+function canonText(s = '') {
+    return String(s || '').trim();
+}
+
+/* ---------- core: notify users for a given lead ---------- */
+/**
+ * POST /api/sms/notify-lead
+ * Body can be:
+ *   { post_url: "https://nextdoor..." }
+ * or
+ *   { lead_id: 123 }
+ *
+ * We will:
+ *  - look up the lead in nextdoor_messages
+ *  - if it has a phone number, find users whose:
+ *      - industry array contains the lead's type (canonicalized)
+ *      - subscribed_areas array contains the lead's city (case-insensitive match)
+ *  - send each matching user an SMS with the lead details
+ *  - record in lead_alerts_sent to avoid duplicates
+ */
+exports.notifyUsersForLead = async (req, res) => {
+    const { post_url, lead_id } = req.body || {};
+
+    if (!post_url && !lead_id) {
+        return res.status(400).json({ error: 'Provide post_url or lead_id' });
+    }
+
+    try {
+        // 1) Load the lead
+        const leadSql = post_url
+            ? `SELECT id, post_url, author, city, lead_type, phone, description
+           FROM nextdoor_messages
+          WHERE post_url = $1`
+            : `SELECT id, post_url, author, city, lead_type, phone, description
+           FROM nextdoor_messages
+          WHERE id = $1`;
+
+        const leadParam = post_url || lead_id;
+        const leadResult = await pool.query(leadSql, [leadParam]);
+        const lead = leadResult.rows[0];
+
+        if (!lead) {
+            return res.status(404).json({ error: 'Lead not found' });
+        }
+
+        if (!lead.phone || !lead.phone.replace(/\D/g, '')) {
+            return res.status(200).json({ message: 'Lead has no phone number; no alerts sent.', lead });
+        }
+
+        const city = canonText(lead.city);
+        const industry = canonIndustry(lead.lead_type);
+
+        if (!city || !industry) {
+            return res.status(200).json({ message: 'Missing city or industry on lead; no alerts sent.', lead });
+        }
+
+        // 2) Find candidate users (industry + subscribed area)
+        //    - industry: EXISTS in users.industry (case-insensitive)
+        //    - area: EXISTS in users.subscribed_areas (case-insensitive)
+        const usersSql = `
+      SELECT id, name, phone_number, industry, subscribed_areas
+        FROM users
+       WHERE phone_number IS NOT NULL
+         AND EXISTS (
+               SELECT 1
+                 FROM unnest(coalesce(industry, ARRAY[]::text[])) i
+                WHERE lower(i) = lower($1)  -- industry match
+         )
+         AND EXISTS (
+               SELECT 1
+                 FROM unnest(coalesce(subscribed_areas, ARRAY[]::text[])) a
+                WHERE lower(a) = lower($2)  -- city match
+         )
+    `;
+        const { rows: users } = await pool.query(usersSql, [industry, city]);
+
+        if (!users.length) {
+            return res.status(200).json({ message: 'No matching users for this lead.', matchedUsers: 0, lead });
+        }
+
+        // 3) Compose the SMS text
+        const phonePretty = formatUSPhone(lead.phone);
+        const desc = lead.description ? `\n\n📝 Post: ${lead.description}` : '';
+        const text = [
+            `🔔 New ${industry} lead in ${city}`,
+            `👤 ${lead.author || 'Unknown'}`,
+            `📞 ${phonePretty}`,
+            lead.post_url ? `🔗 ${lead.post_url}` : '',
+            desc
+        ].filter(Boolean).join('\n');
+
+        // 4) Send + dedupe with lead_alerts_sent
+        const results = [];
+        for (const u of users) {
+            try {
+                // Skip if already sent for this (lead, user)
+                const already = await pool.query(
+                    `SELECT 1 FROM lead_alerts_sent WHERE post_url = $1 AND user_id = $2`,
+                    [lead.post_url, u.id]
+                );
+                if (already.rowCount > 0) {
+                    results.push({ userId: u.id, sent: false, reason: 'duplicate' });
+                    continue;
+                }
+
+                await client.messages.create({
+                    to: normalizeToE164(u.phone_number),
+                    body: text,
+                    messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID || messagingServiceSid,
+                });
+
+                await pool.query(
+                    `INSERT INTO lead_alerts_sent (post_url, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+                    [lead.post_url, u.id]
+                );
+
+                results.push({ userId: u.id, sent: true });
+            } catch (e) {
+                console.error(`❌ SMS send failed for user ${u.id}:`, e.message);
+                results.push({ userId: u.id, sent: false, error: e.message });
+            }
+        }
+
+        return res.status(200).json({
+            message: 'Alert processing complete',
+            matchedUsers: users.length,
+            results
+        });
+    } catch (err) {
+        console.error('❌ notifyUsersForLead error:', err);
+        return res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+/* ---------- utilities ---------- */
+function normalizeToE164(num = '') {
+    const digits = String(num).replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.length === 10) return `+1${digits}`;
+    if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
+    if (digits.startsWith('+')) return digits;
+    // Fallback: best effort
+    return `+${digits}`;
+}
+
+function formatUSPhone(num = '') {
+    const d = String(num).replace(/\D/g, '');
+    if (d.length === 10) return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+    if (d.length === 11 && d.startsWith('1')) return `(${d.slice(1,4)}) ${d.slice(4,7)}-${d.slice(7)}`;
+    return num;
+}
+
+
+
+
+
+
+
 dotenv.config(); // Load environment variables from .env
 const smsSessions = new Map(); // Simple in-memory session tracking
 
