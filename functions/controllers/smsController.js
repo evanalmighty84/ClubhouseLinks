@@ -1,7 +1,6 @@
 const dotenv = require('dotenv');
 const { client, messagingServiceSid } = require('../utils/twilioClient');
 const pool = require('../db/db');
-
 dotenv.config();
 
 const smsSessions = new Map(); // Simple in-memory session tracking
@@ -26,18 +25,11 @@ const CANON = {
     'insurance': 'insurance',
 };
 
-function canonIndustry(s = '') {
-    const k = String(s || '').trim().toLowerCase();
-    return CANON[k] || k; // fall back to lower
-}
 
-function canonText(s = '') {
-    return String(s || '').trim();
-}
 
 /* ---------- core: notify users for a given lead ---------- */
 /**
- * POST /api/sms/notify-lead
+ * POST /api/smsqueue/alert-lead
  * Body can be:
  *   { post_url: "https://nextdoor..." }
  * or
@@ -51,58 +43,142 @@ function canonText(s = '') {
  *  - send each matching user an SMS with the lead details
  *  - record in lead_alerts_sent to avoid duplicates
  */
-exports.notifyUsersForLead = async (req, res) => {
-    const { post_url, lead_id } = req.body || {};
+// controller/notifyUsersForLead.js
+const crypto = require('crypto');
+// assume you already have: const pool = require('./../../../db/db');
 
-    if (!post_url && !lead_id) {
-        return res.status(400).json({ error: 'Provide post_url or lead_id' });
+
+
+const canonText = (s) => (s || '').trim().toLowerCase();
+const hash = (s) => crypto.createHash('md5').update(canonText(s)).digest('hex');
+const digitsOnly = (s) => (s || '').replace(/\D/g, '');
+const titleCase = (s) => (s || '').replace(/\w\S*/g, (t) => t[0].toUpperCase() + t.slice(1).toLowerCase());
+const truncate = (s, n = 300) => (s && s.length > n ? s.slice(0, n - 1) + '…' : s || '');
+const formatUSPhone = (s) => {
+    const d = digitsOnly(s);
+    if (d.length === 10) return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+    if (d.length === 11 && d.startsWith('1')) return `(${d.slice(1,4)}) ${d.slice(4,7)}-${d.slice(7)}`;
+    return s || 'N/A';
+};
+const normalizeToE164 = (s) => {
+    const d = digitsOnly(s);
+    if (!d) return null;
+    return d.length === 11 && d.startsWith('1') ? `+${d}` : d.length === 10 ? `+1${d}` : `+${d}`;
+};
+const canonIndustry = (s) => {
+    const v = canonText(s);
+    // map aliases if needed
+    if (['pool', 'pool service', 'pool maintenance'].includes(v)) return 'pool';
+    if (['handyman', 'plumber', 'plumbing'].includes(v)) return 'handyman';
+    if (['housecleaner', 'house cleaning', 'maid', 'cleaner'].includes(v)) return 'housecleaner';
+    if (['lawncare', 'lawn care', 'landscaping'].includes(v)) return 'lawncare';
+    return v || null;
+};
+const fmtCST = (ts) => {
+    try {
+        return new Date(ts).toLocaleString('en-US', { timeZone: 'America/Chicago' });
+    } catch { return ts || ''; }
+};
+
+// Assumes helpers exist: pool, client (twilio), digitsOnly, hash, titleCase, truncate,
+// formatUSPhone, normalizeToE164, fmtCST, canonText, canonIndustry
+
+async function findByPhone(phoneDigits, table) {
+    const { rows } = await pool.query(
+        `
+    SELECT id, author, message_sent_at, location, city, lead_type, phone, physical_address, description
+      FROM ${table}
+     WHERE regexp_replace(coalesce(phone,''), '\\D','','g') = $1
+     ORDER BY message_sent_at DESC NULLS LAST
+     LIMIT 1
+    `,
+        [phoneDigits]
+    );
+    return rows[0];
+}
+
+exports.notifyUsersForLead = async (req, res) => {
+    const {
+        lead_id,
+        phone,
+        name,            // REQUIRED when no lead_id (author/name)
+        author,          // alias for name
+        lead_type,       // REQUIRED when no lead_id
+        description,     // optional
+        city: cityOverride,                 // optional override
+        location: locationOverride,         // optional override
+        physical_address: physicalAddrOv,   // optional override
+        message_sent_at: messageSentAtOv    // optional override
+    } = req.body || {};
+
+    // Require: lead_id OR (name & phone & lead_type)
+    if (!lead_id && (!phone || !(name || author) || !lead_type)) {
+        return res.status(400).json({
+            error: 'Provide lead_id OR (name AND phone AND lead_type).'
+        });
     }
 
     try {
-        // 1) Load the lead
-        const leadSql = post_url
-            ? `SELECT id, post_url, author, city, lead_type, phone, description
-           FROM nextdoor_messages
-          WHERE post_url = $1`
-            : `SELECT id, post_url, author, city, lead_type, phone, description
-           FROM nextdoor_messages
-          WHERE id = $1`;
+        const phoneDigits = digitsOnly(phone || '');
+        let lead;
 
-        const leadParam = post_url || lead_id;
-        const leadResult = await pool.query(leadSql, [leadParam]);
-        const lead = leadResult.rows[0];
-
-        if (!lead) {
-            return res.status(404).json({ error: 'Lead not found' });
+        // 1) If lead_id provided, it lives in nextdoor_messages
+        if (lead_id) {
+            const { rows } = await pool.query(
+                `SELECT id, author, message_sent_at, location, city, lead_type, phone, physical_address, description
+           FROM nextdoor_messages
+          WHERE id = $1`,
+                [lead_id]
+            );
+            lead = rows[0];
         }
 
-        if (!lead.phone || !lead.phone.replace(/\D/g, '')) {
-            return res.status(200).json({ message: 'Lead has no phone number; no alerts sent.', lead });
+        // 2) If no lead yet and we have a phone, try to fetch most recent by phone
+        if (!lead && phoneDigits) {
+            lead =
+                (await findByPhone(phoneDigits, 'recent_nextdoor_messages')) ||
+                (await findByPhone(phoneDigits, 'nextdoor_messages'));
         }
 
+        // 3) Overlay request body (name/lead_type/etc.) as authoritative
+        const providedName = (name || author || '').trim();
+        const providedType = (lead_type || '').trim();
+
+        lead = {
+            id: lead?.id ?? null,
+            author: providedName || lead?.author || 'Unknown',
+            message_sent_at: messageSentAtOv ?? lead?.message_sent_at ?? null,
+            location: locationOverride ?? lead?.location ?? 'Unknown',
+            city: cityOverride ?? lead?.city ?? null,
+            lead_type: providedType || lead?.lead_type || null,
+            phone: phone ?? lead?.phone ?? null,
+            physical_address: physicalAddrOv ?? lead?.physical_address ?? null,
+            description: description ?? lead?.description ?? null
+        };
+
+        // 4) Validate required targeting fields
         const city = canonText(lead.city);
         const industry = canonIndustry(lead.lead_type);
 
-        if (!city || !industry) {
-            return res.status(200).json({ message: 'Missing city or industry on lead; no alerts sent.', lead });
+        if (!phoneDigits || !city || !industry) {
+            return res.status(200).json({
+                message: 'Missing phone/city/industry; no alerts sent.',
+                lead
+            });
         }
 
-        // 2) Find candidate users (industry + subscribed area)
-        //    - industry: EXISTS in users.industry (case-insensitive)
-        //    - area: EXISTS in users.subscribed_areas (case-insensitive)
+        // 5) Find candidate users (industry + subscribed city)
         const usersSql = `
       SELECT id, name, phone_number, industry, subscribed_areas
         FROM users
        WHERE phone_number IS NOT NULL
          AND EXISTS (
-               SELECT 1
-                 FROM unnest(coalesce(industry, ARRAY[]::text[])) i
-                WHERE lower(i) = lower($1)  -- industry match
+               SELECT 1 FROM unnest(coalesce(industry, ARRAY[]::text[])) i
+                WHERE lower(i) = lower($1)
          )
          AND EXISTS (
-               SELECT 1
-                 FROM unnest(coalesce(subscribed_areas, ARRAY[]::text[])) a
-                WHERE lower(a) = lower($2)  -- city match
+               SELECT 1 FROM unnest(coalesce(subscribed_areas, ARRAY[]::text[])) a
+                WHERE lower(a) = lower($2)
          )
     `;
         const { rows: users } = await pool.query(usersSql, [industry, city]);
@@ -111,40 +187,52 @@ exports.notifyUsersForLead = async (req, res) => {
             return res.status(200).json({ message: 'No matching users for this lead.', matchedUsers: 0, lead });
         }
 
-        // 3) Compose the SMS text
+        // 6) Compose SMS text
         const phonePretty = formatUSPhone(lead.phone);
-        const desc = lead.description ? `\n\n📝 Post: ${lead.description}` : '';
-        const text = [
-            `🔔 New ${industry} lead in ${city}`,
+        const bodyLines = [
+            `🔔 New ${titleCase(industry)} lead in ${titleCase(city)}`,
             `👤 ${lead.author || 'Unknown'}`,
+            lead.message_sent_at ? `🕒 ${fmtCST(lead.message_sent_at)} (CST)` : '',
+            `📍 ${lead.location || 'Unknown'}${lead.physical_address ? ' • ' + lead.physical_address : ''}`,
             `📞 ${phonePretty}`,
-            lead.post_url ? `🔗 ${lead.post_url}` : '',
-            desc
-        ].filter(Boolean).join('\n');
+            lead.description ? `📝 ${truncate(lead.description, 300)}` : ''
+        ].filter(Boolean);
+        const text = bodyLines.join('\n');
 
-        // 4) Send + dedupe with lead_alerts_sent
+        // 7) Dedupe key: prefer id; else phone+city+industry(+name) hash
+        const leadKey = lead.id
+            ? `id:${lead.id}`
+            : `ph:${phoneDigits}|city:${city}|type:${industry}|n:${hash(lead.author || '')}`;
+
+        // 8) Send + record
         const results = [];
         for (const u of users) {
             try {
-                // Skip if already sent for this (lead, user)
                 const already = await pool.query(
                     `SELECT 1 FROM lead_alerts_sent WHERE post_url = $1 AND user_id = $2`,
-                    [lead.post_url, u.id]
+                    [leadKey, u.id]
                 );
                 if (already.rowCount > 0) {
                     results.push({ userId: u.id, sent: false, reason: 'duplicate' });
                     continue;
                 }
 
+                const to = normalizeToE164(u.phone_number);
+                if (!to) {
+                    results.push({ userId: u.id, sent: false, reason: 'invalid phone' });
+                    continue;
+                }
+
                 await client.messages.create({
-                    to: normalizeToE164(u.phone_number),
+                    to,
                     body: text,
-                    messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID || messagingServiceSid,
+                    messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID
                 });
 
+                // reuse post_url column for dedupe key
                 await pool.query(
                     `INSERT INTO lead_alerts_sent (post_url, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-                    [lead.post_url, u.id]
+                    [leadKey, u.id]
                 );
 
                 results.push({ userId: u.id, sent: true });
@@ -157,6 +245,7 @@ exports.notifyUsersForLead = async (req, res) => {
         return res.status(200).json({
             message: 'Alert processing complete',
             matchedUsers: users.length,
+            leadKey,
             results
         });
     } catch (err) {
@@ -164,28 +253,6 @@ exports.notifyUsersForLead = async (req, res) => {
         return res.status(500).json({ error: 'Internal Server Error' });
     }
 };
-
-/* ---------- utilities ---------- */
-function normalizeToE164(num = '') {
-    const digits = String(num).replace(/\D/g, '');
-    if (!digits) return '';
-    if (digits.length === 10) return `+1${digits}`;
-    if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
-    if (digits.startsWith('+')) return digits;
-    // Fallback: best effort
-    return `+${digits}`;
-}
-
-function formatUSPhone(num = '') {
-    const d = String(num).replace(/\D/g, '');
-    if (d.length === 10) return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
-    if (d.length === 11 && d.startsWith('1')) return `(${d.slice(1,4)}) ${d.slice(4,7)}-${d.slice(7)}`;
-    return num;
-}
-
-
-
-
 
 
 
@@ -213,6 +280,11 @@ exports.sendSMS = async (req, res) => {
         res.status(500).json({ error: 'Failed to send SMS' });
     }
 };
+
+
+
+
+
 
 // ✅ NEW - Get scheduled SMS for a user
 // ✅ Better: Join subscribers to get name & notes directly

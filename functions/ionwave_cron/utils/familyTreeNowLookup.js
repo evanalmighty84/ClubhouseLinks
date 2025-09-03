@@ -1,27 +1,50 @@
-// familyTreeNowLookup.js
+// familyTreeNowLookup.js — Playwright “on top of” your realtime renderer
 require('dotenv').config();
+
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const axios = require('axios');
 const { chromium } = require('playwright');
 const OpenAI = require('openai');
 
-// ------------ OpenAI (GPT) ------------
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+/* =======================
+   Config
+   ======================= */
+const NAV_TIMEOUT_MS = Number(process.env.NAV_TIMEOUT_MS || 45000);
+const STEALTH_UA =
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
-// Deterministic geocoding-ish city inference.
-// Returns a city name (e.g., "Allen") or '' if unsure.
+const FTL_HOME = 'https://www.familytreenow.com/';
+
+const REALTIME_API_URL =
+    process.env.REALTIME_API_URL || 'https://api.webit.live/api/v1/realtime/web';
+const REALTIME_API_TOKEN = process.env.TOKEN || ''; // <-- your base64 token
+const SESSION = process.env.RT_SESSION || ('ftn-' + Math.random().toString(36).slice(2, 10));
+
+/* =======================
+   Optional OpenAI city infer
+   ======================= */
+const OPENAI_DIRECT = process.env.OPENAI_DIRECT === '1';
+const openai = (() => {
+    if (!process.env.OPENAI_API_KEY) return null;
+    const cfg = { apiKey: process.env.OPENAI_API_KEY };
+    // If you want to proxy OpenAI later, wire an undici ProxyAgent here.
+    return new OpenAI(cfg);
+})();
+
 async function inferCityWithGPT({ neighborhood, baseCity, state }) {
-    if (!neighborhood || !state) return '';
+    if (!openai || !neighborhood || !state) return '';
     try {
         const system = [
             "You are a concise geocoding assistant.",
             "Given a neighborhood name, a base city, and a US state abbreviation, determine the single most likely city (within that state) that the neighborhood belongs to or is adjacent to.",
             "If you are confident, return ONLY the city name (proper case, no state).",
-            "If unsure, return an empty string.",
+            "If unsure, return an empty string."
         ].join(' ');
 
         const user = JSON.stringify({
-            neighborhood,
-            baseCity,
-            state,
+            neighborhood, baseCity, state,
             instruction: "Return only the city name (e.g., 'Allen'). If unsure, return an empty string."
         });
 
@@ -32,9 +55,7 @@ async function inferCityWithGPT({ neighborhood, baseCity, state }) {
         });
 
         let answer = (resp.choices?.[0]?.message?.content || '').trim();
-        // Basic cleanup: keep letters, spaces, hyphens, periods, apostrophes
         answer = answer.replace(/[^A-Za-z.\-'\s]/g, '').trim();
-        // If it looks like a city (1-3 words), accept; else empty
         if (!answer || answer.split(/\s+/).length > 4) return '';
         return answer;
     } catch (e) {
@@ -43,8 +64,21 @@ async function inferCityWithGPT({ neighborhood, baseCity, state }) {
     }
 }
 
-// ------------ FamilyTree Lookup ------------
-const FTL_HOME = 'https://familytreenow.com/'; // home has #First, #Last, #CityStateZip
+/* =======================
+   Utils
+   ======================= */
+function headers(ref = 'https://www.familytreenow.com/') {
+    return {
+        'User-Agent': STEALTH_UA,
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Upgrade-Insecure-Requests': '1',
+        'Referer': ref,
+        'DNT': '1',
+    };
+}
 
 function fmtCityState({ city, state }) {
     if (!city) return (state || '').trim();
@@ -66,124 +100,261 @@ function looksLikeStateInText(text, stateAbbr) {
     );
 }
 
-/**
- * Search + scrape on familytreelookup.com
- * @param {import('playwright').Browser} browser
- * @param {{ first: string, last: string, baseCity?: string, state?: string, neighborhood?: string, city?: string }} params
- *   - If `city` not provided, we will call GPT using {neighborhood, baseCity, state} to infer it.
- * @returns {Promise<{ phone: string|null, email: string|null, physical_address: string|null, resolvedCity: string|null }>}
- */
-async function familyTreeNowSearchAndScrape(browser, { first, last, baseCity = '', state = '', neighborhood = '', city = '' }) {
-    const context = await browser.newContext({ viewport: { width: 1400, height: 900 } });
-    const page = await context.newPage();
+function cityVariants(cityStateZip) {
+    if (!cityStateZip) return [];
+    const v1 = cityStateZip;                    // "Plano, TX"
+    const v2 = cityStateZip.replace(',', '');   // "Plano TX"
+    const parts = cityStateZip.split(',');
+    const v3 = parts[1] ? parts[1].trim() : cityStateZip; // "TX"
+    return Array.from(new Set([v1, v2, v3].filter(Boolean)));
+}
 
-    const out = { phone: null, email: null, physical_address: null, resolvedCity: null };
+/* =======================
+   Humanization helpers
+   ======================= */
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+async function hpause(min=120, max=260) {
+    const ms = Math.round(min + Math.random() * (max - min));
+    await sleep(ms);
+}
+async function humanType(page, selector, text) {
+    const el = page.locator(selector).first();
+    await el.click({ timeout: NAV_TIMEOUT_MS });
+    await el.fill(''); await hpause(150, 300);
+    for (const ch of String(text).split('')) {
+        await page.keyboard.type(ch, { delay: 40 + Math.floor(Math.random()*80) });
+        if (Math.random() < 0.08) await hpause(80, 180);
+    }
+}
 
-    // 0) If no explicit city provided, try GPT
-    let resolvedCity = city;
-    if (!resolvedCity) {
-        resolvedCity = await inferCityWithGPT({
-            neighborhood: String(neighborhood || '').trim(),
-            baseCity: String(baseCity || '').trim(),
-            state: String(state || '').trim().toUpperCase()
+/* =======================
+   Realtime renderer bridge
+   ======================= */
+async function rtCall(payload, tag='rt') {
+    if (!REALTIME_API_TOKEN) {
+        console.warn('ℹ️ TOKEN (REALTIME_API_TOKEN) not set; cannot use realtime renderer.');
+        return null;
+    }
+    try {
+        const body = {
+            session: SESSION,
+            render: true,
+            format: 'html',
+            parse: false,
+            country: 'US',
+            locale: 'en',
+            wait: NAV_TIMEOUT_MS,
+            ...payload,
+        };
+        const res = await axios.post(REALTIME_API_URL, body, {
+            timeout: Math.max(NAV_TIMEOUT_MS + 15000, 60000),
+            headers: {
+                Authorization: `Basic ${REALTIME_API_TOKEN}`,
+                'X-Api-Key': REALTIME_API_TOKEN, // some endpoints accept either
+                'Content-Type': 'application/json',
+            },
         });
-        out.resolvedCity = resolvedCity || null;
-        console.log('🔎 GPT resolved city:', resolvedCity || '(none)');
-    } else {
-        out.resolvedCity = resolvedCity;
+        return res.data;
+    } catch (e) {
+        console.log(`${tag} error:`, e?.message || e);
+        return null;
     }
+}
 
-    // 1) Go to site and wait for form
-    await page.goto(FTL_HOME, { waitUntil: 'domcontentloaded' });
-    await page.locator('#First').first().waitFor({ timeout: 20000 });
+async function rtLoad(page, url, ref='https://www.familytreenow.com/') {
+    const data = await rtCall({ url, headers: headers(ref) }, 'rtLoad');
+    const html = data?.html_content || '';
+    if (!html) return false;
 
-    // 2) Fill inputs (IDs you provided)
-    try { await page.fill('#First', first || ''); } catch {}
-    try { await page.fill('#Last', last || ''); } catch {}
+    // install base + set “url” so relative links resolve for us
+    const origin = new URL(url).origin + '/';
+    const withBase = html.includes('<base ')
+        ? html
+        : html.replace('<head>', `<head><base href="${origin}">`);
 
-    const cityStateZipVal = fmtCityState({ city: resolvedCity, state });
-    try { await page.fill('#CityStateZip', cityStateZipVal || (state || '')); } catch {}
+    await page.setContent(withBase, { waitUntil: 'load' });
+    await page.evaluate((u) => { try { history.replaceState(null, '', u); } catch {} }, url);
 
-    // 3) Submit search
-    const submitButton = page.locator(
-        'button[type="submit"]:has-text("Search"), input[type="submit"], button:has-text("Search")'
-    ).first();
+    try { fs.writeFileSync('ftn_last.html', withBase, 'utf8'); } catch {}
+    return true;
+}
 
-    if (await submitButton.count()) {
-        await Promise.all([page.waitForLoadState('domcontentloaded'), submitButton.click()]);
-    } else {
-        await page.locator('#Last').press('Enter').catch(() => {});
-        await page.waitForLoadState('domcontentloaded');
+async function wireRtNavigation(page) {
+    // Let the page tell Node to navigate via the renderer
+    await page.exposeFunction('__rtNavigate', async (url) => {
+        const current = await page.evaluate(() => location.href);
+        return rtLoad(page, url, current);
+    });
+
+    // Intercept link clicks & form submits
+    await page.addInitScript(() => {
+        window.addEventListener('click', (e) => {
+            const a = e.target && e.target.closest && e.target.closest('a[href]');
+            if (!a) return;
+            const href = a.getAttribute('href');
+            if (!href) return;
+            const url = new URL(href, location.href).toString();
+            if (url.includes('familytreenow.com')) {
+                e.preventDefault();
+                // eslint-disable-next-line no-undef
+                window.__rtNavigate(url);
+            }
+        }, true);
+
+        window.addEventListener('submit', (e) => {
+            const form = e.target;
+            if (!form || !(form instanceof HTMLFormElement)) return;
+            e.preventDefault();
+            const action = form.getAttribute('action') || location.href;
+            const method = (form.getAttribute('method') || 'GET').toUpperCase();
+            const fd = new FormData(form);
+            const usp = new URLSearchParams(fd);
+            let url = new URL(action, location.href);
+            if (method === 'GET') {
+                for (const [k,v] of usp.entries()) url.searchParams.set(k, v);
+                // eslint-disable-next-line no-undef
+                window.__rtNavigate(url.toString());
+            } else {
+                // For POST we degrade to GET (FTN search uses GET anyway)
+                for (const [k,v] of usp.entries()) url.searchParams.set(k, v);
+                // eslint-disable-next-line no-undef
+                window.__rtNavigate(url.toString());
+            }
+        }, true);
+    });
+}
+
+/* =======================
+   Core flow “on top” of renderer
+   ======================= */
+async function submitSearchHumanOnTop(page, { first, last, cityStateZip }) {
+    const variants = cityVariants(cityStateZip?.length ? cityStateZip : '') || [''];
+
+    for (let i = 0; i < Math.max(1, variants.length); i++) {
+        const v = variants[i] || '';
+
+        // Always load fresh home via renderer
+        if (!(await rtLoad(page, FTL_HOME))) return false;
+        await hpause(300, 700);
+        await wireRtNavigation(page);
+
+        // gentle mouse/scroll
+        await page.mouse.move(80 + Math.random()*100, 130 + Math.random()*80);
+        await page.mouse.wheel(0, 200 + Math.random()*200);
+        await hpause(200, 400);
+
+        // type fields
+        await humanType(page, '#First', first || '');
+        await hpause(120, 220);
+        await humanType(page, '#Last',  last  || '');
+        await hpause(120, 220);
+        if (v) await humanType(page, '#CityStateZip', v);
+
+        await hpause(220, 480);
+
+        // Build the exact GET URL FTN expects and navigate via renderer
+        const url = await page.evaluate(() => {
+            const first = document.querySelector('#First')?.value || '';
+            const last  = document.querySelector('#Last')?.value  || '';
+            const csz   = document.querySelector('#CityStateZip')?.value || '';
+            const u = new URL('/search/genealogy/results', 'https://www.familytreenow.com');
+            if (first) u.searchParams.set('first', first);
+            if (last)  u.searchParams.set('last',  last);
+            if (csz)   u.searchParams.set('citystatezip', csz);
+            return u.toString();
+        });
+
+        const ok = await page.evaluate(async (u) => {
+            // eslint-disable-next-line no-undef
+            return await window.__rtNavigate(u);
+        }, url);
+
+        if (!ok) {
+            await hpause(1000, 1600);
+            continue; // try next variant
+        }
+
+        // Save for debug
+        try { fs.writeFileSync('ftn_search.html', await page.content(), 'utf8'); } catch {}
+
+        // If this page is JSON (rare via renderer), retry variant
+        const isJson = await page.evaluate(() => (document.contentType || '').includes('json') ||
+            document.body?.innerText?.includes('"msg":"something went wrong"'));
+        if (!isJson) return true;
+
+        await hpause(900, 1500);
     }
+    return false;
+}
 
-    // 4) Wait for results — try several patterns
-    const resultsSelectorCandidates = [
+async function pickAndOpenDetail(page, state) {
+    const candidates = [
         'table tbody tr',
         '.search-results .result',
         '.results .result',
         'ul.results > li',
+        '.people-results li',
+        '.content .result',
     ];
 
-    let resultsSel = null;
-    for (const sel of resultsSelectorCandidates) {
-        if (await page.locator(sel).first().count()) { resultsSel = sel; break; }
-    }
-    if (!resultsSel) {
-        await page.waitForTimeout(1500);
-        for (const sel of resultsSelectorCandidates) {
-            if (await page.locator(sel).first().count()) { resultsSel = sel; break; }
+    const findSel = async () => {
+        for (const sel of candidates) {
+            if (await page.locator(sel).first().count()) return sel;
         }
+        return null;
+    };
+
+    let resultsSel = await findSel();
+    if (!resultsSel) {
+        await hpause(500, 900);
+        // “reload” from current URL via renderer
+        const cur = await page.evaluate(() => location.href);
+        await rtLoad(page, cur);
+        resultsSel = await findSel();
     }
-    if (!resultsSel) return out; // no results
+    if (!resultsSel) return false;
 
     const results = page.locator(resultsSel);
     const rCount = await results.count();
-    if (rCount === 0) return out;
+    if (!rCount) return false;
 
-    // 5) Prefer a result that mentions the state (if provided)
-    let detailClicked = false;
-    const prefState = (state || '').toUpperCase();
-
+    const pref = (state || '').toUpperCase();
     for (let i = 0; i < Math.min(rCount, 50); i++) {
         const row = results.nth(i);
         const text = ((await row.innerText().catch(() => '')) || '').trim();
+        if (!pref || looksLikeStateInText(text, pref)) {
+            // pick detail href
+            const href = await row.locator(
+                'a:has-text("View"), a:has-text("Details"), a:has-text("Profile"), a[href*="detail"], a[href*="profile"], a[href*="/record/"]'
+            ).first().getAttribute('href').catch(()=>null);
 
-        if (!prefState || looksLikeStateInText(text, prefState)) {
-            const detailLink = row
-                .locator('a:has-text("View"), a:has-text("Details"), a:has-text("Profile"), a[href*="detail"], a[href*="profile"]')
-                .first();
-
-            if (await detailLink.count()) {
-                await Promise.all([page.waitForLoadState('domcontentloaded'), detailLink.click()]);
-                detailClicked = true;
-                break;
+            if (href) {
+                const url = new URL(href, await page.evaluate(() => location.href)).toString();
+                const ok = await page.evaluate(async (u) => {
+                    // eslint-disable-next-line no-undef
+                    return await window.__rtNavigate(u);
+                }, url);
+                if (ok) return true;
             }
-
-            try {
-                await Promise.all([page.waitForLoadState('domcontentloaded'), row.click({ timeout: 1000 })]);
-                detailClicked = true;
-                break;
-            } catch {}
         }
     }
 
-    if (!detailClicked) {
-        const firstLink = results.first().locator(
-            'a:has-text("View"), a:has-text("Details"), a:has-text("Profile"), a[href*="detail"], a[href*="profile"]'
-        ).first();
-        if (await firstLink.count()) {
-            await Promise.all([page.waitForLoadState('domcontentloaded'), firstLink.click()]);
-            detailClicked = true;
-        } else {
-            try {
-                await Promise.all([page.waitForLoadState('domcontentloaded'), results.first().click({ timeout: 1000 })]);
-                detailClicked = true;
-            } catch {}
-        }
+    // fallback: try first row
+    const firstHref = await results.first().locator('a[href]').first().getAttribute('href').catch(()=>null);
+    if (firstHref) {
+        const url = new URL(firstHref, await page.evaluate(() => location.href)).toString();
+        const ok = await page.evaluate(async (u) => {
+            // eslint-disable-next-line no-undef
+            return await window.__rtNavigate(u);
+        }, url);
+        if (ok) return true;
     }
-    if (!detailClicked) return out;
+    return false;
+}
 
-    // 6) Scrape detail page for phone/email/address (broad fallbacks)
+async function scrapeDetail(page) {
+    const out = { phone: null, email: null, physical_address: null };
+
     try {
         const phoneCand = [
             'a[href^="tel:"]',
@@ -197,7 +368,7 @@ async function familyTreeNowSearchAndScrape(browser, { first, last, baseCity = '
         for (const sel of phoneCand) {
             const el = page.locator(sel).first();
             if (await el.count()) {
-                const t = (await el.innerText()) || (await el.getAttribute('href')) || '';
+                const t = (await el.innerText().catch(()=>'')) || (await el.getAttribute('href').catch(()=>'')) || '';
                 const phone = t.replace(/^tel:/, '').trim();
                 if (/\d{3}[-.\s)]?\d{3}[-.\s]?\d{4}/.test(phone)) { out.phone = phone; break; }
             }
@@ -216,7 +387,7 @@ async function familyTreeNowSearchAndScrape(browser, { first, last, baseCity = '
         for (const sel of emailCand) {
             const el = page.locator(sel).first();
             if (await el.count()) {
-                const t = (await el.innerText()) || (await el.getAttribute('href')) || '';
+                const t = (await el.innerText().catch(()=>'')) || (await el.getAttribute('href').catch(()=>'')) || '';
                 const email = t.replace(/^mailto:/, '').trim();
                 if (email.includes('@')) { out.email = email; break; }
             }
@@ -235,7 +406,7 @@ async function familyTreeNowSearchAndScrape(browser, { first, last, baseCity = '
         for (const sel of addrCand) {
             const el = page.locator(sel).first();
             if (await el.count()) {
-                const t = (await el.innerText()).trim();
+                const t = ((await el.innerText().catch(()=>'')) || '').trim();
                 if (t && t.length > 6) { out.physical_address = t.replace(/\s*\n\s*/g, ', '); break; }
             }
         }
@@ -244,40 +415,90 @@ async function familyTreeNowSearchAndScrape(browser, { first, last, baseCity = '
     return out;
 }
 
-// ------------ Local runner with CLI args ------------
-// Usage:
-//   node familyTreeNowLookup.js "Isiah" "Ichmel" "TX" "Allen" "Heritage Estates"
-// Args: first last state baseCity neighborhood
+/* =======================
+   Public API
+   ======================= */
+async function familyTreeNowSearchAndScrape(_browser, { first, last, baseCity='', state='', neighborhood='', city='' }) {
+    // Playwright here is purely a DOM host; network is done by realtime renderer
+    const userDataDir = process.env.ND_PROFILE_DIR || path.join(os.tmpdir(), 'nd-ftn-profile');
+    const context = await chromium.launchPersistentContext(userDataDir, {
+        headless: false,
+        args: ['--ignore-certificate-errors'],
+        ignoreHTTPSErrors: true,
+        userAgent: STEALTH_UA,
+        locale: 'en-US',
+        timezoneId: 'America/Chicago',
+        viewport: { width: 1400, height: 900 },
+    });
+
+    context.setDefaultNavigationTimeout(NAV_TIMEOUT_MS);
+    context.setDefaultTimeout(NAV_TIMEOUT_MS);
+
+    const page = await context.newPage();
+
+    const out = { phone: null, email: null, physical_address: null, resolvedCity: null };
+
+    // City inference (optional)
+    let resolvedCity = city;
+    if (!resolvedCity) {
+        resolvedCity = await inferCityWithGPT({
+            neighborhood: String(neighborhood || '').trim(),
+            baseCity: String(baseCity || '').trim(),
+            state: String(state || '').trim().toUpperCase()
+        });
+        if (!resolvedCity && baseCity) resolvedCity = baseCity;
+    }
+    out.resolvedCity = resolvedCity || null;
+    console.log('🔎 resolved city:', out.resolvedCity || '(none)');
+
+    const cityStateZipVal = fmtCityState({ city: resolvedCity, state });
+
+    // 1) Humanized submit on top of renderer
+    const ok = await submitSearchHumanOnTop(page, { first, last, cityStateZip: cityStateZipVal || (state || '') });
+    if (!ok) { await context.close(); return out; }
+
+    // 2) Pick/open a detail
+    const detailOk = await pickAndOpenDetail(page, state);
+    if (!detailOk) { await context.close(); return out; }
+
+    // 3) Scrape detail
+    const detail = await scrapeDetail(page);
+    Object.assign(out, detail);
+
+    await context.close();
+    return out;
+}
+
+/* =======================
+   CLI Runner
+   ======================= */
 async function runFamilyTreeNowAutomation() {
     const [,, firstArg, lastArg, stateArg, baseCityArg, neighborhoodArg] = process.argv;
 
-    // Example from your message:
-    // First: Isiah, Last: Ichmel, BaseCity: Allen, State: TX, Neighborhood: Heritage Estates
     const first = firstArg || 'Isiah';
     const last = lastArg || 'Ichmel';
     const state = (stateArg || 'TX').toUpperCase();
     const baseCity = baseCityArg || 'Allen';
     const neighborhood = neighborhoodArg || 'Heritage Estates';
 
-    const browser = await chromium.launch({ headless: false });
     try {
-        const result = await familyTreeNowSearchAndScrape(browser, {
+        const result = await familyTreeNowSearchAndScrape(null, {
             first, last, baseCity, state, neighborhood
-            // city:  // leave undefined; GPT will try to infer from neighborhood + baseCity + state
         });
-
         console.log('✅ FamilyTreeNow result:', JSON.stringify(result, null, 2));
     } catch (err) {
         console.error('❌ FamilyTreeNow test failed:', err);
-    } finally {
-        await browser.close();
     }
 }
 
 if (require.main === module) {
-    if (!process.env.OPENAI_API_KEY) {
-        console.error('Missing OPENAI_API_KEY in environment. Please set it first.');
-        process.exit(1);
+    if (!REALTIME_API_TOKEN) {
+        console.warn('⚠️ TOKEN not set — set env TOKEN with your base64 credential.');
+    }
+    if (process.env.OPENAI_API_KEY) {
+        console.log('OpenAI enabled (city inference).');
+    } else {
+        console.log('OpenAI not set — skipping city inference.');
     }
     runFamilyTreeNowAutomation();
 }
