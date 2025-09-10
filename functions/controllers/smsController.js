@@ -111,7 +111,8 @@ exports.notifyUsersForLead = async (req, res) => {
         message_sent_at: messageSentAtOv    // optional override
     } = req.body || {};
 
-    // Require: lead_id OR (name & phone & lead_type)
+    // Keep your original "either lead_id OR (name & phone & lead_type)" guard.
+    // With server-only approach, we DO require phone if there's no lead_id.
     if (!lead_id && (!phone || !(name || author) || !lead_type)) {
         return res.status(400).json({
             error: 'Provide lead_id OR (name AND phone AND lead_type).'
@@ -122,7 +123,7 @@ exports.notifyUsersForLead = async (req, res) => {
         const phoneDigits = digitsOnly(phone || '');
         let lead;
 
-        // 1) If lead_id provided, it lives in nextdoor_messages
+        // 1) If lead_id provided, load from nextdoor_messages
         if (lead_id) {
             const { rows } = await pool.query(
                 `SELECT id, author, message_sent_at, location, city, lead_type, phone, physical_address, description
@@ -156,11 +157,14 @@ exports.notifyUsersForLead = async (req, res) => {
             description: description ?? lead?.description ?? null
         };
 
-        // 4) Validate required targeting fields
+        // 4) Validate required targeting fields (server-only: no enrichment here)
         const city = canonText(lead.city);
         const industry = canonIndustry(lead.lead_type);
+        const chosenPhone = digitsOnly(lead.phone || '');
+        const prettyChosenPhone = formatUSPhone(chosenPhone);
+        const finalPhysicalAddress = lead.physical_address || null;
 
-        if (!phoneDigits || !city || !industry) {
+        if (!chosenPhone || !city || !industry) {
             return res.status(200).json({
                 message: 'Missing phone/city/industry; no alerts sent.',
                 lead
@@ -175,11 +179,11 @@ exports.notifyUsersForLead = async (req, res) => {
          AND EXISTS (
                SELECT 1 FROM unnest(coalesce(industry, ARRAY[]::text[])) i
                 WHERE lower(i) = lower($1)
-         )
+           )
          AND EXISTS (
                SELECT 1 FROM unnest(coalesce(subscribed_areas, ARRAY[]::text[])) a
                 WHERE lower(a) = lower($2)
-         )
+           )
     `;
         const { rows: users } = await pool.query(usersSql, [industry, city]);
 
@@ -188,13 +192,12 @@ exports.notifyUsersForLead = async (req, res) => {
         }
 
         // 6) Compose SMS text
-        const phonePretty = formatUSPhone(lead.phone);
         const bodyLines = [
             `🔔 New ${titleCase(industry)} lead in ${titleCase(city)}`,
             `👤 ${lead.author || 'Unknown'}`,
             lead.message_sent_at ? `🕒 ${fmtCST(lead.message_sent_at)} (CST)` : '',
-            `📍 ${lead.location || 'Unknown'}${lead.physical_address ? ' • ' + lead.physical_address : ''}`,
-            `📞 ${phonePretty}`,
+            `📍 ${lead.location || 'Unknown'}${finalPhysicalAddress ? ' • ' + finalPhysicalAddress : ''}`,
+            `📞 ${prettyChosenPhone}`,
             lead.description ? `📝 ${truncate(lead.description, 300)}` : ''
         ].filter(Boolean);
         const text = bodyLines.join('\n');
@@ -202,12 +205,13 @@ exports.notifyUsersForLead = async (req, res) => {
         // 7) Dedupe key: prefer id; else phone+city+industry(+name) hash
         const leadKey = lead.id
             ? `id:${lead.id}`
-            : `ph:${phoneDigits}|city:${city}|type:${industry}|n:${hash(lead.author || '')}`;
+            : `ph:${chosenPhone}|city:${city}|type:${industry}|n:${hash(lead.author || '')}`;
 
-        // 8) Send + record
+        // 8) Send + record (populate lead_alerts_sent fully)
         const results = [];
         for (const u of users) {
             try {
+                // Deduplicate per user
                 const already = await pool.query(
                     `SELECT 1 FROM lead_alerts_sent WHERE post_url = $1 AND user_id = $2`,
                     [leadKey, u.id]
@@ -223,21 +227,101 @@ exports.notifyUsersForLead = async (req, res) => {
                     continue;
                 }
 
-                await client.messages.create({
+                // Send SMS
+                const msg = await client.messages.create({
                     to,
                     body: text,
                     messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID
                 });
 
-                // reuse post_url column for dedupe key
+                // Build a rich JSON envelope for the body column
+                const envelope = {
+                    lead_snapshot: {
+                        id: lead.id,
+                        author: lead.author,
+                        city,
+                        industry,
+                        location: lead.location,
+                        physical_address: finalPhysicalAddress,
+                        message_sent_at: lead.message_sent_at
+                    },
+                    phones: {
+                        chosen: chosenPhone,
+                        chosen_pretty: prettyChosenPhone,
+                        original: lead.phone || null
+                    },
+                    sms: {
+                        sid: msg?.sid || null,
+                        to
+                    },
+                    composed_text_preview: text
+                };
+
+                // Persist a full row (not just post_url,user_id)
                 await pool.query(
-                    `INSERT INTO lead_alerts_sent (post_url, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-                    [leadKey, u.id]
+                    `INSERT INTO lead_alerts_sent
+             (post_url, user_id, sent_at, sms_sid, to_number, body, delivery_status, error_message,
+              lead_id, lead_phone, lead_city, lead_type)
+           VALUES
+             ($1,       $2,      NOW(),  $3,      $4,       $5,   $6,              $7,
+              $8,      $9,        $10,      $11)`,
+                    [
+                        leadKey,                          // post_url (dedupe key)
+                        u.id,                             // user_id
+                        msg?.sid || null,                 // sms_sid
+                        to,                               // to_number (subscriber's number)
+                        JSON.stringify(envelope),         // body (rich JSON)
+                        'sent',                           // delivery_status
+                        null,                             // error_message
+                        lead.id || null,                  // lead_id (from nextdoor_messages)
+                        formatUSPhone(chosenPhone),       // lead_phone (pretty or raw; your call)
+                        city,                             // lead_city
+                        industry                          // lead_type
+                    ]
                 );
 
-                results.push({ userId: u.id, sent: true });
+                results.push({ userId: u.id, sent: true, sid: msg?.sid || null });
             } catch (e) {
                 console.error(`❌ SMS send failed for user ${u.id}:`, e.message);
+
+                // Store a failed row too, with error details
+                const envelope = {
+                    lead_snapshot: {
+                        id: lead.id,
+                        author: lead.author,
+                        city,
+                        industry,
+                        location: lead.location,
+                        physical_address: finalPhysicalAddress,
+                        message_sent_at: lead.message_sent_at
+                    },
+                    phones: {
+                        chosen: chosenPhone,
+                        original: lead.phone || null
+                    },
+                    send_error: e?.message || String(e),
+                    composed_text_preview: text
+                };
+
+                await pool.query(
+                    `INSERT INTO lead_alerts_sent
+             (post_url, user_id, sent_at, sms_sid, to_number, body, delivery_status, error_message,
+              lead_id, lead_phone, lead_city, lead_type)
+           VALUES
+             ($1,       $2,      NOW(),  NULL,    NULL,     $3,   'failed',       $4,
+              $5,      $6,        $7,       $8)`,
+                    [
+                        leadKey,
+                        u.id,
+                        JSON.stringify(envelope),
+                        e?.message || null,
+                        lead.id || null,
+                        formatUSPhone(chosenPhone),
+                        city,
+                        industry
+                    ]
+                );
+
                 results.push({ userId: u.id, sent: false, error: e.message });
             }
         }
@@ -253,6 +337,7 @@ exports.notifyUsersForLead = async (req, res) => {
         return res.status(500).json({ error: 'Internal Server Error' });
     }
 };
+
 
 
 
