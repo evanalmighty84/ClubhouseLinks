@@ -133,6 +133,7 @@ const Settings = () => {
         );
     };
 
+
     const handleSelectAllIndustries = (e) => {
         if (e.target.checked) setSelectedIndustries(industryOptions);
         else setSelectedIndustries([]);
@@ -317,14 +318,15 @@ const Settings = () => {
                                             <div className="industry-grid mb-3">
                                                 {industryOptions.map((ind) => (
                                                     <Form.Check
-                                                        key={ind}
+                                                        key={ind.value}
                                                         type="checkbox"
-                                                        id={`industry-${ind}`}
-                                                        label={ind}
-                                                        checked={selectedIndustries.includes(ind)}
-                                                        onChange={() => handleIndustryToggle(ind)}
+                                                        id={`industry-${ind.value}`}
+                                                        label={ind.label}
+                                                        checked={selectedIndustries.includes(ind.value)}
+                                                        onChange={() => handleIndustryToggle(ind.value)}
                                                     />
                                                 ))}
+
                                             </div>
                                             <Button className="mt-1" variant="primary" type="submit">
                                                 Save Industries
