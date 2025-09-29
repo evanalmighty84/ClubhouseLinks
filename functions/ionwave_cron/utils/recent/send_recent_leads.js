@@ -36,7 +36,7 @@ async function postLeadAlert(payload) {
         description: payload.description ?? null,
         location: payload.location ?? null,
         physical_address: payload.physical_address ?? null,
-        message_sent_at: payload.message_sent_at ?? null,
+        timestamp: payload.timestamp ?? null,
     };
 
     if (!data.name || !data.phone || !data.lead_type) {
@@ -83,7 +83,7 @@ async function sendRecentLeadsForUser(userId) {
         const q = `
             SELECT nm.*
             FROM nextdoor_messages nm
-            WHERE nm.message_sent_at >= NOW() - INTERVAL '24 hours'
+            WHERE nm.timestamp >= NOW() - INTERVAL '24 hours'
               AND nm.city = ANY($1::text[])
               AND (
                 $2::text[] IS NULL
@@ -91,7 +91,7 @@ async function sendRecentLeadsForUser(userId) {
                OR canon_industry(nm.lead_type) = ANY($2::text[])
                 )
               AND nm.phone IS NOT NULL AND nm.phone <> ''
-            ORDER BY nm.message_sent_at DESC
+            ORDER BY nm.timestamp DESC
                 LIMIT 500;
         `;
 
@@ -132,7 +132,7 @@ async function sendRecentLeadsForUser(userId) {
                 description: lead.description || null,
                 location: lead.location || null,
                 physical_address: lead.physical_address || null,
-                message_sent_at: lead.message_sent_at || null,
+                timestamp: lead.timestamp || null,
             };
 
             const result = await postLeadAlert(payload);

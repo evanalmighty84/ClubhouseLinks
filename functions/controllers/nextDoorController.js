@@ -24,7 +24,7 @@ exports.getNextDoorLeads = async (req, res) => {
       SELECT rnm.*
       FROM recent_nextdoor_messages rnm
       WHERE LOWER(rnm.lead_type) = ANY($1)
-      ORDER BY COALESCE(rnm.message_sent_at, NOW() - INTERVAL '100 years') DESC, rnm.id DESC
+      ORDER BY COALESCE(rnm.timestamp, NOW() - INTERVAL '100 years') DESC, rnm.id DESC
     `;
         const { rows: hot } = await pool.query(hotSql, [normalizedIndustries]);
 
@@ -36,7 +36,7 @@ exports.getNextDoorLeads = async (req, res) => {
         ON rnm.post_url = nm.post_url
       WHERE LOWER(nm.lead_type) = ANY($1)
         AND rnm.post_url IS NULL
-      ORDER BY COALESCE(nm.message_sent_at, NOW() - INTERVAL '100 years') DESC, nm.id DESC
+      ORDER BY COALESCE(nm.timestamp, NOW() - INTERVAL '100 years') DESC, nm.id DESC
     `;
         const { rows: warm } = await pool.query(warmSql, [normalizedIndustries]);
 
