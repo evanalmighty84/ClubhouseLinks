@@ -86,10 +86,10 @@ const fmtCST = (ts) => {
 async function findByPhone(phoneDigits, table) {
     const { rows } = await pool.query(
         `
-    SELECT id, author, message_sent_at, location, city, lead_type, phone, physical_address, description
+    SELECT id, author, timestamp, location, city, lead_type, phone, physical_address, description
       FROM ${table}
      WHERE regexp_replace(coalesce(phone,''), '\\D','','g') = $1
-     ORDER BY message_sent_at DESC NULLS LAST
+     ORDER BY timestamp DESC NULLS LAST
      LIMIT 1
     `,
         [phoneDigits]
@@ -108,7 +108,7 @@ exports.notifyUsersForLead = async (req, res) => {
         city: cityOverride,                 // optional override
         location: locationOverride,         // optional override
         physical_address: physicalAddrOv,   // optional override
-        message_sent_at: messageSentAtOv    // optional override
+        timestamp: messageSentAtOv    // optional override
     } = req.body || {};
 
     // Keep your original "either lead_id OR (name & phone & lead_type)" guard.
@@ -126,7 +126,7 @@ exports.notifyUsersForLead = async (req, res) => {
         // 1) If lead_id provided, load from nextdoor_messages
         if (lead_id) {
             const { rows } = await pool.query(
-                `SELECT id, author, message_sent_at, location, city, lead_type, phone, physical_address, description
+                `SELECT id, author, timestamp, location, city, lead_type, phone, physical_address, description
            FROM nextdoor_messages
           WHERE id = $1`,
                 [lead_id]
@@ -148,7 +148,7 @@ exports.notifyUsersForLead = async (req, res) => {
         lead = {
             id: lead?.id ?? null,
             author: providedName || lead?.author || 'Unknown',
-            message_sent_at: messageSentAtOv ?? lead?.message_sent_at ?? null,
+            timestamp: messageSentAtOv ?? lead?.timestamp ?? null,
             location: locationOverride ?? lead?.location ?? 'Unknown',
             city: cityOverride ?? lead?.city ?? null,
             lead_type: providedType || lead?.lead_type || null,
@@ -195,7 +195,7 @@ exports.notifyUsersForLead = async (req, res) => {
         const bodyLines = [
             `🔔 New ${titleCase(industry)} lead in ${titleCase(city)}`,
             `👤 ${lead.author || 'Unknown'}`,
-            lead.message_sent_at ? `🕒 ${fmtCST(lead.message_sent_at)} (CST)` : '',
+            lead.timestamp ? `🕒 ${fmtCST(lead.timestamp)} (CST)` : '',
             `📍 ${lead.location || 'Unknown'}${finalPhysicalAddress ? ' • ' + finalPhysicalAddress : ''}`,
             `📞 ${prettyChosenPhone}`,
             lead.description ? `📝 ${truncate(lead.description, 300)}` : ''
@@ -243,7 +243,7 @@ exports.notifyUsersForLead = async (req, res) => {
                         industry,
                         location: lead.location,
                         physical_address: finalPhysicalAddress,
-                        message_sent_at: lead.message_sent_at
+                        timestamp: lead.timestamp
                     },
                     phones: {
                         chosen: chosenPhone,
@@ -293,7 +293,7 @@ exports.notifyUsersForLead = async (req, res) => {
                         industry,
                         location: lead.location,
                         physical_address: finalPhysicalAddress,
-                        message_sent_at: lead.message_sent_at
+                        timestamp: lead.timestamp
                     },
                     phones: {
                         chosen: chosenPhone,
