@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/static/css/main.0e747930.css",
-    "main.js": "/static/js/main.75a1767c.js",
+    "main.js": "/static/js/main.181a1fba.js",
     "static/media/WideMovieLogo.gif": "/static/media/WideMovieLogo.fb5a2153d857a59ad898.gif",
     "static/media/vecteezy_two-brown-dogs-digging-the-ground-for-hunting-fat-pets_32544191.gif": "/static/media/vecteezy_two-brown-dogs-digging-the-ground-for-hunting-fat-pets_32544191.9a2f7d0191dc928804fa.gif",
     "static/media/Revolutionize Your Pet Grooming Business_ AI-Powered Solutions.mp4": "/static/media/Revolutionize Your Pet Grooming Business_ AI-Powered Solutions.03536c75974482438bf6.mp4",
@@ -46,12 +46,14 @@
     "static/media/clientportfolio7.jpeg": "/static/media/clientportfolio7.e7272da1cca3ea66b19d.jpeg",
     "static/media/vecteezy_ai-generated-globe-books-and-cute-dog-in-graduation-cap-on_37227259.jpeg": "/static/media/vecteezy_ai-generated-globe-books-and-cute-dog-in-graduation-cap-on_37227259.7d41e5e0ef294653e68d.jpeg",
     "static/media/markandtrish.jpg": "/static/media/markandtrish.e96499802f6d5fad7d1b.jpg",
+    "static/media/plumbing.png": "/static/media/plumbing.49a4382a23738c6ecbba.png",
     "static/media/JodiandGregg.JPG": "/static/media/JodiandGregg.81eca58ed01aa5721f42.JPG",
     "static/media/vecteezy_dog-in-real-life-happy-moment-with-pet_24637503.jpg": "/static/media/vecteezy_dog-in-real-life-happy-moment-with-pet_24637503.e1925a08064f506349c9.jpg",
     "static/media/pexels-gerardo-vazquez-garcia-3475787-5194384.jpg": "/static/media/pexels-gerardo-vazquez-garcia-3475787-5194384.c6fba0147dcc80e06e23.jpg",
     "static/media/vecteezy_dog-in-real-life-happy-moment-with-pet_24637537.jpg": "/static/media/vecteezy_dog-in-real-life-happy-moment-with-pet_24637537.0b4e737af832266d070b.jpg",
     "static/media/clientportfolio4.jpeg": "/static/media/clientportfolio4.e42b9fd45b1ef02acb4e.jpeg",
     "static/media/clientportfolio1.jpeg": "/static/media/clientportfolio1.9fb84c89655c685ec7de.jpeg",
+    "static/media/fixtures.jpg": "/static/media/fixtures.7a986d3fcc0b0de31203.jpg",
     "static/media/OurTeam.png": "/static/media/OurTeam.05edd588783fd384fba5.png",
     "static/media/anna-rosar-ZxFyVBHMK-c-unsplash.jpg": "/static/media/anna-rosar-ZxFyVBHMK-c-unsplash.9d624723eb4e9cc31329.jpg",
     "static/media/ClientPortfolios (1).png": "/static/media/ClientPortfolios (1).7da2709e8b0eeaf1343e.png",
@@ -99,6 +101,7 @@
     "static/media/bootstrap-icons.woff2": "/static/media/bootstrap-icons.deae72ec4e319cf4ba7a.woff2",
     "static/media/happy-african-american-professional-manager-smiling-looking-camera-headshot-portrait.jpg": "/static/media/happy-african-american-professional-manager-smiling-looking-camera-headshot-portrait.ecd390020ae2235c5748.jpg",
     "static/media/Email-Marketing-Planning-Image-in-Outsource-Workers-Emails-Coming-Out-Computers-Yellow-Mails.png": "/static/media/Email-Marketing-Planning-Image-in-Outsource-Workers-Emails-Coming-Out-Computers-Yellow-Mails.5104063ecfc9c6184292.png",
+    "static/media/draincleaning.jpg": "/static/media/draincleaning.7c09575bb4e7858daadc.jpg",
     "static/media/GrowingBusinessPodcastImage.jpeg": "/static/media/GrowingBusinessPodcastImage.af6aee63e7e973834d11.jpeg",
     "static/media/JasonGardner.jpeg": "/static/media/JasonGardner.198a1d2af7ea92d095c5.jpeg",
     "static/media/bidding-leads.webp": "/static/media/bidding-leads.7974294aec8f2e092700.webp",
@@ -107,10 +110,10 @@
     "static/media/icons8-facebook-business-suite.svg": "/static/media/icons8-facebook-business-suite.f7ceaa166fa73eb83ae4c87efbaa3f4e.svg",
     "index.html": "/index.html",
     "main.0e747930.css.map": "/static/css/main.0e747930.css.map",
-    "main.75a1767c.js.map": "/static/js/main.75a1767c.js.map"
+    "main.181a1fba.js.map": "/static/js/main.181a1fba.js.map"
   },
   "entrypoints": [
     "static/css/main.0e747930.css",
-    "static/js/main.75a1767c.js"
+    "static/js/main.181a1fba.js"
   ]
 }
