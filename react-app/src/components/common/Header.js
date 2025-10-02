@@ -22,6 +22,7 @@ import MarkandTrish from "../markandtrish.jpg"
 import PodcastImage from '../profilepicevan.png';
 import DavidDixon from '../JodiandGregg.JPG'
 import JasonGardner from '../JasonGardner.jpeg'
+import Plumbing from '../services/images/plumbing.png'
 
 const Header = () => {
     const [expanded, setExpanded] = useState(false);
@@ -183,6 +184,24 @@ const Header = () => {
                 </Modal.Header>
                 <Modal.Body style={{ padding: '2rem' }}>
                     <div style={{ display: 'grid', gap: '2rem' }}>
+
+
+                        {/* Graphic Design */}
+                        <div
+                            onClick={() => window.location.href = '/Plumbing'}
+                            style={{ textAlign: 'center', cursor: 'pointer' }}
+                        >
+                            <img
+                                src={Plumbing}
+                                alt="Graphic Design"
+                                style={{ width: '200px', height: '200px', objectFit: 'cover', borderRadius: '12px', marginBottom: '0.75rem' }}
+                            />
+                            <h4 style={{ fontSize: '1.4rem', color: '#111', marginBottom: '0.5rem' }}>Handyman/Plumbing</h4>
+                            <p style={{ fontSize: '1rem', color: '#555', maxWidth: '400px', margin: '0 auto' }}>
+                                Randy and Denys will provide you with great value at minimal cost with our plumbing and handyman services. All technicians are licensed and have been thoroughly vetted.
+                                Whether it's a leaky faucet or a garbage disposal removal, we'll make sure it's done right.
+                                `,                            </p>
+                        </div>
                         {/* Construction Team */}
                         <div
                             onClick={() => window.location.href = '/Construction'}

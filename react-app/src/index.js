@@ -66,6 +66,7 @@ import "./index.css";
 import PoolServiceHomepage from "./PoolService/PoolServiceHomePage";
 import ContactUs from "./components/landing-pages/ContactSection";
 import EmailLeadsSection from "./components/landing-pages/EmailLeadsSection";
+import PlumbingSection from "./components/landing-pages/PlumbingSection";
 
 
 const stripePromise = loadStripe("pk_live_4s4TtIY6HXHbiKpHOoFGvQRf");
@@ -170,6 +171,7 @@ class App extends Component {
                             <Route path="/aiProjects" element={<AI />} />
                             <Route path="/Bids" element={<BiddingSection />} />
                             <Route path="/Construction" element={<ConstructionSection/>} />
+                            <Route path="/Plumbing" element={<PlumbingSection/>} />
                             <Route path="/Social" element={<SocialMediaSection />} />
                             <Route path="/leads/email-leads" element={<EmailLeadsSection/>} />
                             <Route path="/Apparel" element={<ApparelSection/>} />

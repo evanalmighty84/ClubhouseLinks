@@ -5,6 +5,7 @@ import TreeRemoval       from '../services/images/pexels-tima-miroshnichenko-957
 import TreeStump         from '../services/images/pexels-format-380633-1029757.jpg';
 import TreeStorm         from '../services/images/Lead Generation.jpg';
 import PoolImage         from '../services/images/pexels-heyho-8134750.jpg';
+import PlumbingImage         from '../services/images/plumbing.png';
 import ContractImage     from '../services/images/general-contracting.jpg';
 import RoofingImage      from '../services/images/roofing.jpg';
 import SolarElectricImage from '../services/images/SolarElectric.jpg';
@@ -54,6 +55,14 @@ Dream it. We’ll design it. Clubhouse Links starts every pool remodeling projec
 When it comes to implementation, we manage the entire process: demolition of old surfaces, installation of new liners or plaster, mechanical upgrades, and ongoing cleaning schedules. We even integrate smart-pump systems and automated chemical dosing to keep your water crystal clear.
     `,
         image: PoolImage,
+    },
+    {
+        title: 'Plumbing and Handyman Services',
+        description: `
+We'll provide you with great value at minimal cost with our plumbing and handyman services. All technicians are licensed and have been thoroughly vetted.
+Whether it's a leaky faucet or a garbage disposal removal, we'll make sure it's done right.
+    `,
+        image: PlumbingImage,
     },
     {
         title: 'General Contracting',
