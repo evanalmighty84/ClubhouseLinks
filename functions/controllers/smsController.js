@@ -157,7 +157,7 @@ exports.notifyUsersForLead = async (req, res) => {
             city: cityOverride ?? lead?.city ?? null,
             lead_type: providedType || lead?.lead_type || null,
             phone: phone ?? lead?.phone ?? null,
-            mobile_phone: lead?.mobile_phone ?? null,
+            mobile_phone: mobile_phone ?? lead?.mobile_phone ?? null,
             physical_address: physicalAddrOv ?? lead?.physical_address ?? null,
             description: description ?? lead?.description ?? null
         };
