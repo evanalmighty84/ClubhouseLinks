@@ -130,54 +130,58 @@ async function humanType(page, selector, text) {
 /* =======================
    Realtime renderer bridge
    ======================= */
-async function rtCall(payload, tag='rt') {
-    if (!REALTIME_API_TOKEN) {
-        console.warn('ℹ️ TOKEN (REALTIME_API_TOKEN) not set; cannot use realtime renderer.');
+async function scraperApiCall(url, tag = 'scraperApi') {
+    const apiKey = process.env.SCRAPERAPI_KEY;
+
+    if (!apiKey || !url) {
+        console.warn('❌ SCRAPERAPI_KEY or URL missing.');
         return null;
     }
+
     try {
-        const body = {
-            session: SESSION,
-            render: true,
-            format: 'html',
-            parse: false,
-            country: 'US',
-            locale: 'en',
-            wait: NAV_TIMEOUT_MS,
-            ...payload,
-        };
-        const res = await axios.post(REALTIME_API_URL, body, {
-            timeout: Math.max(NAV_TIMEOUT_MS + 15000, 60000),
+        const scraperUrl = `http://api.scraperapi.com/?api_key=${apiKey}&render=true&country_code=us&url=${encodeURIComponent(url)}`;
+
+        console.log(`🌐 [${tag}] ScraperAPI requesting:`, url);
+        const res = await axios.get(scraperUrl, {
+            timeout: 60000,
             headers: {
-                Authorization: `Basic ${REALTIME_API_TOKEN}`,
-                'X-Api-Key': REALTIME_API_TOKEN, // some endpoints accept either
-                'Content-Type': 'application/json',
-            },
+                'User-Agent': STEALTH_UA,
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Referer': 'https://www.familytreenow.com',
+            }
         });
-        return res.data;
-    } catch (e) {
-        console.log(`${tag} error:`, e?.message || e);
+
+        const html = res.data;
+        console.log(`📥 [${tag}] ScraperAPI HTML length:`, html?.length);
+        return { html_content: html };
+    } catch (err) {
+        console.error(`❌ [${tag}] ScraperAPI failed:`, err.message || err);
         return null;
     }
 }
 
-async function rtLoad(page, url, ref='https://www.familytreenow.com/') {
-    const data = await rtCall({ url, headers: headers(ref) }, 'rtLoad');
+
+
+async function rtLoad(page, url, ref = 'https://www.familytreenow.com/') {
+    const data = await scraperApiCall(url, 'rtLoad');
     const html = data?.html_content || '';
+
     if (!html) return false;
 
-    // install base + set “url” so relative links resolve for us
     const origin = new URL(url).origin + '/';
     const withBase = html.includes('<base ')
         ? html
         : html.replace('<head>', `<head><base href="${origin}">`);
 
-    await page.setContent(withBase, { waitUntil: 'load' });
-    await page.evaluate((u) => { try { history.replaceState(null, '', u); } catch {} }, url);
+    await page.setContent(withBase, { waitUntil: 'domcontentloaded' });
+    await page.evaluate((u) => {
+        try { history.replaceState(null, '', u); } catch {}
+    }, url);
 
     try { fs.writeFileSync('ftn_last.html', withBase, 'utf8'); } catch {}
     return true;
 }
+
 
 async function wireRtNavigation(page) {
     // Let the page tell Node to navigate via the renderer
@@ -268,6 +272,33 @@ async function submitSearchHumanOnTop(page, { first, last, cityStateZip }) {
             // eslint-disable-next-line no-undef
             return await window.__rtNavigate(u);
         }, url);
+        // Just navigated to search results — check for CAPTCHA
+        await page.waitForTimeout(2000); // small buffer
+
+        const isCaptcha = await page.evaluate(() => {
+            const text = document.body.innerText || '';
+            const title = document.title || '';
+            return (
+                title.toLowerCase().includes('robot') ||
+                text.toLowerCase().includes('are you human') ||
+                text.toLowerCase().includes('please verify') ||
+                text.toLowerCase().includes('recaptcha') ||
+                !!document.querySelector('iframe[src*="recaptcha"]')
+            );
+        });
+
+        if (isCaptcha) {
+            console.log('🚧 CAPTCHA detected — please solve it manually in the browser...');
+            console.log('🕒 Waiting for manual solve. Press ENTER here when ready.');
+
+            await new Promise((resolve) => {
+                process.stdin.resume();
+                process.stdin.once('data', () => resolve());
+            });
+
+            console.log('✅ CAPTCHA cleared. Continuing automation...');
+        }
+
 
         if (!ok) {
             await hpause(1000, 1600);
@@ -419,8 +450,32 @@ async function scrapeDetail(page) {
    Public API
    ======================= */
 async function familyTreeNowSearchAndScrape(_browser, { first, last, baseCity='', state='', neighborhood='', city='' }) {
-    // Playwright here is purely a DOM host; network is done by realtime renderer
     const userDataDir = process.env.ND_PROFILE_DIR || path.join(os.tmpdir(), 'nd-ftn-profile');
+
+    const out = {
+        phone: null,
+        email: null,
+        physical_address: null,
+        resolvedCity: null,
+    };
+
+    // Step 1: Optional city inference using GPT
+    let resolvedCity = city;
+    if (!resolvedCity) {
+        console.log('🤖 Inferring city from neighborhood/state...');
+        resolvedCity = await inferCityWithGPT({
+            neighborhood: String(neighborhood || '').trim(),
+            baseCity: String(baseCity || '').trim(),
+            state: String(state || '').trim().toUpperCase()
+        });
+        if (!resolvedCity && baseCity) resolvedCity = baseCity;
+    }
+
+    out.resolvedCity = resolvedCity || null;
+    console.log('🔎 resolved city:', out.resolvedCity || '(none)');
+
+    // Step 2: Launch Playwright browser
+    console.log('🧭 Launching Chromium with persistent context...');
     const context = await chromium.launchPersistentContext(userDataDir, {
         headless: false,
         args: ['--ignore-certificate-errors'],
@@ -435,36 +490,41 @@ async function familyTreeNowSearchAndScrape(_browser, { first, last, baseCity=''
     context.setDefaultTimeout(NAV_TIMEOUT_MS);
 
     const page = await context.newPage();
+    console.log('🧾 New page opened.');
 
-    const out = { phone: null, email: null, physical_address: null, resolvedCity: null };
-
-    // City inference (optional)
-    let resolvedCity = city;
-    if (!resolvedCity) {
-        resolvedCity = await inferCityWithGPT({
-            neighborhood: String(neighborhood || '').trim(),
-            baseCity: String(baseCity || '').trim(),
-            state: String(state || '').trim().toUpperCase()
-        });
-        if (!resolvedCity && baseCity) resolvedCity = baseCity;
-    }
-    out.resolvedCity = resolvedCity || null;
-    console.log('🔎 resolved city:', out.resolvedCity || '(none)');
-
+    // Step 3: Submit search
     const cityStateZipVal = fmtCityState({ city: resolvedCity, state });
+    console.log('📬 Submitting FTN search with:', { first, last, cityStateZip: cityStateZipVal });
 
-    // 1) Humanized submit on top of renderer
-    const ok = await submitSearchHumanOnTop(page, { first, last, cityStateZip: cityStateZipVal || (state || '') });
-    if (!ok) { await context.close(); return out; }
+    const ok = await submitSearchHumanOnTop(page, {
+        first,
+        last,
+        cityStateZip: cityStateZipVal || (state || '')
+    });
 
-    // 2) Pick/open a detail
+    console.log('✅ Search page submitted?', ok);
+    if (!ok) {
+        console.warn('❌ Search failed. Closing browser.');
+        await context.close();
+        return out;
+    }
+
+    // Step 4: Pick and open result
+    console.log('🔍 Attempting to pick and open matching record...');
     const detailOk = await pickAndOpenDetail(page, state);
-    if (!detailOk) { await context.close(); return out; }
 
-    // 3) Scrape detail
+    if (!detailOk) {
+        console.warn('❌ No matching record opened. Closing browser.');
+        await context.close();
+        return out;
+    }
+
+    // Step 5: Scrape result details
+    console.log('📋 Scraping contact details...');
     const detail = await scrapeDetail(page);
     Object.assign(out, detail);
 
+    console.log('✅ Scrape complete. Closing browser...');
     await context.close();
     return out;
 }
@@ -480,6 +540,19 @@ async function runFamilyTreeNowAutomation() {
     const state = (stateArg || 'TX').toUpperCase();
     const baseCity = baseCityArg || 'Allen';
     const neighborhood = neighborhoodArg || 'Heritage Estates';
+
+
+    try {
+        console.log('🛠 Calling familyTreeNowSearchAndScrape...');
+        const result = await familyTreeNowSearchAndScrape(null, {
+            first, last, baseCity, state, neighborhood
+        });
+        console.log('✅ FamilyTreeNow result:', JSON.stringify(result, null, 2));
+    } catch (err) {
+        console.error('❌ FamilyTreeNow test failed:', err);
+        console.error(err?.stack || err);
+    }
+
 
     try {
         const result = await familyTreeNowSearchAndScrape(null, {

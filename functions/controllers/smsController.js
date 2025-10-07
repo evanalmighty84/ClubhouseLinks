@@ -126,7 +126,7 @@ exports.notifyUsersForLead = async (req, res) => {
         // 1) If lead_id provided, load from nextdoor_messages
         if (lead_id) {
             const { rows } = await pool.query(
-                `SELECT id, author, timestamp, location, city, lead_type, phone, physical_address, description
+                `SELECT id, author, timestamp, location, city, lead_type, phone, mobile_phone, physical_address, description
            FROM nextdoor_messages
           WHERE id = $1`,
                 [lead_id]
@@ -153,14 +153,18 @@ exports.notifyUsersForLead = async (req, res) => {
             city: cityOverride ?? lead?.city ?? null,
             lead_type: providedType || lead?.lead_type || null,
             phone: phone ?? lead?.phone ?? null,
+            mobile_phone: lead?.mobile_phone ?? null,
             physical_address: physicalAddrOv ?? lead?.physical_address ?? null,
             description: description ?? lead?.description ?? null
         };
 
+
         // 4) Validate required targeting fields (server-only: no enrichment here)
         const city = canonText(lead.city);
         const industry = canonIndustry(lead.lead_type);
-        const chosenPhone = digitsOnly(lead.phone || '');
+
+// Prefer mobile_phone when available, fallback to phone
+        const chosenPhone = digitsOnly(lead.mobile_phone || lead.phone || '');
         const prettyChosenPhone = formatUSPhone(chosenPhone);
         const finalPhysicalAddress = lead.physical_address || null;
 
@@ -171,36 +175,51 @@ exports.notifyUsersForLead = async (req, res) => {
             });
         }
 
-        // 5) Find candidate users (industry + subscribed city)
+// Format landline and mobile separately for display
+        const landline = formatUSPhone(lead.phone || '');
+        const mobile = formatUSPhone(lead.mobile_phone || '');
+        const showBothPhones = landline && mobile && landline !== mobile;
+
+        const phoneLine = showBothPhones
+            ? `📞 ${mobile} (mobile)\n☎️ ${landline} (landline)`
+            : mobile
+                ? `📞 ${mobile}`
+                : landline
+                    ? `📞 ${landline}`
+                    : '';
+
+// 5) Find candidate users (industry + subscribed city)
         const usersSql = `
-      SELECT id, name, phone_number, industry, subscribed_areas
-        FROM users
-       WHERE phone_number IS NOT NULL
-         AND EXISTS (
-               SELECT 1 FROM unnest(coalesce(industry, ARRAY[]::text[])) i
-                WHERE lower(i) = lower($1)
-           )
-         AND EXISTS (
-               SELECT 1 FROM unnest(coalesce(subscribed_areas, ARRAY[]::text[])) a
-                WHERE lower(a) = lower($2)
-           )
-    `;
+  SELECT id, name, phone_number, industry, subscribed_areas
+    FROM users
+   WHERE phone_number IS NOT NULL
+     AND EXISTS (
+           SELECT 1 FROM unnest(coalesce(industry, ARRAY[]::text[])) i
+            WHERE lower(i) = lower($1)
+       )
+     AND EXISTS (
+           SELECT 1 FROM unnest(coalesce(subscribed_areas, ARRAY[]::text[])) a
+            WHERE lower(a) = lower($2)
+       )
+`;
         const { rows: users } = await pool.query(usersSql, [industry, city]);
 
         if (!users.length) {
             return res.status(200).json({ message: 'No matching users for this lead.', matchedUsers: 0, lead });
         }
 
-        // 6) Compose SMS text
+// 6) Compose SMS text with both numbers shown (if available)
         const bodyLines = [
             `🔔 New ${titleCase(industry)} lead in ${titleCase(city)}`,
             `👤 ${lead.author || 'Unknown'}`,
             lead.timestamp ? `🕒 ${fmtCST(lead.timestamp)} (CST)` : '',
             `📍 ${lead.location || 'Unknown'}${finalPhysicalAddress ? ' • ' + finalPhysicalAddress : ''}`,
-            `📞 ${prettyChosenPhone}`,
+            phoneLine,
             lead.description ? `📝 ${truncate(lead.description, 300)}` : ''
         ].filter(Boolean);
+
         const text = bodyLines.join('\n');
+
 
         // 7) Dedupe key: prefer id; else phone+city+industry(+name) hash
         const leadKey = lead.id
