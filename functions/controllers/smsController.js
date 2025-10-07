@@ -113,11 +113,14 @@ exports.notifyUsersForLead = async (req, res) => {
 
     // Keep your original "either lead_id OR (name & phone & lead_type)" guard.
     // With server-only approach, we DO require phone if there's no lead_id.
-    if (!lead_id && (!phone || !(name || author) || !lead_type)) {
+    const hasPhone = phone || mobile_phone;
+
+    if (!lead_id && (!hasPhone || !(name || author) || !lead_type)) {
         return res.status(400).json({
-            error: 'Provide lead_id OR (name AND phone AND lead_type).'
+            error: 'Provide lead_id OR (name AND phone/mobile_phone AND lead_type).'
         });
     }
+
 
     try {
         const phoneDigits = digitsOnly(phone || '');
