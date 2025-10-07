@@ -101,6 +101,7 @@ exports.notifyUsersForLead = async (req, res) => {
     const {
         lead_id,
         phone,
+        mobile_phone,
         name,            // REQUIRED when no lead_id (author/name)
         author,          // alias for name
         lead_type,       // REQUIRED when no lead_id
