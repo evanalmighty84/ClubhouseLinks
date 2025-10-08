@@ -168,7 +168,16 @@ exports.notifyUsersForLead = async (req, res) => {
         const industry = canonIndustry(lead.lead_type);
 
 // Prefer mobile_phone when available, fallback to phone
-        const chosenPhone = digitsOnly(lead.mobile_phone || lead.phone || '');
+// Support FTN: allow multiple phones
+        const phones = [];
+        if (lead.mobile_phone) phones.push(lead.mobile_phone);
+        if (lead.phone) phones.push(lead.phone);
+
+// dedupe and normalize
+        const deduped = [...new Set(phones.map(p => formatUSPhone(p)).filter(Boolean))];
+
+// Prefer first as primary
+        const chosenPhone = digitsOnly(deduped[0] || '');
         const prettyChosenPhone = formatUSPhone(chosenPhone);
         const finalPhysicalAddress = lead.physical_address || null;
 
@@ -179,18 +188,13 @@ exports.notifyUsersForLead = async (req, res) => {
             });
         }
 
-// Format landline and mobile separately for display
-        const landline = formatUSPhone(lead.phone || '');
-        const mobile = formatUSPhone(lead.mobile_phone || '');
-        const showBothPhones = landline && mobile && landline !== mobile;
+// Format multi-phone display
+        const phoneLine =
+            deduped.length > 1
+                ? deduped.map((p, i) => `${i === 0 ? '📞' : '☎️'} ${p}`).join('\n')
+                : `📞 ${deduped[0]}`;
 
-        const phoneLine = showBothPhones
-            ? `📞 ${mobile} (mobile)\n☎️ ${landline} (landline)`
-            : mobile
-                ? `📞 ${mobile}`
-                : landline
-                    ? `📞 ${landline}`
-                    : '';
+
 
 // 5) Find candidate users (industry + subscribed city)
         const usersSql = `
