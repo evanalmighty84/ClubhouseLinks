@@ -1,4 +1,3 @@
-// runFamilyTreeStealth.js  (CommonJS)
 // Usage:
 //   PROXY_FILE=./proxies.txt TWOCAPTCHA_API_KEY=yourkey node runFamilyTreeStealth.js
 //   or: PROXY_LINE="http://user:pass@host:port" node runFamilyTreeStealth.js
@@ -123,7 +122,7 @@ async function pickAndOpenDetail(page, state) {
 }
 
 
-async function scrapeDetail(page) {
+async function scrapeBasicResult(page) {
     const out = { phone: null, email: null, physical_address: null };
 
     try {
@@ -185,6 +184,59 @@ async function scrapeDetail(page) {
 
     return out;
 }
+
+async function scrapeWirelessDetail(page) {
+    const out = { mobile_phones: [], phones: [] };
+
+    try {
+        const entries = await page.$$eval('.panel-body .col-xs-12.col-md-6', nodes => {
+            const results = [];
+
+            for (const el of nodes) {
+                const text = el.innerText.trim();
+                const numAnchor = el.querySelector('a[href*="phoneno="]');
+                const number = numAnchor ? numAnchor.innerText.trim() : null;
+
+                if (!number) continue;
+
+                const typeMatch = text.match(/\b(Wireless|Landline|Voip)\b/i);
+                const type = typeMatch ? typeMatch[1].toLowerCase() : 'unknown';
+
+                const lastReported =
+                    (text.match(/Last reported\s+([A-Za-z]+\s+\d{4})/) || [])[1] || null;
+
+                const carrier =
+                    (text.match(/\b(AT&T|Verizon|T-Mobile|Sprint|Metro|Cricket|Frontier|Southwestern Bell|Time Warner Cable)\b/i) || [])[0] || null;
+
+                const isPrimary = /Possible Primary Phone/i.test(text);
+
+                results.push({
+                    number,
+                    type,
+                    carrier,
+                    lastReported,
+                    isPrimary,
+                    raw: text
+                });
+            }
+
+            return results;
+        });
+
+        // Sort results and categorize
+        for (const r of entries) {
+            if (r.type === 'wireless') out.mobile_phones.push(r);
+            else out.phones.push(r);
+        }
+
+        console.log('📞 Parsed phone records:', out);
+    } catch (e) {
+        console.warn('scrapeWirelessDetail failed:', e.message);
+    }
+
+    return out;
+}
+
 async function loadProxyLines() {
     // prefer single ENV raw line
     if (RAW_PROXY) return [RAW_PROXY.trim()];
@@ -235,7 +287,7 @@ async function attemptWithProxy(rawProxy, tryIndex) {
         proxy = normalizeProxy(cleaned);
     } catch (e) {
         console.error('Proxy parse failed:', e.message);
-        return { success: false, reason: 'parse', error: e.message };
+        return {success: false, reason: 'parse', error: e.message};
     }
 
     console.log(`\n--- Attempt #${tryIndex} using proxy: ${proxy.host}:${proxy.port} (user: ${!!proxy.username}) ---`);
@@ -249,8 +301,8 @@ async function attemptWithProxy(rawProxy, tryIndex) {
     }
 
     // new fresh profile directory
-    const profileDir = path.resolve(`./ftn-profile-${Date.now()}-${Math.floor(Math.random()*10000)}`);
-    await fsp.mkdir(profileDir, { recursive: true });
+    const profileDir = path.resolve(`./ftn-profile-${Date.now()}-${Math.floor(Math.random() * 10000)}`);
+    await fsp.mkdir(profileDir, {recursive: true});
 
     // stealth init script to hide webdriver and some flags (keeps it minimal)
     const stealthInit = `
@@ -296,7 +348,7 @@ async function attemptWithProxy(rawProxy, tryIndex) {
             userAgent: UA,
             locale: 'en-US',
             timezoneId: 'America/Chicago',
-            viewport: { width: 1366, height: 768 },
+            viewport: {width: 1366, height: 768},
         };
         if (proxyForPlaywright) contextOpts.proxy = proxyForPlaywright;
         // start a persistent context so we can inspect files if needed (but using unique dir)
@@ -370,12 +422,12 @@ async function attemptWithProxy(rawProxy, tryIndex) {
 // but fall back to domcontentloaded to avoid long stalls.
         try {
 
-            await page.goto(TARGET, { waitUntil: 'networkidle', timeout: 30000 });
+            await page.goto(TARGET, {waitUntil: 'networkidle', timeout: 30000});
         } catch (e) {
             // networkidle may time out or not be suitable; try a quicker domcontentloaded then continue.
             console.warn('networkidle goto failed (falling back to domcontentloaded):', e && e.message ? e.message : e);
             try {
-                await page.goto(TARGET, { waitUntil: 'domcontentloaded', timeout: 30000 });
+                await page.goto(TARGET, {waitUntil: 'domcontentloaded', timeout: 30000});
             } catch (err) {
                 console.warn('domcontentloaded goto also had an error (continuing):', err && err.message ? err.message : err);
             }
@@ -390,11 +442,14 @@ async function attemptWithProxy(rawProxy, tryIndex) {
             try {
                 // prevent new tabs/windows from being opened by page scripts
                 try {
-                    window.open = function() { return null; };
+                    window.open = function () {
+                        return null;
+                    };
                     // also catch hyperlink targets that try to open new windows
                     const origCreateElement = document.createElement;
                     // don't override further if env is hostile — keep minimal
-                } catch (e) {}
+                } catch (e) {
+                }
 
                 function findRidInDoc(doc) {
                     try {
@@ -407,7 +462,9 @@ async function attemptWithProxy(rawProxy, tryIndex) {
                             return b.getAttribute('href') || b.getAttribute('data-href') || null;
                         }
                         return null;
-                    } catch (e) { return null; }
+                    } catch (e) {
+                        return null;
+                    }
                 }
 
                 // 1) top-level
@@ -435,23 +492,55 @@ async function attemptWithProxy(rawProxy, tryIndex) {
                             const found = findRidInDoc(idoc);
                             if (found) return (new URL(found, location.href)).toString();
                         }
-                    } catch (e) { /* ignore cross-origin frames */ }
+                    } catch (e) { /* ignore cross-origin frames */
+                    }
                 }
 
                 return null;
-            } catch (err) { return null; }
+            } catch (err) {
+                return null;
+            }
         });
 
 // If we found a rid URL, navigate to it immediately (location.href so it's consistent)
         if (forcedNav) {
             console.log('Found RID link — forcing navigation to:', forcedNav);
             try {
-                await page.evaluate((u) => { window.location.href = u; }, forcedNav);
-                // give navigation time to complete
-                await page.waitForTimeout(4500);
+                console.log('Navigating directly to RID URL:', forcedNav);
+
+                // navigate via JS
+                await page.evaluate(u => (window.location.href = u), forcedNav).catch(() => {});
+                // wait explicitly for navigation to settle
+                await page.waitForLoadState('domcontentloaded', { timeout: 15000 }).catch(() => {});
+                await page.waitForTimeout(2000); // small buffer for scripts/images to load
+
+                // ✅ check for phone data once page is stable
+                const hasPhones = await page.$('div.panel-body, .phones, a[href*="phoneno="]');
+                if (hasPhones) {
+                    console.log('✅ Detected phone data already visible — skipping Turnstile and solver phase.');
+
+                    const scraped = await scrapeWirelessDetail(page).catch(err => {
+                        console.warn('scrapeWirelessDetail failed:', err.message);
+                        return { mobile_phones: [], phones: [] };
+                    });
+
+                    console.log('📞 Parsed wireless detail immediately:', scraped);
+
+                    // save artifacts & close
+                    const shot = path.join(LOG_DIR, `phones-visible-${Date.now()}.png`);
+                    await page.screenshot({ path: shot, fullPage: true }).catch(() => {});
+                    const statePath = path.join(LOG_DIR, `state-visible-${Date.now()}.json`);
+                    await context.storageState({ path: statePath }).catch(() => {});
+
+                    await context.close().catch(() => {});
+                    await browser.close().catch(() => {});
+                    return { success: true, phones: scraped, screenshot: shot, state: statePath };
+                }
+
             } catch (e) {
                 console.warn('Forced navigation attempt failed:', e && e.message ? e.message : e);
             }
+
         } else {
             console.log('No RID link found on initial scan.');
         }
@@ -462,7 +551,7 @@ async function attemptWithProxy(rawProxy, tryIndex) {
 // Wait for a Turnstile-like iframe (if any) to appear — many Cloudflare flows put the widget in an iframe.
 // Don't fail if it doesn't appear; just continue after the timeout.
         try {
-            await page.waitForSelector('iframe[src*="turnstile"], iframe[src*="challenge"], iframe[src*="cloudflare"]', { timeout: 10000 });
+            await page.waitForSelector('iframe[src*="turnstile"], iframe[src*="challenge"], iframe[src*="cloudflare"]', {timeout: 10000});
             console.log('Turnstile-like iframe appeared (or at least an iframe matched the selector).');
         } catch (e) {
             console.log('No obvious Turnstile iframe found within timeout; will still attempt to read payload from frames.');
@@ -474,7 +563,11 @@ async function attemptWithProxy(rawProxy, tryIndex) {
                 try {
                     // First, try top-level frame
                     const top = await page.evaluate(() => {
-                        try { return window.__tsPayload || null; } catch (e) { return null; }
+                        try {
+                            return window.__tsPayload || null;
+                        } catch (e) {
+                            return null;
+                        }
                     });
                     if (top) return top;
 
@@ -483,7 +576,11 @@ async function attemptWithProxy(rawProxy, tryIndex) {
                     for (const f of frames) {
                         try {
                             const p = await f.evaluate(() => {
-                                try { return window.__tsPayload || null; } catch (e) { return null; }
+                                try {
+                                    return window.__tsPayload || null;
+                                } catch (e) {
+                                    return null;
+                                }
                             });
                             if (p) return p;
                         } catch (frameErr) {
@@ -516,55 +613,64 @@ async function attemptWithProxy(rawProxy, tryIndex) {
             // save screenshot + storage to help debugging
             try {
                 const shotPath = path.join(LOG_DIR, `no-payload-${Date.now()}.png`);
-                await page.screenshot({ path: shotPath, fullPage: true }).catch(()=>{});
+                await page.screenshot({path: shotPath, fullPage: true}).catch(() => {
+                });
                 const statePath = path.join(LOG_DIR, `no-payload-state-${Date.now()}.json`);
-                await context.storageState({ path: statePath }).catch(()=>{});
+                await context.storageState({path: statePath}).catch(() => {
+                });
                 console.log('Saved artifacts for inspection:', shotPath, statePath);
-            } catch (e) { /* ignore */ }
+            } catch (e) { /* ignore */
+            }
         } else {
             console.log('Captured Turnstile payload:', {
                 websiteKey: payload.websiteKey || payload.sitekey || null,
                 websiteURL: payload.websiteURL || payload.url || null,
                 action: payload.action || null,
-                userAgent: payload.userAgent ? String(payload.userAgent).slice(0,80) : null
+                userAgent: payload.userAgent ? String(payload.userAgent).slice(0, 80) : null
             });
         }
 
 
 // also capture a short snippet of body text for logging / heuristics
-        const bodyText = await page.evaluate(() => document.body ? document.body.innerText.slice(0, 2000) : '').catch(()=>'');
+        const bodyText = await page.evaluate(() => document.body ? document.body.innerText.slice(0, 2000) : '').catch(() => '');
 
         if (!payload) {
             console.warn('No Turnstile payload captured (could be in iframe or Cloudflare used different flow).');
             // save screenshot + storage to help debugging
             try {
                 const shotPath = path.join(LOG_DIR, `no-payload-${Date.now()}.png`);
-                await page.screenshot({ path: shotPath, fullPage: true }).catch(()=>{});
+                await page.screenshot({path: shotPath, fullPage: true}).catch(() => {
+                });
                 const statePath = path.join(LOG_DIR, `no-payload-state-${Date.now()}.json`);
-                await context.storageState({ path: statePath }).catch(()=>{});
+                await context.storageState({path: statePath}).catch(() => {
+                });
                 console.log('Saved artifacts for inspection:', shotPath, statePath);
-            } catch (e) { /* ignore */ }
+            } catch (e) { /* ignore */
+            }
         } else {
             console.log('Captured Turnstile payload:', {
                 websiteKey: payload.websiteKey,
                 websiteURL: payload.websiteURL,
                 action: payload.action,
-                userAgent: payload.userAgent ? payload.userAgent.slice(0,80) : null
+                userAgent: payload.userAgent ? payload.userAgent.slice(0, 80) : null
             });
         }
-
 
 
         if (!payload) {
             console.warn('No Turnstile payload captured (could be in iframe or non-Turnstile challenge). Saving screenshot and storage for inspection.');
             const s1 = path.join(LOG_DIR, `screenshot-no-payload-${Date.now()}.png`);
-            await page.screenshot({ path: s1, fullPage: true }).catch(()=>{});
+            await page.screenshot({path: s1, fullPage: true}).catch(() => {
+            });
             const statePath = path.join(LOG_DIR, `storage-no-payload-${Date.now()}.json`);
-            await context.storageState({ path: statePath }).catch(()=>{});
+            await context.storageState({path: statePath}).catch(() => {
+            });
             console.log('Saved screenshot/state:', s1, statePath);
-            await context.close().catch(()=>{});
-            await browser.close().catch(()=>{});
-            return { success: false, reason: 'no_payload', probe, profileDir, screenshot: s1, state: statePath };
+            await context.close().catch(() => {
+            });
+            await browser.close().catch(() => {
+            });
+            return {success: false, reason: 'no_payload', probe, profileDir, screenshot: s1, state: statePath};
         }
 
         console.log('Turnstile sitekey detected:', payload.websiteKey);
@@ -581,12 +687,19 @@ async function attemptWithProxy(rawProxy, tryIndex) {
                 });
             });
             const s2 = path.join(LOG_DIR, `screenshot-manual-${Date.now()}.png`);
-            await page.screenshot({ path: s2, fullPage: true }).catch(()=>{});
+            await page.screenshot({path: s2, fullPage: true}).catch(() => {
+            });
             const statePath2 = path.join(LOG_DIR, `storage-manual-${Date.now()}.json`);
-            await context.storageState({ path: statePath2 }).catch(()=>{});
+            await context.storageState({path: statePath2}).catch(() => {
+            });
             console.log('Saved after manual solve:', s2, statePath2);
-            if (!KEEP_OPEN) { await context.close().catch(()=>{}); await browser.close().catch(()=>{}); }
-            return { success: true, manual: true, screenshot: s2, state: statePath2 };
+            if (!KEEP_OPEN) {
+                await context.close().catch(() => {
+                });
+                await browser.close().catch(() => {
+                });
+            }
+            return {success: true, manual: true, screenshot: s2, state: statePath2};
         }
 
         // prepare 2captcha solver and solver proxy string (matching browser exit IP ideally)
@@ -595,8 +708,13 @@ async function attemptWithProxy(rawProxy, tryIndex) {
 
         // build tasks to try: prefer proxy-enabled TurnstileTask if we have solver proxy string
         const variants = [];
-        if (solverProxyString) variants.push({ type: 'TurnstileTask', websiteKey: payload.websiteKey, websiteURL: payload.websiteURL, proxy: solverProxyString });
-        variants.push({ type: 'TurnstileTaskProxyless', websiteKey: payload.websiteKey, websiteURL: payload.websiteURL });
+        if (solverProxyString) variants.push({
+            type: 'TurnstileTask',
+            websiteKey: payload.websiteKey,
+            websiteURL: payload.websiteURL,
+            proxy: solverProxyString
+        });
+        variants.push({type: 'TurnstileTaskProxyless', websiteKey: payload.websiteKey, websiteURL: payload.websiteURL});
 
         let token = null, lastErr = null;
         for (const v of variants) {
@@ -605,7 +723,10 @@ async function attemptWithProxy(rawProxy, tryIndex) {
                 const res = await solver.solve(v);
                 // library often returns { data: '...' } or string
                 const t = res?.data || res?.token || (typeof res === 'string' ? res : null);
-                if (t) { token = t; break; }
+                if (t) {
+                    token = t;
+                    break;
+                }
             } catch (err) {
                 lastErr = err;
                 console.warn('Solver attempt failed:', err && err.message ? err.message : err);
@@ -615,11 +736,22 @@ async function attemptWithProxy(rawProxy, tryIndex) {
         if (!token) {
             console.warn('Solver did not return a token. Saving artifacts and returning failure for this proxy.');
             const s3 = path.join(LOG_DIR, `screenshot-solver-fail-${Date.now()}.png`);
-            await page.screenshot({ path: s3, fullPage: true }).catch(()=>{});
+            await page.screenshot({path: s3, fullPage: true}).catch(() => {
+            });
             const statePath3 = path.join(LOG_DIR, `storage-solver-fail-${Date.now()}.json`);
-            await context.storageState({ path: statePath3 }).catch(()=>{});
-            await context.close().catch(()=>{}); await browser.close().catch(()=>{});
-            return { success: false, reason: 'solver_failed', error: lastErr && lastErr.message, screenshot: s3, state: statePath3 };
+            await context.storageState({path: statePath3}).catch(() => {
+            });
+            await context.close().catch(() => {
+            });
+            await browser.close().catch(() => {
+            });
+            return {
+                success: false,
+                reason: 'solver_failed',
+                error: lastErr && lastErr.message,
+                screenshot: s3,
+                state: statePath3
+            };
         }
 
         console.log('Token acquired (truncated):', String(token).slice(0, 30));
@@ -636,10 +768,11 @@ async function attemptWithProxy(rawProxy, tryIndex) {
                     // fallback: try triggering form
                     const form = document.querySelector('form');
                     if (form) {
-                        form.dispatchEvent(new Event('submit', { bubbles: true }));
+                        form.dispatchEvent(new Event('submit', {bubbles: true}));
                     }
                 }
-            } catch (e) {}
+            } catch (e) {
+            }
         }, token);
 
         // ✅ Extracted modifications only — insert into your existing script after token injection
@@ -671,30 +804,36 @@ async function attemptWithProxy(rawProxy, tryIndex) {
                 if (link && link.href) {
                     return new URL(link.getAttribute('href'), location.href).toString();
                 }
-            } catch (e) {}
+            } catch (e) {
+            }
             return null;
         });
 
         if (!ridUrl) {
             console.warn('❌ Could not find RID result link — saving screenshot');
             const shot = path.join(LOG_DIR, `no-rid-link-${Date.now()}.png`);
-            await page.screenshot({ path: shot, fullPage: true }).catch(() => {});
+            await page.screenshot({path: shot, fullPage: true}).catch(() => {
+            });
         } else {
             console.log('📍 Navigating directly to RID URL:', ridUrl);
-            await page.evaluate((u) => { window.location.href = u; }, ridUrl);
+            await page.evaluate((u) => {
+                window.location.href = u;
+            }, ridUrl);
             await page.waitForTimeout(5000); // let navigation finish
 
-            const scraped = await scrapeDetail(page).catch((e) => {
-                console.warn('scrapeDetail failed:', e?.message || e);
-                return { phone: null, email: null, physical_address: null };
+            const scraped = await scrapeBasicResult(page).catch((e) => {
+                console.warn('scrape Basic view results page failed:', e?.message || e);
+                return {phone: null, email: null, physical_address: null};
             });
 
             console.log('Scraped detail:', scraped);
 
             const finalShot = path.join(LOG_DIR, `final-scrape-${Date.now()}.png`);
-            await page.screenshot({ path: finalShot, fullPage: true }).catch(() => {});
+            await page.screenshot({path: finalShot, fullPage: true}).catch(() => {
+            });
             const finalState = path.join(LOG_DIR, `final-state-${Date.now()}.json`);
-            await context.storageState({ path: finalState }).catch(() => {});
+            await context.storageState({path: finalState}).catch(() => {
+            });
             console.log('Saved final artifacts:', finalShot, finalState);
         }
 
@@ -757,54 +896,108 @@ async function attemptWithProxy(rawProxy, tryIndex) {
             if (!targetUrl) {
                 console.warn('❌ Could not resolve View Details link — saving screenshot');
                 const shot = path.join(LOG_DIR, `no-details-link-${Date.now()}.png`);
-                await page.screenshot({ path: shot, fullPage: true }).catch(() => {});
+                await page.screenshot({path: shot, fullPage: true}).catch(() => {
+                });
             } else {
                 console.log('🌐 Navigating via location.href to:', targetUrl);
-                await page.evaluate((u) => { window.location.href = u; }, targetUrl);
+                await page.evaluate((u) => {
+                    window.location.href = u;
+                }, targetUrl);
                 await page.waitForTimeout(5000); // wait for navigation to complete
 
-                const scraped = await scrapeDetail(page).catch((e) => {
-                    console.warn('scrapeDetail failed:', e?.message || e);
-                    return { phone: null, email: null, physical_address: null };
-                });
+                try {
+                    // prevent link auto-click chaos before scraping
+                    await page.evaluate(() => {
+                        document.querySelectorAll('a[href*="phoneno="]').forEach(a => {
+                            a.addEventListener('click', e => e.preventDefault());
+                        });
+                    });
 
-                console.log('Scraped detail:', scraped);
+                    console.log('🔍 Extracting all phone data (wireless + landline)...');
+                    const scraped = await scrapeWirelessDetail(page).catch((e) => {
+                        console.warn('scrapeWirelessDetail failed:', e?.message || e);
+                        return { mobile_phones: [], phones: [] };
+                    });
 
-                const finalShot = path.join(LOG_DIR, `final-scrape-${Date.now()}.png`);
-                await page.screenshot({ path: finalShot, fullPage: true }).catch(() => {});
-                const finalState = path.join(LOG_DIR, `final-state-${Date.now()}.json`);
-                await context.storageState({ path: finalState }).catch(() => {});
-                console.log('Saved final artifacts:', finalShot, finalState);
-            }
+                    console.log('📞 Scraped phone data:', scraped);
+
+                    // Save screenshots and browser state for debugging
+                    const finalShot = path.join(LOG_DIR, `final-scrape-${Date.now()}.png`);
+                    await page.screenshot({ path: finalShot, fullPage: true }).catch(() => {});
+                    const finalState = path.join(LOG_DIR, `final-state-${Date.now()}.json`);
+                    await context.storageState({ path: finalState }).catch(() => {});
+                    console.log('💾 Saved final artifacts:', finalShot, finalState);
+
+                    // Return structured data (no external post)
+                    return {
+                        success: true,
+                        screenshot: finalShot,
+                        state: finalState,
+                        phones: scraped.phones,
+                        mobile_phones: scraped.mobile_phones,
+                    };
+                } catch (err) {
+                    console.error('Error in view-details + scrape phase:', err?.message || err);
+                    return { success: false, reason: 'scrape_error', error: err?.message };
+                } finally {
+                    if (!KEEP_OPEN) {
+                        await context.close().catch(() => {});
+                        await browser.close().catch(() => {});
+                    } else {
+                        console.log('KEEP_OPEN enabled - leaving browser open for inspection.');
+                    }
+                }
+
+
+                return {success: true, screenshot: s4, state: statePath4, resultPresent};
+            } // closes if (!targetUrl)
+
+
+// outer try/catch below remains untouched
         } catch (err) {
-            console.error('Error in view-details + scrape phase:', err?.message || err);
-        }
-
-
-
-        if (!KEEP_OPEN) {
-            await context.close().catch(()=>{});
-            await browser.close().catch(()=>{});
-        } else {
-            console.log('KEEP_OPEN enabled - leaving browser open for inspection.');
-        }
-
-        return { success: true, screenshot: s4, state: statePath4, resultPresent };
-    } catch (err) {
+            console.error('Attempt error:', err && err.message ? err.message : err);
+            try {
+                if (page) {
+                    const errShot = path.join(LOG_DIR, `screenshot-error-${Date.now()}.png`);
+                    await page.screenshot({path: errShot}).catch(() => {
+                    });
+                }
+            } catch (e) {
+            }
+            try {
+                if (context) await context.close();
+            } catch (e) {
+            }
+            try {
+                if (browser) await browser.close();
+            } catch (e) {
+            }
+            return { success: false, reason: 'exception', error: err && err.message };
+            // closes outer catch
+        } }
+    catch (err) {
         console.error('Attempt error:', err && err.message ? err.message : err);
         try {
             if (page) {
                 const errShot = path.join(LOG_DIR, `screenshot-error-${Date.now()}.png`);
-                await page.screenshot({ path: errShot }).catch(()=>{});
+                await page.screenshot({ path: errShot }).catch(() => {});
             }
-        } catch(e){}
-        try { if (context) await context.close(); } catch(e) {}
-        try { if (browser) await browser.close(); } catch(e) {}
+        } catch (e) {}
+        try {
+            if (context) await context.close();
+        } catch (e) {}
+        try {
+            if (browser) await browser.close();
+        } catch (e) {}
+
         return { success: false, reason: 'exception', error: err && err.message };
-    }
+    } // closes outer catch
 }
 
-(async () => {
+
+
+// Async runner (IIFE)
+; (async () => {
     await ensureLogDir();
     const lines = await loadProxyLines();
     if (!lines.length && !RAW_PROXY) {
@@ -812,20 +1005,17 @@ async function attemptWithProxy(rawProxy, tryIndex) {
         process.exit(2);
     }
 
-    // If single proxy provided by PROXY_LINE, use that one repeatedly (with different session IDs if you want)
     const pool = lines.length ? lines : [RAW_PROXY];
 
-    for (let i = 0, tries = 0; tries < MAX_TRIES && i < pool.length; i = (i+1) % pool.length, tries++) {
+    for (let i = 0, tries = 0; tries < MAX_TRIES && i < pool.length; i = (i + 1) % pool.length, tries++) {
         const raw = pool[i];
-        console.log(`\n== Try ${tries+1} of up to ${MAX_TRIES} using proxy index ${i} ==`);
-        const res = await attemptWithProxy(raw, tries+1);
+        console.log(`\n== Try ${tries + 1} of up to ${MAX_TRIES} using proxy index ${i} ==`);
+        const res = await attemptWithProxy(raw, tries + 1);
         if (res.success) {
             console.log('✅ Success!', res);
-            // keep result and stop rotating
             process.exit(0);
         } else {
             console.warn('Proxy attempt failed:', res.reason || res.error || 'unknown', res);
-            // if we have more proxies, continue loop
         }
     }
 
