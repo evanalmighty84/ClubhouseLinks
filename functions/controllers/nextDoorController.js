@@ -1,50 +1,53 @@
 const pool = require('../db/db');
 
-// controllers/nextdoor.js
 exports.getNextDoorLeads = async (req, res) => {
     const { userId } = req.params;
 
     try {
-        // 1) User industries
+        // 1️⃣ Get user's industries
         const userResult = await pool.query(
             'SELECT industry FROM users WHERE id = $1',
             [userId]
         );
-        const industryArray = userResult.rows[0]?.industry;
 
-        if (!Array.isArray(industryArray) || industryArray.length === 0) {
-            console.log('⚠️ No industries found for user:', userId);
-            return res.json({ hot: [], warm: [] });
-        }
-
+        const industryArray = userResult.rows[0]?.industry || [];
         const normalizedIndustries = industryArray.map((s) => String(s).toLowerCase());
 
-        // 2) HOT: everything in recent_nextdoor_messages for those industries
-        const hotSql = `
-      SELECT rnm.*
-      FROM recent_nextdoor_messages rnm
-      WHERE LOWER(rnm.lead_type) = ANY($1)
-      ORDER BY COALESCE(rnm.timestamp, NOW() - INTERVAL '100 years') DESC, rnm.id DESC
-    `;
-        const { rows: hot } = await pool.query(hotSql, [normalizedIndustries]);
-
-        // 3) WARM: from nextdoor_messages, excluding any still present in recent_nextdoor_messages
-        const warmSql = `
-      SELECT nm.*
+        // 2️⃣ Always join familytreenow for enrichment
+        const sql = `
+      SELECT 
+        nm.id,
+        nm.author,
+        nm.location,
+        nm.city,
+        nm.lead_type,
+        COALESCE(ftn.phone, NULL) AS phone,                    -- 🟢 enrich from familytreenow
+        COALESCE(ftn.physical_address, NULL) AS physical_address,
+        COALESCE(ftn.description, nm.description) AS description,
+        nm.timestamp,
+        nm.state,
+        ftn.company_name,
+        ftn.professionalnumbertocall,
+        ftn.phones AS enriched_phones,
+        CASE WHEN ftn.phone IS NOT NULL THEN TRUE ELSE FALSE END AS enriched
       FROM nextdoor_messages nm
-      LEFT JOIN recent_nextdoor_messages rnm
-        ON rnm.post_url = nm.post_url
-      WHERE LOWER(nm.lead_type) = ANY($1)
-        AND rnm.post_url IS NULL
-      ORDER BY COALESCE(nm.timestamp, NOW() - INTERVAL '100 years') DESC, nm.id DESC
+      LEFT JOIN familytreenow ftn ON ftn.lead_id = nm.id
+      WHERE
+        array_length($1::text[], 1) IS NULL OR
+        EXISTS (
+          SELECT 1 FROM unnest($1::text[]) AS i
+          WHERE LOWER(nm.lead_type) LIKE '%' || i || '%'
+        )
+      ORDER BY nm.timestamp DESC;
     `;
-        const { rows: warm } = await pool.query(warmSql, [normalizedIndustries]);
 
-        console.log(`✅ Found ${hot.length} hot and ${warm.length} warm leads`);
-        return res.json({ hot, warm });
+        const { rows } = await pool.query(sql, [normalizedIndustries]);
+
+        console.log(`✅ Found ${rows.length} enriched leads (joined with familytreenow) for user ${userId}`);
+        res.json(rows);
+
     } catch (err) {
-        console.error('❌ Error fetching nextdoor leads:', err);
-        return res.status(500).json({ error: 'Failed to fetch leads' });
+        console.error('❌ Error fetching Nextdoor leads:', err);
+        res.status(500).json({ error: 'Failed to fetch leads' });
     }
 };
-

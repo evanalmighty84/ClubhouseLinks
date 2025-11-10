@@ -11,7 +11,6 @@ const LeadsPage = () => {
     return (
         <>
     <HotNextDoorLeads/>,
-        <NextDoorLeads/>,
             <RFPBids/>
             </>
     );

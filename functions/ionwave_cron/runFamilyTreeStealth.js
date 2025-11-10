@@ -534,13 +534,7 @@ async function attemptWithProxy(rawProxy, tryIndex) {
 
                     await context.close().catch(() => {});
                     await browser.close().catch(() => {});
-                    return {
-                        success: true,
-                        phones: scraped,
-                        address: scraped.address || null,
-                        screenshot: shot,
-                        state: statePath
-                    };
+                    return { success: true, phones: scraped, screenshot: shot, state: statePath };
                 }
 
             } catch (e) {
