@@ -13,7 +13,10 @@ import {
 } from "react-bootstrap";
 
 // ✅ Localhost backend (for development)
-const API_BASE = "http://localhost:5000/server/lead_function/api";
+// OLD:
+// ✅ NEW:
+const API_BASE = "https://upbeat-spontaneity-production.up.railway.app/server/lead_function/api";
+
 
 export default function LeadsSentDashboard() {
     const [leads, setLeads] = useState([]);
