@@ -8,23 +8,23 @@ const EMAIL_PASS = process.env.EMAIL_PASS;
 const sendEmail = async (to, subject, htmlContent) => {
     try {
         const transporter = nodemailer.createTransport({
-            host: 'smtp.zoho.com',
-            port: 587,
-            secure: false,
+            host: 'smtp.gmail.com',   // ✅ Gmail SMTP host
+            port: 587,                // ✅ Gmail TLS port
+            secure: false,            // STARTTLS (true for port 465 SSL)
             auth: {
                 user: EMAIL_USER,
-                pass: EMAIL_PASS
+                pass: EMAIL_PASS,     // must be an App Password
             },
             tls: {
-                rejectUnauthorized: false
-            }
+                rejectUnauthorized: false,
+            },
         });
 
         await transporter.sendMail({
-            from: EMAIL_USER,
+            from: `"Clubhouse Links" <${EMAIL_USER}>`,
             to,
             subject,
-            html: htmlContent
+            html: htmlContent,
         });
 
         console.log(`📤 Email sent to ${to}`);

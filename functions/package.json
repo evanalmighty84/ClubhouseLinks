@@ -1,7 +1,7 @@
 {
 	"name": "crm_function",
 	"version": "1.0.0",
-	"main": "index.js",
+	"main": "crmIndex.js",
 	"author": "evanligon7@gmail.com",
 	"scripts": {
 		"start": "node server.js",

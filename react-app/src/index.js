@@ -48,6 +48,7 @@ import SubscribersPage from "./CRMcomponents/Subscribers/SubscribersPage";
 import SubscriberDetails from "./CRMcomponents/Subscribers/SubscriberDetails";
 import SubscribersForm from "./CRMcomponents/Subscribers/SubscribersForm";
 import UnsubscribePage from "./CRMpages/UnsubscribePage";
+import LeadsSentDashboard from "./CRMpages/LeadsSentDashboard";
 import Settings from "./CRMpages/Settings";
 import SMSConsentPage from "./CRMpages/ConsentPage";
 import EmailVerified from "./CRMpages/EmailVerified";
@@ -198,6 +199,7 @@ class App extends Component {
                             <Route path="/ClientPortfolios" element={<ClientPortfolios />} />
                             <Route path="/lists" element={<ProtectedRoute><ListsPage /></ProtectedRoute>} />
                             <Route path="/emailqueued" element={<ProtectedRoute><EmailQueuedPage /></ProtectedRoute>} />
+                            <Route path="/leadssentdashboard" element={<ProtectedRoute><LeadsSentDashboard/></ProtectedRoute>} />
                             <Route path="/leads" element={<ProtectedRoute><LeadsPage/></ProtectedRoute>} />
                             <Route path="/lists/new" element={<ProtectedRoute><ListForm /></ProtectedRoute>} />
                             <Route path="/lists/:id/edit" element={<ProtectedRoute><ListForm /></ProtectedRoute>} />

@@ -1,3 +1,4 @@
+/* This is the www.clubhouselinks.com */
 import React, { useEffect, useState } from 'react';
 import { Card } from 'react-bootstrap';
 import DashboardCards from '../CRMcomponents/DashboardCards';
@@ -71,7 +72,7 @@ const NonUserDashboard = () => {
                 </div>
             </div>
 
-            {/* Optional sign up / sign in under the flipper */}
+
             <SignUp />
             <SignIn />
         </Card>

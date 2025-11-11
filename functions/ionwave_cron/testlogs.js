@@ -8,7 +8,7 @@
  *   OPENAI_API_KEY  (only if you decide to use classifyPost() with OpenAI)
  *
  * Run:
- *   node index.js
+ *   node crmIndex.js
  */
 
 const fs = require('fs');
