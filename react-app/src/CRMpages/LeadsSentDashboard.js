@@ -15,8 +15,12 @@ import {
 // ✅ Localhost backend (for development)
 // OLD:
 // ✅ NEW:
-const API_BASE2 = "https://crm-function-app-5d4de511071d.herokuapp.com/server/lead_function/api/";
-const API_BASE = "https://upbeat-spontaneity-production.up.railway.app/server/lead_function/api";
+const API_BASE =
+    process.env.NODE_ENV === "production"
+        ? "https://upbeat-spontaneity-production.up.railway.app/server/lead_function/api"
+        : "http://localhost:5000/server/lead_function/api";
+
+
 https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/
 export default function LeadsSentDashboard() {
     const [leads, setLeads] = useState([]);
@@ -56,7 +60,7 @@ export default function LeadsSentDashboard() {
     async function sendReportEmail(company) {
         if (!window.confirm(`Send report email to ${company.company_name}?`)) return;
         try {
-            await axios.post(`${API_BASE2}/leads/send-summaries`);
+            await axios.post(`${API_BASE}/leads/send-summaries`);
             alert(`Report email sent to ${company.company_name}`);
         } catch (err) {
             console.error("Error sending report email:", err);
