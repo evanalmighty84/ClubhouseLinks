@@ -230,6 +230,7 @@ export default function LeadsSentDashboard() {
                                 <th>City</th>
                                 <th>State</th>
                                 <th>Phone</th>
+                                <th>Description</th>
                                 <th>Date</th>
                             </tr>
                             </thead>
@@ -241,6 +242,7 @@ export default function LeadsSentDashboard() {
                                     <td>{lead.city}</td>
                                     <td>{lead.state}</td>
                                     <td>{lead.phone || "—"}</td>
+                                    <td>{lead.description || "—"}</td> {/* NEW */}
                                     <td>
                                         {new Date(lead.scraped_at).toLocaleDateString()}
                                     </td>

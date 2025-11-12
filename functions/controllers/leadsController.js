@@ -73,8 +73,8 @@ exports.getCompanyLeads = async (req, res) => {
 };
 
 
-
-
+const db = require("../db/db");
+const sendEmail = require("../utils/sendEmail");
 
 exports.sendLeadSummaries = async (req, res) => {
     try {
@@ -86,45 +86,43 @@ exports.sendLeadSummaries = async (req, res) => {
 
         console.log(`📨 Generating lead summary for ${company_name}...`);
 
-        // Get all leads for that company
-        const { rows: leads } = await db.query(
+        // 🧠 Pull leads and join with users to get email
+        const { rows } = await db.query(
             `
-      SELECT 
-        author,
-        city,
-        state,
-        lead_type,
-        phone,
-        scraped_at
-      FROM familytreenow
-      WHERE company_name = $1
-        AND lead_sent = TRUE
-      ORDER BY scraped_at DESC
-      LIMIT 100;
-      `,
+                SELECT
+                    f.author,
+                    f.description,
+                    f.city,
+                    f.state,
+                    f.lead_type,
+                    f.phone,
+                    f.scraped_at,
+                    u.email AS user_email
+                FROM familytreenow f
+                         LEFT JOIN users u
+                                   ON LOWER(TRIM(f.company_name)) = LOWER(TRIM(u.company_name))
+                WHERE f.company_name = $1
+                  AND f.lead_sent = TRUE
+                ORDER BY f.scraped_at DESC
+                    LIMIT 100;
+            `,
             [company_name]
         );
 
-        if (!leads.length) {
+        if (!rows.length) {
             console.log(`⚠️ No leads found for ${company_name}`);
             return res.json({ message: `No leads found for ${company_name}` });
         }
 
-        // Get the company’s user email from the users table
-        const { rows: users } = await db.query(
-            `
-      SELECT email
-      FROM users
-      WHERE LOWER(TRIM(name)) = LOWER(TRIM($1))
-      LIMIT 1;
-      `,
-            [company_name]
-        );
+        // Extract the matched email (prefer company match)
+        const to = rows[0].user_email;
+        if (!to) {
+            console.warn(`⚠️ No email found for ${company_name} in users table`);
+            return res.json({ message: `No email found for ${company_name}` });
+        }
 
-        const to = users.length ? users[0].email : "evan.ligon@clubhouselinks.com";
-
-        // Build table
-        const tableRows = leads
+        // 🧠 Build HTML
+        const tableRows = rows
             .map(
                 (l) => `
         <tr>
@@ -133,6 +131,7 @@ exports.sendLeadSummaries = async (req, res) => {
           <td>${l.city || "—"}</td>
           <td>${l.state || "—"}</td>
           <td>${l.phone || "—"}</td>
+          <td>${l.description ? l.description.replace(/\n/g, "<br>") : "—"}</td>
           <td>${new Date(l.scraped_at).toLocaleString()}</td>
         </tr>
       `
@@ -151,24 +150,26 @@ exports.sendLeadSummaries = async (req, res) => {
             <th>City</th>
             <th>State</th>
             <th>Phone</th>
+            <th>Description</th>
             <th>Date</th>
           </tr>
         </thead>
         <tbody>${tableRows}</tbody>
       </table>
 
-      <p style="margin-top: 16px;">Total Leads: <strong>${leads.length}</strong></p>
+      <p style="margin-top: 16px;">Total Leads: <strong>${rows.length}</strong></p>
     `;
 
         await sendEmail(to, `Your Lead Summary Report — ${company_name}`, html);
 
         console.log(`📤 Email sent to ${to} for ${company_name}`);
-        res.json({ success: true, message: `Report sent for ${company_name}` });
+        res.json({ success: true, message: `Report sent to ${to} for ${company_name}` });
     } catch (error) {
         console.error("❌ Error sending lead summary:", error);
         res.status(500).json({ error: "Failed to send lead summary" });
     }
 };
+
 
 
 
