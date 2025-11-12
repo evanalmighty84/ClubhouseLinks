@@ -242,10 +242,9 @@ export default function LeadsSentDashboard() {
                                     <td>{lead.city}</td>
                                     <td>{lead.state}</td>
                                     <td>{lead.phone || "—"}</td>
-                                    <td>{lead.description || "—"}</td> {/* NEW */}
-                                    <td>
-                                        {new Date(lead.scraped_at).toLocaleDateString()}
-                                    </td>
+                                    <td>{lead.description || "—"}</td>
+                                    <td>{new Date(lead.post_date).toLocaleDateString()}</td>
+
                                 </tr>
                             ))}
                             </tbody>
