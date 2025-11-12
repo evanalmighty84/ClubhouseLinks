@@ -73,8 +73,6 @@ exports.getCompanyLeads = async (req, res) => {
 };
 
 
-const db = require("../db/db");
-const sendEmail = require("../utils/sendEmail");
 
 exports.sendLeadSummaries = async (req, res) => {
     try {
