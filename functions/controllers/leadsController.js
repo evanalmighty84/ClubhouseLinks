@@ -84,24 +84,27 @@ exports.sendLeadSummaries = async (req, res) => {
 
         console.log(`📨 Generating lead summary for ${company_name}...`);
 
-        // 🧠 Pull leads and join with users to get email
+        // 🧠 Pull leads, join nextdoor_messages for true date,
+        // and join users to find the email for this company.
         const { rows } = await db.query(
             `
                 SELECT
                     f.author,
-                    f.description,
+                    f.lead_type,
                     f.city,
                     f.state,
-                    f.lead_type,
                     f.phone,
-                    f.scraped_at,
+                    f.description,
+                    COALESCE(n.timestamp, f.scraped_at) AS post_date,
+                    f.company_name,
                     u.email AS user_email
                 FROM familytreenow f
+                         LEFT JOIN nextdoor_messages n
+                                   ON f.lead_id = n.id
                          LEFT JOIN users u
                                    ON LOWER(TRIM(f.company_name)) = LOWER(TRIM(u.company_name))
                 WHERE f.company_name = $1
-                  AND f.lead_sent = TRUE
-                ORDER BY f.scraped_at DESC
+                ORDER BY post_date DESC
                     LIMIT 100;
             `,
             [company_name]
@@ -112,17 +115,16 @@ exports.sendLeadSummaries = async (req, res) => {
             return res.json({ message: `No leads found for ${company_name}` });
         }
 
-        // Extract the matched email (prefer company match)
+        // Extract email address for the matching company
         const to = rows[0].user_email;
         if (!to) {
             console.warn(`⚠️ No email found for ${company_name} in users table`);
             return res.json({ message: `No email found for ${company_name}` });
         }
 
-        // 🧠 Build HTML
+        // 🧠 Build HTML with accurate date and description
         const tableRows = rows
-            .map(
-                (l) => `
+            .map((l) => `
         <tr>
           <td>${l.author || "N/A"}</td>
           <td>${l.lead_type || "—"}</td>
@@ -130,10 +132,9 @@ exports.sendLeadSummaries = async (req, res) => {
           <td>${l.state || "—"}</td>
           <td>${l.phone || "—"}</td>
           <td>${l.description ? l.description.replace(/\n/g, "<br>") : "—"}</td>
-          <td>${new Date(l.scraped_at).toLocaleString()}</td>
+          <td>${l.post_date ? new Date(l.post_date).toLocaleString("en-US", { hour12: true }) : "—"}</td>
         </tr>
-      `
-            )
+      `)
             .join("");
 
         const html = `
@@ -167,6 +168,7 @@ exports.sendLeadSummaries = async (req, res) => {
         res.status(500).json({ error: "Failed to send lead summary" });
     }
 };
+
 
 
 
