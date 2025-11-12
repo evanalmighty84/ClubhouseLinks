@@ -15,13 +15,21 @@ import {
 // ✅ Localhost backend (for development)
 // OLD:
 // ✅ NEW:
+// ✅ Railway for fetching leads (works fine)
 const API_BASE =
     process.env.NODE_ENV === "production"
         ? "https://upbeat-spontaneity-production.up.railway.app/server/lead_function/api"
         : "http://localhost:5000/server/lead_function/api";
 
+// ✅ Heroku for sending emails (SMTP allowed)
+const EMAIL_API_BASE =
+    process.env.NODE_ENV === "production"
+        ? "https://crm-function-app-5d4de511071d.herokuapp.com/server/lead_function/api"
+        : "http://localhost:5000/server/lead_function/api";
 
-https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/
+
+
+
 export default function LeadsSentDashboard() {
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -60,7 +68,7 @@ export default function LeadsSentDashboard() {
     async function sendReportEmail(company) {
         if (!window.confirm(`Send report email to ${company.company_name}?`)) return;
         try {
-            await axios.post(`${API_BASE}/leads/send-summaries`);
+            await axios.post(`${EMAIL_API_BASE}/leads/send-summaries`);
             alert(`Report email sent to ${company.company_name}`);
         } catch (err) {
             console.error("Error sending report email:", err);
@@ -71,13 +79,14 @@ export default function LeadsSentDashboard() {
     async function sendTutorialEmail(company) {
         if (!window.confirm(`Send “How to Curate Leads” tutorial to ${company.company_name}?`)) return;
         try {
-            await axios.post(`${API_BASE}/leads/send-tutorial/${company.id}`);
+            await axios.post(`${EMAIL_API_BASE}/leads/send-tutorial/${company.id}`);
             alert("Tutorial email sent!");
         } catch (err) {
             console.error("Error sending tutorial email:", err);
             alert("Failed to send tutorial email.");
         }
     }
+
 
     async function viewLeads(company) {
         try {
