@@ -66,15 +66,18 @@ export default function LeadsSentDashboard() {
     }
 
     async function sendReportEmail(company) {
-        if (!window.confirm(`Send report email to ${company.company_name}?`)) return;
+        if (!window.confirm(`Send report email for ${company.company_name}?`)) return;
         try {
-            await axios.post(`${EMAIL_API_BASE}/leads/send-summaries`);
-            alert(`Report email sent to ${company.company_name}`);
+            await axios.post(`${API_BASE}/leads/send-summaries`, {
+                company_name: company.company_name,
+            });
+            alert(`Report email sent for ${company.company_name}`);
         } catch (err) {
             console.error("Error sending report email:", err);
             alert("Failed to send report email.");
         }
     }
+
 
     async function sendTutorialEmail(company) {
         if (!window.confirm(`Send “How to Curate Leads” tutorial to ${company.company_name}?`)) return;
