@@ -68,7 +68,7 @@ export default function LeadsSentDashboard() {
     async function sendReportEmail(company) {
         if (!window.confirm(`Send report email for ${company.company_name}?`)) return;
         try {
-            await axios.post(`${API_BASE}/leads/send-summaries`, {
+            await axios.post(`${EMAIL_API_BASE}/leads/send-summaries`, {
                 company_name: company.company_name,
             });
             alert(`Report email sent for ${company.company_name}`);
