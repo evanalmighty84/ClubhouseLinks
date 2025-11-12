@@ -48,19 +48,22 @@ exports.getCompanyLeads = async (req, res) => {
         console.log(`📋 Fetching leads for company: ${company_name}`);
 
         const query = `
-      SELECT 
-        id,
-        author,
-        city,
-        state,
-        lead_type,
-        phone,
-        scraped_at
-      FROM familytreenow
-      WHERE company_name = $1 
-        AND lead_sent = TRUE
-      ORDER BY scraped_at DESC;
-    `;
+            SELECT
+                f.id,
+                f.author,
+                f.city,
+                f.state,
+                f.lead_type,
+                f.phone,
+                f.description,
+                COALESCE(n.timestamp, f.scraped_at) AS post_date
+            FROM familytreenow f
+                     LEFT JOIN nextdoor_messages n
+                               ON f.lead_id = n.id
+            WHERE f.company_name = $1
+              AND f.lead_sent = TRUE
+            ORDER BY post_date DESC;
+        `;
 
         const { rows } = await db.query(query, [company_name]);
 
@@ -71,6 +74,7 @@ exports.getCompanyLeads = async (req, res) => {
         res.status(500).json({ error: "Failed to retrieve company leads" });
     }
 };
+
 
 
 
