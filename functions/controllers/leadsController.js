@@ -75,51 +75,105 @@ exports.getCompanyLeads = async (req, res) => {
 
 
 
+
+
 exports.sendLeadSummaries = async (req, res) => {
     try {
         console.log("📨 Starting sendLeadSummaries...");
 
-        // ✅ Query each company’s stats + its matching email from users
-        const { rows } = await db.query(`
-      SELECT 
-        COALESCE(f.company_name, 'Unknown Company') AS company_name,
-        COUNT(*) AS total_leads,
-        STRING_AGG(DISTINCT f.city, ', ') AS cities,
-        MAX(f.scraped_at) AS last_sent,
-        u.email AS user_email
-      FROM familytreenow f
-      LEFT JOIN users u ON LOWER(TRIM(f.company_name)) = LOWER(TRIM(u.name))
-      WHERE f.lead_sent = TRUE
-      GROUP BY f.company_name, u.email
-      ORDER BY total_leads DESC;
-    `);
+        // Step 1️⃣: Get distinct company list
+        const { rows: companies } = await db.query(`
+            SELECT DISTINCT f.company_name, u.email AS user_email
+            FROM familytreenow f
+                     LEFT JOIN users u ON LOWER(TRIM(f.company_name)) = LOWER(TRIM(u.name))
+            WHERE f.lead_sent = TRUE
+              AND f.company_name IS NOT NULL
+            ORDER BY f.company_name;
+        `);
 
-        if (!rows.length) {
-            console.log("⚠️ No company leads found for summary.");
-            return res.json({ message: "No leads available to summarize." });
+        if (!companies.length) {
+            console.log("⚠️ No companies found to summarize.");
+            return res.json({ message: "No companies found to summarize." });
         }
 
-        // ✅ Send to each company
-        for (const company of rows) {
-            const recipient = company.user_email || "evan.ligon@clubhouselinks.com"; // fallback
-            console.log(`📧 Preparing summary for ${company.company_name} (${recipient})`);
+        // Step 2️⃣: Generate and send reports
+        for (const company of companies) {
+            const { company_name, user_email } = company;
+            const to = user_email || "evan.ligon@clubhouselinks.com";
+
+            console.log(`📧 Preparing summary for ${company_name} (${to})`);
+
+            // Step 3️⃣: Query that company’s leads
+            const { rows: leads } = await db.query(
+                `
+        SELECT 
+          author,
+          city,
+          state,
+          lead_type,
+          phone,
+          scraped_at
+        FROM familytreenow
+        WHERE company_name = $1
+          AND lead_sent = TRUE
+        ORDER BY scraped_at DESC
+        LIMIT 50;
+        `,
+                [company_name]
+            );
+
+            if (leads.length === 0) {
+                console.log(`⚠️ No leads found for ${company_name}`);
+                continue;
+            }
+
+            // Step 4️⃣: Generate HTML table
+            const tableRows = leads
+                .map(
+                    (l) => `
+          <tr>
+            <td>${l.author || "N/A"}</td>
+            <td>${l.lead_type || "—"}</td>
+            <td>${l.city || "—"}</td>
+            <td>${l.state || "—"}</td>
+            <td>${l.phone || "—"}</td>
+            <td>${new Date(l.scraped_at).toLocaleString()}</td>
+          </tr>
+        `
+                )
+                .join("");
 
             const html = `
-        <h2>Lead Summary for ${company.company_name}</h2>
-        <p><strong>Total Leads:</strong> ${company.total_leads}</p>
-        <p><strong>Cities:</strong> ${company.cities}</p>
-        <p><strong>Last Sent:</strong> ${new Date(company.last_sent).toLocaleString()}</p>
+        <h2>Lead Summary for ${company_name}</h2>
+        <p>Below is a summary of your most recent leads from Clubhouse Links.</p>
+        <table border="1" cellspacing="0" cellpadding="8" style="border-collapse: collapse; width: 100%;">
+          <thead style="background-color: #f2f2f2;">
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>City</th>
+              <th>State</th>
+              <th>Phone</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+        <p style="margin-top: 16px;">Total Leads: <strong>${leads.length}</strong></p>
       `;
 
-            await sendEmail(recipient, "Your Lead Summary Report", html);
+            // Step 5️⃣: Send the email
+            await sendEmail(to, `Your Lead Summary Report`, html);
+            console.log(`📤 Email sent to ${to} for ${company_name}`);
         }
 
-        res.json({ success: true, message: "Lead summary emails sent successfully!" });
+        res.json({ success: true, message: "✅ Lead summaries sent per company!" });
     } catch (error) {
         console.error("❌ Error sending lead summaries:", error);
         res.status(500).json({ error: "Failed to send lead summaries" });
     }
 };
+
 
 
 
