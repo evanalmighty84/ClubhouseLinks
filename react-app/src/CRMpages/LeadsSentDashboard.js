@@ -123,7 +123,7 @@ export default function LeadsSentDashboard() {
                     lead_id: lead.id,
                     phone: lead.phone,
                     description: lead.description,
-                    user_id: USER_ID
+                    user_id: 79
                 }
             );
             alert(`✅ Message sent to ${lead.author}!`);
