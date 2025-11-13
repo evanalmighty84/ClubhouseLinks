@@ -3,6 +3,7 @@ const { client, messagingServiceSid } = require('../utils/twilioClient');
 const pool = require('../db/db');
 dotenv.config();
 
+
 const smsSessions = new Map(); // Simple in-memory session tracking
 
 /* ---------- helpers: canonicalization ---------- */
