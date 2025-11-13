@@ -410,7 +410,8 @@ exports.notifyUsersForLead = async (req, res) => {
 exports.messageLead = async (req, res) => {
 
     try {
-        const { lead_id, phone, description, user_id } = req.body;
+
+        const { lead_id, phone, description, user_id, company_name } = req.body;
         console.log("📨 LOGGING SMS for lead:", lead_id);
 
 
