@@ -114,18 +114,21 @@ export default function LeadsSentDashboard() {
         }
     }
     async function sendLeadMessage(lead) {
+        console.log("Sending payload lead:", lead);
+
         if (!window.confirm(`Message ${lead.author} about their post?`)) return;
 
         try {
             const res = await axios.post(
-                `${SMS_LEAD_BASE}/smsqueue/message-lead`,
+                `${API_BASE}/smsqueue/message-lead`,
                 {
-                    lead_id: lead.lead_id,
+                    lead_id: lead.id,                   // ✅ FIXED
                     phone: lead.phone,
                     description: lead.description,
                     user_id: 79
                 }
             );
+
             alert(`✅ Message sent to ${lead.author}!`);
         } catch (err) {
             console.error("Error messaging lead:", err);
@@ -133,13 +136,14 @@ export default function LeadsSentDashboard() {
         }
     }
 
+
     // 🧠 Fetch entire conversation thread for this lead
     async function openConversation(lead) {
         try {
             setSelectedLead(lead);
             setShowChat(true);
             setChatLoading(true);
-            const res = await axios.get(`${SMS_LEAD_BASE}/smsqueue/lead/conversation/${lead.lead_id}`)
+            const res = await axios.get(`${SMS_LEAD_BASE}/smsqueue/lead/conversation/${lead.id}`)
             ;
             setConversation(res.data || []);
         } catch (err) {
@@ -155,7 +159,7 @@ export default function LeadsSentDashboard() {
         if (!chatMessage.trim()) return;
         try {
             await axios.post(`${SMS_LEAD_BASE}/smsqueue/lead/send-reply`, {
-                lead_id: selectedLead.lead_id,
+                lead_id: selectedLead.id,
                 message: chatMessage,
             });
             setChatMessage("");
@@ -296,37 +300,41 @@ export default function LeadsSentDashboard() {
                             </tr>
                             </thead>
                             <tbody>
-                            {companyLeads.map((lead, i) => (
-                                <tr key={i}>
-                                    <td>
-                                        <td className="d-flex gap-2">
-                                            <Button
-                                                variant="outline-primary"
-                                                size="sm"
-                                                onClick={() => sendLeadMessage(lead)}
-                                            >
-                                                💬 Message
-                                            </Button>
-                                            <Button
-                                                variant="outline-secondary"
-                                                size="sm"
-                                                onClick={() => openConversation(lead)}
-                                            >
-                                                🗨️ Open Chat
-                                            </Button>
+                            {companyLeads.map((lead, i) => {
+                                console.log("LEAD OBJECT:", lead);   //  ← ADD THIS LINE
+
+                                return (
+                                    <tr key={i}>
+                                        <td>
+                                            <div className="d-flex gap-2">
+                                                <Button
+                                                    variant="outline-primary"
+                                                    size="sm"
+                                                    onClick={() => sendLeadMessage(lead)}
+                                                >
+                                                    💬 Message
+                                                </Button>
+                                                <Button
+                                                    variant="outline-secondary"
+                                                    size="sm"
+                                                    onClick={() => openConversation(lead)}
+                                                >
+                                                    🗨️ Open Chat
+                                                </Button>
+                                            </div>
                                         </td>
 
-                                    </td>
-                                    <td>{lead.author}</td>
-                                    <td>{lead.lead_type}</td>
-                                    <td>{lead.city}</td>
-                                    <td>{lead.state}</td>
-                                    <td>{lead.phone || "—"}</td>
-                                    <td>{lead.description || "—"}</td>
-                                    <td>{new Date(lead.post_date).toLocaleDateString()}</td>
+                                        <td>{lead.author}</td>
+                                        <td>{lead.lead_type}</td>
+                                        <td>{lead.city}</td>
+                                        <td>{lead.state}</td>
+                                        <td>{lead.phone || "—"}</td>
+                                        <td>{lead.description || "—"}</td>
+                                        <td>{new Date(lead.post_date).toLocaleDateString()}</td>
+                                    </tr>
+                                );
+                            })}
 
-                                </tr>
-                            ))}
                             </tbody>
                         </Table>
                     )}
