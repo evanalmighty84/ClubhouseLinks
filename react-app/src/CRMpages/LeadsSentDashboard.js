@@ -168,7 +168,7 @@ export default function LeadsSentDashboard() {
 
     return (
         <Container className="mt-5">
-            <h1 className="mb-4 text-center">📊 Leads Sent Dashboard</h1>
+            <h1 className="mb-4 text-center">📊Emily's Leads Sent Dashboard</h1>
 
             <Form className="mb-4">
                 <Row className="align-items-end justify-content-center">
