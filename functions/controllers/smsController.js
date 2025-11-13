@@ -408,6 +408,8 @@ exports.notifyUsersForLead = async (req, res) => {
 };
 
 exports.messageLead = async (req, res) => {
+    console.log("📨 LOGGING SMS for lead:", lead_id);
+
     try {
         const { lead_id, phone, description, user_id } = req.body;
 
@@ -416,7 +418,7 @@ exports.messageLead = async (req, res) => {
 
         const toPhone = "+1" + phone.replace(/\D/g, "");
 
-        // Fetch user (only need name + company_name)
+        // Fetch user info
         const { rows: userRows } = await pool.query(
             `SELECT id, name, company_name FROM users WHERE id = $1`,
             [user_id]
@@ -425,7 +427,9 @@ exports.messageLead = async (req, res) => {
         const user = userRows[0];
         if (!user) return res.status(404).json({ error: "User not found" });
 
-        // AI-generated message
+        //---------------------------------------------------------
+        // ⭐ AI-generated message only (NO fallback)
+        //---------------------------------------------------------
         const prompt = `
 Write a friendly SMS under 320 characters.
 Sender: ${user.name} from ${user.company_name}
@@ -438,9 +442,18 @@ Tone: casual, helpful, offer a quote if relevant.
             input: prompt,
         });
 
-        const messageBody = completion.output[0].content[0].text.trim();
+        const messageBody = completion.output?.[0]?.content?.[0]?.text?.trim();
 
-        // Send SMS
+        if (!messageBody) {
+            // This forces the UI to show “Failed to send”
+            return res.status(500).json({
+                error: "AI did not generate a message. Please try Open Chat instead."
+            });
+        }
+
+        //---------------------------------------------------------
+        // ⭐ Send SMS
+        //---------------------------------------------------------
         const sms = await client.messages.create({
             body: messageBody,
             to: toPhone,
@@ -448,20 +461,26 @@ Tone: casual, helpful, offer a quote if relevant.
             statusCallback: `${process.env.BASE_URL}/server/lead_function/api/smsqueue/status-callback`,
         });
 
-        // Log outbound
+        //---------------------------------------------------------
+        // ⭐ Log message
+        //---------------------------------------------------------
         await pool.query(
             `INSERT INTO lead_sms (lead_id, user_id, from_number, to_number, message_body, direction, status)
              VALUES ($1, $2, $3, $4, $5, 'outbound', 'sent')`,
             [lead_id, user.id, process.env.TWILIO_NUMBER, toPhone, messageBody]
         );
 
+        //---------------------------------------------------------
+        // ⭐ Respond OK
+        //---------------------------------------------------------
         res.json({ success: true, message_sid: sms.sid, body: messageBody });
 
     } catch (err) {
         console.error("❌ messageLead error:", err);
-        res.status(500).json({ error: "Failed to send lead message" });
+        return res.status(500).json({ error: "Failed to send message. Try Open Chat instead." });
     }
 };
+
 
 
 
@@ -614,6 +633,8 @@ exports.sendLeadReply = async (req, res) => {
 };
 
 exports.getLeadConversation = async (req, res) => {
+    console.log("💬 FETCHING conversation for lead:", leadId);
+
     try {
         const { leadId } = req.params;
 
