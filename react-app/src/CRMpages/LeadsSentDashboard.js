@@ -120,7 +120,7 @@ export default function LeadsSentDashboard() {
             const res = await axios.post(
                 `${API_BASE}/smsqueue/message-lead`,
                 {
-                    lead_id: lead.id,
+                    lead_id: lead.lead_id,
                     phone: lead.phone,
                     description: lead.description,
                     user_id: 79
@@ -139,7 +139,8 @@ export default function LeadsSentDashboard() {
             setSelectedLead(lead);
             setShowChat(true);
             setChatLoading(true);
-            const res = await axios.get(`${EMAIL_API_BASE}/smsqueue/lead/conversation/${lead.id}`);
+            const res = await axios.get(`${EMAIL_API_BASE}/smsqueue/lead/conversation/${lead.lead_id}`)
+            ;
             setConversation(res.data || []);
         } catch (err) {
             console.error("Error loading conversation:", err);
@@ -154,7 +155,7 @@ export default function LeadsSentDashboard() {
         if (!chatMessage.trim()) return;
         try {
             await axios.post(`${API_BASE}/smsqueue/lead/send-reply`, {
-                lead_id: selectedLead.id,
+                lead_id: selectedLead.lead_id,
                 message: chatMessage,
             });
             setChatMessage("");
@@ -168,7 +169,7 @@ export default function LeadsSentDashboard() {
 
     return (
         <Container className="mt-5">
-            <h1 className="mb-4 text-center">📊Emily's Leads Sent Dashboard</h1>
+            <h1 className="mb-4 text-center">Emily's Leads Sent Dashboard</h1>
 
             <Form className="mb-4">
                 <Row className="align-items-end justify-content-center">
