@@ -105,7 +105,13 @@ export default function LeadsSentDashboard() {
             const res = await axios.get(
                 `${API_BASE}/leads/company/${encodeURIComponent(company.company_name)}`
             );
-            setCompanyLeads(res.data || []);
+            setCompanyLeads(
+                (res.data || []).map((lead) => ({
+                    ...lead,
+                    company_name: company.company_name   // ⬅ inject it into every lead
+                }))
+            );
+
         } catch (err) {
             console.error("Error loading company leads:", err);
             alert("Failed to load company leads.");
