@@ -22,7 +22,7 @@ const API_BASE =
         : "http://localhost:5000/server/lead_function/api";
 
 // ✅ Heroku for sending emails (SMTP allowed)
-const EMAIL_API_BASE =
+const SMS_LEAD_BASE =
     process.env.NODE_ENV === "production"
         ? "https://crm-function-app-5d4de511071d.herokuapp.com/server/lead_function/api"
         : "http://localhost:5000/server/lead_function/api";
@@ -74,7 +74,7 @@ export default function LeadsSentDashboard() {
     async function sendReportEmail(company) {
         if (!window.confirm(`Send report email for ${company.company_name}?`)) return;
         try {
-            await axios.post(`${EMAIL_API_BASE}/leads/send-summaries`, {
+            await axios.post(`${SMS_LEAD_BASE}/leads/send-summaries`, {
                 company_name: company.company_name,
             });
             alert(`Report email sent for ${company.company_name}`);
@@ -88,7 +88,7 @@ export default function LeadsSentDashboard() {
     async function sendTutorialEmail(company) {
         if (!window.confirm(`Send “How to Curate Leads” tutorial to ${company.company_name}?`)) return;
         try {
-            await axios.post(`${EMAIL_API_BASE}/leads/send-tutorial/${company.id}`);
+            await axios.post(`${SMS_LEAD_BASE}/leads/send-tutorial/${company.id}`);
             alert("Tutorial email sent!");
         } catch (err) {
             console.error("Error sending tutorial email:", err);
@@ -118,7 +118,7 @@ export default function LeadsSentDashboard() {
 
         try {
             const res = await axios.post(
-                `${API_BASE}/smsqueue/message-lead`,
+                `${SMS_LEAD_BASE}/smsqueue/message-lead`,
                 {
                     lead_id: lead.lead_id,
                     phone: lead.phone,
@@ -139,7 +139,7 @@ export default function LeadsSentDashboard() {
             setSelectedLead(lead);
             setShowChat(true);
             setChatLoading(true);
-            const res = await axios.get(`${EMAIL_API_BASE}/smsqueue/lead/conversation/${lead.lead_id}`)
+            const res = await axios.get(`${SMS_LEAD_BASE}/smsqueue/lead/conversation/${lead.lead_id}`)
             ;
             setConversation(res.data || []);
         } catch (err) {
@@ -154,7 +154,7 @@ export default function LeadsSentDashboard() {
     async function sendReply() {
         if (!chatMessage.trim()) return;
         try {
-            await axios.post(`${API_BASE}/smsqueue/lead/send-reply`, {
+            await axios.post(`${SMS_LEAD_BASE}/smsqueue/lead/send-reply`, {
                 lead_id: selectedLead.lead_id,
                 message: chatMessage,
             });
