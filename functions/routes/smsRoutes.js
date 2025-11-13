@@ -16,13 +16,19 @@ router.post('/status-callback', smsController.twilioStatusCallback);
 
 router.post('/alert-lead', smsController.notifyUsersForLead);
 
+router.post('/message-lead', smsController.messageLead);
+
 router.post(
     '/incoming',
     express.urlencoded({ extended: false }), // only this route needs form support
     smsController.twilioHandleIncomingSMS
 );
 
+router.post('/lead/send-reply', smsController.sendLeadReply);
+router.get('/lead/conversation/:leadId', smsController.getLeadConversation);
+
 
 module.exports = router;
+
 
 

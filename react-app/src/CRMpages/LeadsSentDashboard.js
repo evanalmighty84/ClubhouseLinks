@@ -42,6 +42,12 @@ export default function LeadsSentDashboard() {
     const [companyLeads, setCompanyLeads] = useState([]);
     const [modalLoading, setModalLoading] = useState(false);
     const [showModal, setShowModal] = useState(false);
+// 💬 Chat modal state
+    const [showChat, setShowChat] = useState(false);
+    const [selectedLead, setSelectedLead] = useState(null);
+    const [conversation, setConversation] = useState([]);
+    const [chatMessage, setChatMessage] = useState("");
+    const [chatLoading, setChatLoading] = useState(false);
 
     useEffect(() => {
         fetchLeadsSent();
@@ -107,6 +113,58 @@ export default function LeadsSentDashboard() {
             setModalLoading(false);
         }
     }
+    async function sendLeadMessage(lead) {
+        if (!window.confirm(`Message ${lead.author} about their post?`)) return;
+
+        try {
+            const res = await axios.post(
+                `${API_BASE}/smsqueue/message-lead`,
+                {
+                    lead_id: lead.id,
+                    phone: lead.phone,
+                    description: lead.description,
+                    user_id: USER_ID
+                }
+            );
+            alert(`✅ Message sent to ${lead.author}!`);
+        } catch (err) {
+            console.error("Error messaging lead:", err);
+            alert("❌ Failed to send message.");
+        }
+    }
+
+    // 🧠 Fetch entire conversation thread for this lead
+    async function openConversation(lead) {
+        try {
+            setSelectedLead(lead);
+            setShowChat(true);
+            setChatLoading(true);
+            const res = await axios.get(`${EMAIL_API_BASE}/smsqueue/lead/conversation/${lead.id}`);
+            setConversation(res.data || []);
+        } catch (err) {
+            console.error("Error loading conversation:", err);
+            alert("Failed to load conversation.");
+        } finally {
+            setChatLoading(false);
+        }
+    }
+
+// 📨 Send new reply from dashboard to lead
+    async function sendReply() {
+        if (!chatMessage.trim()) return;
+        try {
+            await axios.post(`${API_BASE}/smsqueue/lead/send-reply`, {
+                lead_id: selectedLead.id,
+                message: chatMessage,
+            });
+            setChatMessage("");
+            await openConversation(selectedLead); // refresh messages
+        } catch (err) {
+            console.error("Error sending reply:", err);
+            alert("Failed to send message.");
+        }
+    }
+
 
     return (
         <Container className="mt-5">
@@ -225,6 +283,7 @@ export default function LeadsSentDashboard() {
                         <Table striped bordered hover>
                             <thead>
                             <tr>
+                                <th>Actions</th>
                                 <th>Name</th>
                                 <th>Type</th>
                                 <th>City</th>
@@ -232,11 +291,31 @@ export default function LeadsSentDashboard() {
                                 <th>Phone</th>
                                 <th>Description</th>
                                 <th>Date</th>
+
                             </tr>
                             </thead>
                             <tbody>
                             {companyLeads.map((lead, i) => (
                                 <tr key={i}>
+                                    <td>
+                                        <td className="d-flex gap-2">
+                                            <Button
+                                                variant="outline-primary"
+                                                size="sm"
+                                                onClick={() => sendLeadMessage(lead)}
+                                            >
+                                                💬 Message
+                                            </Button>
+                                            <Button
+                                                variant="outline-secondary"
+                                                size="sm"
+                                                onClick={() => openConversation(lead)}
+                                            >
+                                                🗨️ Open Chat
+                                            </Button>
+                                        </td>
+
+                                    </td>
                                     <td>{lead.author}</td>
                                     <td>{lead.lead_type}</td>
                                     <td>{lead.city}</td>
@@ -251,7 +330,62 @@ export default function LeadsSentDashboard() {
                         </Table>
                     )}
                 </Modal.Body>
+                {/* 💬 Chat Modal for Lead Conversation */}
+                <Modal
+                    show={showChat}
+                    onHide={() => setShowChat(false)}
+                    size="lg"
+                    centered
+                >
+                    <Modal.Header closeButton>
+                        <Modal.Title>
+                            Conversation with {selectedLead?.author || "Lead"}
+                        </Modal.Title>
+                    </Modal.Header>
+
+                    <Modal.Body style={{ maxHeight: "60vh", overflowY: "auto" }}>
+                        {chatLoading ? (
+                            <div className="text-center py-4">
+                                <Spinner animation="border" />
+                            </div>
+                        ) : conversation.length === 0 ? (
+                            <p className="text-muted text-center">No messages yet.</p>
+                        ) : (
+                            conversation.map((msg) => (
+                                <div
+                                    key={msg.id}
+                                    className={`p-2 my-2 rounded ${
+                                        msg.direction === "outbound"
+                                            ? "bg-primary text-white ms-auto"
+                                            : "bg-light me-auto"
+                                    }`}
+                                    style={{ maxWidth: "75%" }}
+                                >
+                                    <small className="d-block text-muted" style={{ fontSize: "0.7rem" }}>
+                                        {new Date(msg.created_at).toLocaleTimeString()}
+                                    </small>
+                                    <div>{msg.message_body}</div>
+                                </div>
+                            ))
+                        )}
+                    </Modal.Body>
+
+                    <Modal.Footer>
+                        <Form.Control
+                            type="text"
+                            placeholder="Type your reply..."
+                            value={chatMessage}
+                            onChange={(e) => setChatMessage(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && sendReply()}
+                        />
+                        <Button variant="primary" onClick={sendReply}>
+                            Send
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+
             </Modal>
         </Container>
     );
 }
+

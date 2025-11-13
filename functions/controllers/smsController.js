@@ -1,30 +1,19 @@
 const dotenv = require('dotenv');
 const { client, messagingServiceSid } = require('../utils/twilioClient');
 const pool = require('../db/db');
+const nodemailer = require('nodemailer'); // if not already imported
 dotenv.config();
+const OpenAI = require("openai");
+
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
 
 
 const smsSessions = new Map(); // Simple in-memory session tracking
 
 /* ---------- helpers: canonicalization ---------- */
-const CANON = {
-    'pool': 'pool',
-    'handyman': 'handyman',
-    'plumber': 'plumber',
-    'house cleaner': 'house cleaner',   // keep the label EXACTLY as you store it in users.industry
-    'house_cleaner': 'house cleaner',   // normalize inbound variants -> canonical
-    'housecleaner': 'house cleaner',
-    'roofer': 'roofer',
-    'painter': 'painter',
-    'lawncare': 'lawncare',
-    'electrician': 'electrician',
-    'golf instructor': 'golf instructor',
-    'pet sitter': 'pet sitter',
-    'junk removal': 'junk removal',
-    'general contractor': 'general contractor',
-    'realtor': 'realtor',
-    'insurance': 'insurance',
-};
+
 
 
 
@@ -50,208 +39,252 @@ const crypto = require('crypto');
 
 
 
-const canonText = (s) => (s || '').trim().toLowerCase();
-const hash = (s) => crypto.createHash('md5').update(canonText(s)).digest('hex');
-const digitsOnly = (s) => (s || '').replace(/\D/g, '');
-const titleCase = (s) => (s || '').replace(/\w\S*/g, (t) => t[0].toUpperCase() + t.slice(1).toLowerCase());
-const truncate = (s, n = 300) => (s && s.length > n ? s.slice(0, n - 1) + '…' : s || '');
+/********************************************
+ * HELPERS (clean + multi-industry safe)
+ ********************************************/
+
+
+
+const canonText = (s) => (s || "").trim().toLowerCase();
+
+/** Split comma-separated lead_type:
+ *   "hvac, handyman" → ["hvac","handyman"]
+ */
+const splitLeadTypes = (s) =>
+    (s || "")
+        .toLowerCase()
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
+
+const hash = (s) => crypto.createHash("md5").update(canonText(s)).digest("hex");
+const digitsOnly = (s) => (s || "").replace(/\D/g, "");
+
+const titleCase = (s) =>
+    (s || "").replace(/\w\S*/g, (t) => t[0].toUpperCase() + t.slice(1).toLowerCase());
+
+const truncate = (s, n = 300) =>
+    s && s.length > n ? s.slice(0, n - 1) + "…" : s || "";
+
 const formatUSPhone = (s) => {
     const d = digitsOnly(s);
-    if (d.length === 10) return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
-    if (d.length === 11 && d.startsWith('1')) return `(${d.slice(1,4)}) ${d.slice(4,7)}-${d.slice(7)}`;
-    return s || 'N/A';
+    if (d.length === 10) return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+    if (d.length === 11 && d.startsWith("1"))
+        return `(${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7)}`;
+    return s || "N/A";
 };
+
 const normalizeToE164 = (s) => {
     const d = digitsOnly(s);
     if (!d) return null;
-    return d.length === 11 && d.startsWith('1') ? `+${d}` : d.length === 10 ? `+1${d}` : `+${d}`;
+    if (d.length === 11 && d.startsWith("1")) return `+${d}`;
+    if (d.length === 10) return `+1${d}`;
+    return `+${d}`;
 };
-const canonIndustry = (s) => {
-    const v = canonText(s);
-    // map aliases if needed
-    if (['pool', 'pool service', 'pool maintenance'].includes(v)) return 'pool';
-    if (['handyman', 'plumber', 'plumbing'].includes(v)) return 'handyman';
-    if (['housecleaner', 'house cleaning', 'maid', 'cleaner'].includes(v)) return 'housecleaner';
-    if (['lawncare', 'lawn care', 'landscaping'].includes(v)) return 'lawncare';
-    return v || null;
-};
+
 const fmtCST = (ts) => {
     try {
-        return new Date(ts).toLocaleString('en-US', { timeZone: 'America/Chicago' });
-    } catch { return ts || ''; }
+        return new Date(ts).toLocaleString("en-US", {
+            timeZone: "America/Chicago",
+        });
+    } catch {
+        return ts || "";
+    }
 };
 
-// Assumes helpers exist: pool, client (twilio), digitsOnly, hash, titleCase, truncate,
-// formatUSPhone, normalizeToE164, fmtCST, canonText, canonIndustry
-
+/********************************************
+ * Fetch lead by phone helper
+ ********************************************/
 async function findByPhone(phoneDigits, table) {
     const { rows } = await pool.query(
         `
-    SELECT id, author, timestamp, location, city, lead_type, phone, physical_address, description
-      FROM ${table}
-     WHERE regexp_replace(coalesce(phone,''), '\\D','','g') = $1
-     ORDER BY timestamp DESC NULLS LAST
-     LIMIT 1
-    `,
+            SELECT id, author, timestamp, location, city, lead_type, phone, physical_address, description
+            FROM ${table}
+            WHERE regexp_replace(coalesce(phone,''), '\\D','','g') = $1
+            ORDER BY timestamp DESC NULLS LAST
+                LIMIT 1
+        `,
         [phoneDigits]
     );
     return rows[0];
 }
 
+/********************************************
+ * MAIN notifyUsersForLead
+ ********************************************/
 exports.notifyUsersForLead = async (req, res) => {
     const {
         lead_id,
         phone,
         mobile_phone,
-        name,            // REQUIRED when no lead_id (author/name)
-        author,          // alias for name
-        lead_type,       // REQUIRED when no lead_id
-        description,     // optional
-        city: cityOverride,                 // optional override
-        location: locationOverride,         // optional override
-        physical_address: physicalAddrOv,   // optional override
-        timestamp: messageSentAtOv    // optional override
+        name,
+        author,
+        lead_type,
+        description,
+        city: cityOverride,
+        location: locationOverride,
+        physical_address: physicalAddrOv,
+        timestamp: messageSentAtOv,
     } = req.body || {};
 
-    // Keep your original "either lead_id OR (name & phone & lead_type)" guard.
-    // With server-only approach, we DO require phone if there's no lead_id.
     const hasPhone = phone || mobile_phone;
 
+    // Basic guard
     if (!lead_id && (!hasPhone || !(name || author) || !lead_type)) {
         return res.status(400).json({
-            error: 'Provide lead_id OR (name AND phone/mobile_phone AND lead_type).'
+            error: "Provide lead_id OR (name AND phone/mobile_phone AND lead_type).",
         });
     }
 
-
     try {
-        const phoneDigits = digitsOnly(phone || '');
         let lead;
+        const phoneDigits = digitsOnly(phone || "");
 
-        // 1) If lead_id provided, load from nextdoor_messages
+        /** 1) Load by lead_id */
         if (lead_id) {
             const { rows } = await pool.query(
                 `SELECT id, author, timestamp, location, city, lead_type, phone, mobile_phone, physical_address, description
-           FROM nextdoor_messages
-          WHERE id = $1`,
+                 FROM nextdoor_messages
+                 WHERE id = $1`,
                 [lead_id]
             );
             lead = rows[0];
         }
 
-        // 2) If no lead yet and we have a phone, try to fetch most recent by phone
+        /** 2) If no lead found yet, search by phone */
         if (!lead && phoneDigits) {
             lead =
-                (await findByPhone(phoneDigits, 'recent_nextdoor_messages')) ||
-                (await findByPhone(phoneDigits, 'nextdoor_messages'));
+                (await findByPhone(phoneDigits, "recent_nextdoor_messages")) ||
+                (await findByPhone(phoneDigits, "nextdoor_messages"));
         }
 
-        // 3) Overlay request body (name/lead_type/etc.) as authoritative
-        const providedName = (name || author || '').trim();
-        const providedType = (lead_type || '').trim();
+        /** 3) Overlay request body */
+        const providedName = (name || author || "").trim();
+        const providedType = (lead_type || "").trim();
 
         lead = {
             id: lead?.id ?? null,
-            author: providedName || lead?.author || 'Unknown',
+            author: providedName || lead?.author || "Unknown",
             timestamp: messageSentAtOv ?? lead?.timestamp ?? null,
-            location: locationOverride ?? lead?.location ?? 'Unknown',
+            location: locationOverride ?? lead?.location ?? "Unknown",
             city: cityOverride ?? lead?.city ?? null,
             lead_type: providedType || lead?.lead_type || null,
             phone: phone ?? lead?.phone ?? null,
             mobile_phone: mobile_phone ?? lead?.mobile_phone ?? null,
             physical_address: physicalAddrOv ?? lead?.physical_address ?? null,
-            description: description ?? lead?.description ?? null
+            description: description ?? lead?.description ?? null,
         };
 
-
-        // 4) Validate required targeting fields (server-only: no enrichment here)
+        /** 4) Canonical fields */
         const city = canonText(lead.city);
-        const industry = canonIndustry(lead.lead_type);
 
-// Prefer mobile_phone when available, fallback to phone
-// Support FTN: allow multiple phones
+        // MULTI-INDUSTRY FIX:
+        const leadTypes = splitLeadTypes(lead.lead_type); // ["hvac","handyman"]
+
         const phones = [];
         if (lead.mobile_phone) phones.push(lead.mobile_phone);
         if (lead.phone) phones.push(lead.phone);
 
-// dedupe and normalize
-        const deduped = [...new Set(phones.map(p => formatUSPhone(p)).filter(Boolean))];
+        const deduped = [...new Set(phones.map((p) => formatUSPhone(p)).filter(Boolean))];
 
-// Prefer first as primary
-        const chosenPhone = digitsOnly(deduped[0] || '');
+        const chosenPhone = digitsOnly(deduped[0] || "");
         const prettyChosenPhone = formatUSPhone(chosenPhone);
         const finalPhysicalAddress = lead.physical_address || null;
 
-        if (!chosenPhone || !city || !industry) {
+        if (!chosenPhone || !city || leadTypes.length === 0) {
             return res.status(200).json({
-                message: 'Missing phone/city/industry; no alerts sent.',
-                lead
+                message: "Missing phone/city/industry; no alerts sent.",
+                lead,
             });
         }
 
-// Format multi-phone display
+        /** 5) Format SMS phone line */
         const phoneLine =
             deduped.length > 1
-                ? deduped.map((p, i) => `${i === 0 ? '📞' : '☎️'} ${p}`).join('\n')
+                ? deduped
+                    .map((p, i) => `${i === 0 ? "📞" : "☎️"} ${p}`)
+                    .join("\n")
                 : `📞 ${deduped[0]}`;
 
-
-
-// 5) Find candidate users (industry + subscribed city)
+        /**********************************************
+         * SQL — match ANY industry
+         **********************************************/
         const usersSql = `
-  SELECT id, name, phone_number, industry, subscribed_areas
-    FROM users
-   WHERE phone_number IS NOT NULL
-     AND EXISTS (
-           SELECT 1 FROM unnest(coalesce(industry, ARRAY[]::text[])) i
-            WHERE lower(i) = lower($1)
-       )
-     AND EXISTS (
-           SELECT 1 FROM unnest(coalesce(subscribed_areas, ARRAY[]::text[])) a
-            WHERE lower(a) = lower($2)
-       )
-`;
-        const { rows: users } = await pool.query(usersSql, [industry, city]);
+            SELECT id, name, phone_number, industry, subscribed_areas
+            FROM users
+            WHERE phone_number IS NOT NULL
+              AND EXISTS (
+                SELECT 1
+                FROM unnest(coalesce(industry, ARRAY[]::text[])) i
+                WHERE lower(i) = ANY($1)
+              )
+              AND EXISTS (
+                SELECT 1
+                FROM unnest(coalesce(subscribed_areas, ARRAY[]::text[])) a
+                WHERE lower(a) = lower($2)
+              )
+        `;
+
+        const { rows: users } = await pool.query(usersSql, [leadTypes, city]);
 
         if (!users.length) {
-            return res.status(200).json({ message: 'No matching users for this lead.', matchedUsers: 0, lead });
+            return res.status(200).json({
+                message: "No matching users for this lead.",
+                matchedUsers: 0,
+                lead,
+            });
         }
 
-// 6) Compose SMS text with both numbers shown (if available)
+        /** 6) Build SMS body */
         const bodyLines = [
-            `🔔 New ${titleCase(industry)} lead in ${titleCase(city)}`,
-            `👤 ${lead.author || 'Unknown'}`,
-            lead.timestamp ? `🕒 ${fmtCST(lead.timestamp)} (CST)` : '',
-            `📍 ${lead.location || 'Unknown'}${finalPhysicalAddress ? ' • ' + finalPhysicalAddress : ''}`,
+            `🔔 New ${leadTypes.map(titleCase).join("/")} lead in ${titleCase(city)}`,
+            `👤 ${lead.author || "Unknown"}`,
+            lead.timestamp ? `🕒 ${fmtCST(lead.timestamp)} (CST)` : "",
+            `📍 ${lead.location || "Unknown"}${
+                finalPhysicalAddress ? " • " + finalPhysicalAddress : ""
+            }`,
             phoneLine,
-            lead.description ? `📝 ${truncate(lead.description, 300)}` : ''
+            lead.description ? `📝 ${truncate(lead.description, 300)}` : "",
         ].filter(Boolean);
 
-        const text = bodyLines.join('\n');
+        const text = bodyLines.join("\n");
 
-
-        // 7) Dedupe key: prefer id; else phone+city+industry(+name) hash
+        /** 7) Dedupe key */
         const leadKey = lead.id
             ? `id:${lead.id}`
-            : `ph:${chosenPhone}|city:${city}|type:${industry}|n:${hash(lead.author || '')}`;
+            : `ph:${chosenPhone}|city:${city}|types:${leadTypes.join(
+                "|"
+            )}|n:${hash(lead.author || "")}`;
 
-        // 8) Send + record (populate lead_alerts_sent fully)
+        /**********************************************
+         * 8) Send SMS + store rows
+         **********************************************/
         const results = [];
+
         for (const u of users) {
             try {
-                // Deduplicate per user
+                // Per-user dedupe
                 const already = await pool.query(
                     `SELECT 1 FROM lead_alerts_sent WHERE post_url = $1 AND user_id = $2`,
                     [leadKey, u.id]
                 );
+
                 if (already.rowCount > 0) {
-                    results.push({ userId: u.id, sent: false, reason: 'duplicate' });
+                    results.push({
+                        userId: u.id,
+                        sent: false,
+                        reason: "duplicate",
+                    });
                     continue;
                 }
 
                 const to = normalizeToE164(u.phone_number);
                 if (!to) {
-                    results.push({ userId: u.id, sent: false, reason: 'invalid phone' });
+                    results.push({
+                        userId: u.id,
+                        sent: false,
+                        reason: "invalid phone",
+                    });
                     continue;
                 }
 
@@ -259,85 +292,87 @@ exports.notifyUsersForLead = async (req, res) => {
                 const msg = await client.messages.create({
                     to,
                     body: text,
-                    messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID
+                    messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
                 });
 
-                // Build a rich JSON envelope for the body column
+                /** Build JSON envelope */
                 const envelope = {
                     lead_snapshot: {
                         id: lead.id,
                         author: lead.author,
                         city,
-                        industry,
+                        types: leadTypes, // MULTI-INDUSTRY FIX
                         location: lead.location,
                         physical_address: finalPhysicalAddress,
-                        timestamp: lead.timestamp
+                        timestamp: lead.timestamp,
                     },
                     phones: {
                         chosen: chosenPhone,
                         chosen_pretty: prettyChosenPhone,
-                        original: lead.phone || null
+                        original: lead.phone || null,
                     },
                     sms: {
                         sid: msg?.sid || null,
-                        to
+                        to,
                     },
-                    composed_text_preview: text
+                    composed_text_preview: text,
                 };
 
-                // Persist a full row (not just post_url,user_id)
                 await pool.query(
                     `INSERT INTO lead_alerts_sent
-             (post_url, user_id, sent_at, sms_sid, to_number, body, delivery_status, error_message,
-              lead_id, lead_phone, lead_city, lead_type)
-           VALUES
-             ($1,       $2,      NOW(),  $3,      $4,       $5,   $6,              $7,
-              $8,      $9,        $10,      $11)`,
+                     (post_url, user_id, sent_at, sms_sid, to_number, body, delivery_status, error_message,
+                      lead_id, lead_phone, lead_city, lead_type)
+                     VALUES
+                         ($1, $2, NOW(), $3, $4, $5, 'sent', NULL,
+                          $6, $7, $8, $9)
+                    `,
                     [
-                        leadKey,                          // post_url (dedupe key)
-                        u.id,                             // user_id
-                        msg?.sid || null,                 // sms_sid
-                        to,                               // to_number (subscriber's number)
-                        JSON.stringify(envelope),         // body (rich JSON)
-                        'sent',                           // delivery_status
-                        null,                             // error_message
-                        lead.id || null,                  // lead_id (from nextdoor_messages)
-                        formatUSPhone(chosenPhone),       // lead_phone (pretty or raw; your call)
-                        city,                             // lead_city
-                        industry                          // lead_type
+                        leadKey,
+                        u.id,
+                        msg?.sid || null,
+                        to,
+                        JSON.stringify(envelope),
+                        lead.id || null,
+                        formatUSPhone(chosenPhone),
+                        city,
+                        leadTypes.join(','), // MULTI-INDUSTRY FIX
                     ]
                 );
 
-                results.push({ userId: u.id, sent: true, sid: msg?.sid || null });
+                results.push({
+                    userId: u.id,
+                    sent: true,
+                    sid: msg?.sid || null,
+                });
             } catch (e) {
                 console.error(`❌ SMS send failed for user ${u.id}:`, e.message);
 
-                // Store a failed row too, with error details
                 const envelope = {
                     lead_snapshot: {
                         id: lead.id,
                         author: lead.author,
                         city,
-                        industry,
+                        types: leadTypes,
                         location: lead.location,
                         physical_address: finalPhysicalAddress,
-                        timestamp: lead.timestamp
+                        timestamp: lead.timestamp,
                     },
                     phones: {
                         chosen: chosenPhone,
-                        original: lead.phone || null
+                        original: lead.phone || null,
                     },
                     send_error: e?.message || String(e),
-                    composed_text_preview: text
+                    composed_text_preview: text,
                 };
 
                 await pool.query(
                     `INSERT INTO lead_alerts_sent
-             (post_url, user_id, sent_at, sms_sid, to_number, body, delivery_status, error_message,
-              lead_id, lead_phone, lead_city, lead_type)
-           VALUES
-             ($1,       $2,      NOW(),  NULL,    NULL,     $3,   'failed',       $4,
-              $5,      $6,        $7,       $8)`,
+                     (post_url, user_id, sent_at, sms_sid, to_number, body, delivery_status, error_message,
+                      lead_id, lead_phone, lead_city, lead_type)
+                     VALUES
+                         ($1, $2, NOW(), NULL, NULL, $3, 'failed', $4,
+                          $5, $6, $7, $8)
+                    `,
                     [
                         leadKey,
                         u.id,
@@ -346,26 +381,87 @@ exports.notifyUsersForLead = async (req, res) => {
                         lead.id || null,
                         formatUSPhone(chosenPhone),
                         city,
-                        industry
+                        leadTypes.join(','), // MULTI-INDUSTRY FIX
                     ]
                 );
 
-                results.push({ userId: u.id, sent: false, error: e.message });
+                results.push({
+                    userId: u.id,
+                    sent: false,
+                    error: e.message,
+                });
             }
         }
 
         return res.status(200).json({
-            message: 'Alert processing complete',
+            message: "Alert processing complete",
             matchedUsers: users.length,
             leadKey,
-            results
+            results,
         });
     } catch (err) {
-        console.error('❌ notifyUsersForLead error:', err);
-        return res.status(500).json({ error: 'Internal Server Error' });
+        console.error("❌ notifyUsersForLead error:", err);
+        return res.status(500).json({
+            error: "Internal Server Error",
+        });
     }
 };
 
+exports.messageLead = async (req, res) => {
+    try {
+        const { lead_id, phone, description, user_id } = req.body;
+
+        if (!lead_id || !phone || !description || !user_id)
+            return res.status(400).json({ error: "Missing required fields" });
+
+        const toPhone = "+1" + phone.replace(/\D/g, "");
+
+        // Fetch user (only need name + company_name)
+        const { rows: userRows } = await pool.query(
+            `SELECT id, name, company_name FROM users WHERE id = $1`,
+            [user_id]
+        );
+
+        const user = userRows[0];
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        // AI-generated message
+        const prompt = `
+Write a friendly SMS under 320 characters.
+Sender: ${user.name} from ${user.company_name}
+Lead posted: "${description}"
+Tone: casual, helpful, offer a quote if relevant.
+        `;
+
+        const completion = await openai.responses.create({
+            model: "gpt-4o-mini",
+            input: prompt,
+        });
+
+        const messageBody = completion.output[0].content[0].text.trim();
+
+        // Send SMS
+        const sms = await client.messages.create({
+            body: messageBody,
+            to: toPhone,
+            messagingServiceSid,
+            statusCallback: `${process.env.BASE_URL}/server/lead_function/api/smsqueue/status-callback`,
+        });
+
+        // Log outbound
+        await pool.query(
+            `INSERT INTO lead_sms (lead_id, user_id, from_number, to_number, message_body, direction, status)
+             VALUES ($1, $2, $3, $4, $5, 'outbound', 'sent')`,
+            [lead_id, user.id, process.env.TWILIO_NUMBER, toPhone, messageBody]
+        );
+
+        res.json({ success: true, message_sid: sms.sid, body: messageBody });
+
+    } catch (err) {
+        console.error("❌ messageLead error:", err);
+        res.status(500).json({ error: "Failed to send lead message" });
+    }
+};
 
 
 
@@ -408,7 +504,7 @@ exports.getScheduledSMS = async (req, res) => {
         const result = await pool.query(
             `SELECT sq.id, sq.subscriber_id, sq.message, sq.scheduled_time, s.name AS subscriber_name, s.notes
              FROM smsqueue sq
-             JOIN subscribers s ON s.id = sq.subscriber_id
+                      JOIN subscribers s ON s.id = sq.subscriber_id
              WHERE sq.user_id = $1 AND sq.status = 'pending'`,
             [userId]
         );
@@ -428,7 +524,7 @@ exports.getAllSMS = async (req, res) => {
         const result = await pool.query(
             `SELECT sq.id, sq.subscriber_id, sq.message, sq.scheduled_time, sq.status, s.name AS subscriber_name, s.notes
              FROM smsqueue sq
-             JOIN subscribers s ON s.id = sq.subscriber_id
+                      JOIN subscribers s ON s.id = sq.subscriber_id
              WHERE sq.user_id = $1`,
             [userId]
         );
@@ -465,16 +561,82 @@ exports.twilioStatusCallback = async (req, res) => {
 };
 
 
+exports.sendLeadReply = async (req, res) => {
+    try {
+        const { lead_id, message, user_id } = req.body;
+        if (!lead_id || !message || !user_id)
+            return res.status(400).json({ error: "Missing lead_id, message, or user_id" });
+
+        // Get lead phone
+        const { rows: leadRows } = await pool.query(
+            `SELECT phone FROM familytreenow WHERE id = $1`,
+            [lead_id]
+        );
+        const lead = leadRows[0];
+        if (!lead?.phone) return res.status(404).json({ error: "Lead not found" });
+
+        const toPhone = "+1" + lead.phone.replace(/\D/g, "");
+
+        // Get user (sender)
+        const { rows: userRows } = await pool.query(
+            `SELECT id, phone_number FROM users WHERE id = $1`,
+            [user_id]
+        );
+        const user = userRows[0];
+        if (!user?.phone_number) return res.status(400).json({ error: "User has no phone number set" });
+
+        const fromNumber = user.phone_number;
+
+        // Send text
+        const sms = await client.messages.create({
+            body: message,
+            to: toPhone,
+            messagingServiceSid,
+            statusCallback: `${process.env.BASE_URL}/server/lead_function/api/smsqueue/status-callback`,
+        });
+
+        // Log outbound
+        await pool.query(
+            `INSERT INTO lead_sms
+             (lead_id, user_id, from_number, to_number, message_body, direction, status)
+             VALUES ($1, $2, $3, $4, $5, 'outbound', 'sent')`,
+            [lead_id, user.id, fromNumber, toPhone, message]
+        );
+
+        console.log(`📤 Reply sent to ${toPhone}`);
+
+        res.json({ success: true, message_sid: sms.sid });
+
+    } catch (err) {
+        console.error("❌ sendLeadReply error:", err);
+        res.status(500).json({ error: "Failed to send reply" });
+    }
+};
+
+exports.getLeadConversation = async (req, res) => {
+    try {
+        const { leadId } = req.params;
+
+        const { rows } = await pool.query(
+            `SELECT id, from_number, to_number, message_body, direction, created_at
+             FROM lead_sms
+             WHERE lead_id = $1
+             ORDER BY created_at ASC`,
+            [leadId]
+        );
+
+        res.json(rows);
+
+    } catch (err) {
+        console.error("❌ getLeadConversation error:", err);
+        res.status(500).json({ error: "Failed to fetch conversation" });
+    }
+};
+
 
 
 
 // We'll store a basic in-memory map of phone sessions (you can upgrade this later)
-
-
-
-const nodemailer = require('nodemailer'); // if not already imported
-
-
 
 exports.twilioHandleIncomingSMS = async (req, res) => {
     console.log('📩 Incoming SMS payload:', req.body);
@@ -510,9 +672,9 @@ Done-for-you posts & strategy
         }
 
         const userResult = await pool.query(
-            `SELECT id, name, google_place_id, email FROM users 
-             WHERE phone_number IS NOT NULL 
-             AND REPLACE(phone_number, '+', '') LIKE $1`,
+            `SELECT id, name, google_place_id, email FROM users
+             WHERE phone_number IS NOT NULL
+               AND REPLACE(phone_number, '+', '') LIKE $1`,
             [`%${fromNumber.slice(-10)}`]
         );
 
@@ -596,7 +758,7 @@ Done-for-you posts & strategy
             else return res.status(200).send(`<Response><Message>Please choose: Advertisement, Sale, or Review.</Message></Response>`);
 
             const templateResult = await pool.query(
-                `SELECT content FROM templates 
+                `SELECT content FROM templates
                  WHERE user_id = $1 AND workflow = $2`,
                 [user.id, workflow]
             );
@@ -658,12 +820,64 @@ Done-for-you posts & strategy
         }
         // END: Review QR Flow
 
+
+        // ================= LEAD REPLY HANDLER =================
+        // Detect if this inbound SMS is from a lead you previously messaged
+        const leadMatch = await pool.query(
+            `SELECT f.id AS lead_id, f.company_name, u.id AS user_id, u.name, u.phone_number
+             FROM familytreenow f
+             JOIN users u ON f.company_name = u.company_name
+             WHERE REPLACE(f.phone, '+', '') LIKE $1
+             ORDER BY f.id DESC LIMIT 1;`,
+            [`%${fromNumber.slice(-10)}`]
+        );
+
+        const lead = leadMatch.rows[0];
+
+        if (lead) {
+            console.log(`📨 Lead reply detected from ${lead.company_name} (lead_id=${lead.lead_id})`);
+
+            // 🗄️ Log inbound message
+            await pool.query(
+                `INSERT INTO lead_sms (from_number, to_number, message_body, direction, lead_id, user_id)
+                 VALUES ($1, $2, $3, 'inbound', $4, $5)`,
+                [fromNumber, process.env.TWILIO_NUMBER, incomingMessage, lead.lead_id, lead.user_id]
+            );
+
+            // 🧠 Optional: AI-generated suggested reply
+            const prompt = `
+You are an assistant helping ${lead.company_name} respond to potential clients.
+Client message: "${incomingMessage}"
+Write a short, natural SMS reply (under 200 characters) thanking them and asking if they’d like to schedule a quick call or quote.
+`;
+            const completion = await openai.responses.create({
+                model: "gpt-4o-mini",
+                input: prompt,
+            });
+            const aiSuggestion = completion.output[0].content[0].text.trim();
+
+            // ✅ Notify the user by SMS that their lead replied
+            if (lead.phone_number) {
+                await client.messages.create({
+                    messagingServiceSid,
+                    to: lead.phone_number,
+                    body: `📩 ${lead.company_name} lead replied: "${incomingMessage}"\n💡 Suggested reply: "${aiSuggestion}"`,
+                });
+            }
+
+            return res
+                .status(200)
+                .send(`<Response><Message>Thanks for your reply! We'll get back to you shortly.</Message></Response>`);
+        }
+
+
         return res.status(200).send(`<Response><Message>Send "review" or "email" to begin.</Message></Response>`);
     } catch (err) {
         console.error('❌ Error handling incoming SMS:', err);
         res.status(500).send(`<Response><Message>Something went wrong. Please try again later.</Message></Response>`);
     }
 };
+
 
 
 
