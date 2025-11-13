@@ -125,7 +125,8 @@ export default function LeadsSentDashboard() {
                     lead_id: lead.id,                   // ✅ FIXED
                     phone: lead.phone,
                     description: lead.description,
-                    user_id: 79
+                    user_id: 79,
+                    company_name: lead.company_name
                 }
             );
 

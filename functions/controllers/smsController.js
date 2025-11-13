@@ -433,7 +433,8 @@ exports.messageLead = async (req, res) => {
         //---------------------------------------------------------
         const prompt = `
 Write a friendly SMS under 320 characters.
-Sender: ${user.name} from ${user.company_name}
+Sender: ${user.name} from ${company_name}
+
 Lead posted: "${description}"
 Tone: casual, helpful, offer a quote if relevant.
         `;
