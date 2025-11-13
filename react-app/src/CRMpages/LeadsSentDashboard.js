@@ -120,7 +120,7 @@ export default function LeadsSentDashboard() {
 
         try {
             const res = await axios.post(
-                `${API_BASE}/smsqueue/message-lead`,
+                `${SMS_BASE_LEAD}/smsqueue/message-lead`,
                 {
                     lead_id: lead.id,                   // ✅ FIXED
                     phone: lead.phone,
