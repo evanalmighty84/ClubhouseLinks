@@ -408,10 +408,11 @@ exports.notifyUsersForLead = async (req, res) => {
 };
 
 exports.messageLead = async (req, res) => {
-    console.log("📨 LOGGING SMS for lead:", lead_id);
 
     try {
         const { lead_id, phone, description, user_id } = req.body;
+        console.log("📨 LOGGING SMS for lead:", lead_id);
+
 
         if (!lead_id || !phone || !description || !user_id)
             return res.status(400).json({ error: "Missing required fields" });
@@ -633,10 +634,11 @@ exports.sendLeadReply = async (req, res) => {
 };
 
 exports.getLeadConversation = async (req, res) => {
-    console.log("💬 FETCHING conversation for lead:", leadId);
 
     try {
         const { leadId } = req.params;
+        console.log("💬 FETCHING conversation for lead:", leadId);
+
 
         const { rows } = await pool.query(
             `SELECT id, from_number, to_number, message_body, direction, created_at
