@@ -563,6 +563,8 @@ exports.getAllSMS = async (req, res) => {
 
 exports.twilioStatusCallback = async (req, res) => {
     try {
+        console.log("BODY RECEIVED:", req.body);
+
         const { MessageSid, MessageStatus } = req.body;
 
         if (!MessageSid || !MessageStatus) {
