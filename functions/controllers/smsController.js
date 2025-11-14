@@ -888,55 +888,33 @@ Done-for-you posts & strategy
 
         // ================= LEAD REPLY HANDLER =================
         // Detect if this inbound SMS is from a lead you previously messaged
-        const leadMatch = await pool.query(
-            `SELECT f.id AS lead_id, f.company_name, u.id AS user_id, u.name, u.phone_number
-             FROM familytreenow f
-             JOIN users u ON f.company_name = u.company_name
-             WHERE REPLACE(f.phone, '+', '') LIKE $1
-             ORDER BY f.id DESC LIMIT 1;`,
+        // 1. Match only the LEAD based on phone number
+        const leadLookup = await pool.query(
+            `SELECT id AS lead_id, author, phone, company_name
+             FROM familytreenow
+             WHERE regexp_replace(phone, '\\D', '', 'g') LIKE $1
+             ORDER BY id DESC LIMIT 1`,
             [`%${fromNumber.slice(-10)}`]
         );
 
-        const lead = leadMatch.rows[0];
+        const lead = leadLookup.rows[0];
 
-        if (lead) {
-            console.log(`📨 Lead reply detected from ${lead.company_name} (lead_id=${lead.lead_id})`);
-
-            // 🗄️ Log inbound message
-            await pool.query(
-                `INSERT INTO lead_sms
-                 (from_number, to_number, message_body, direction, lead_id, user_id, is_new)
-                 VALUES
-                     ($1, $2, $3, 'inbound', $4, $5, TRUE)`,
-                [fromNumber, process.env.TWILIO_NUMBER, incomingMessage, lead.lead_id, lead.user_id]
+        if (!lead) {
+            console.warn("⚠️ No matching lead found for incoming SMS");
+            return res.status(200).send(
+                `<Response><Message>Your number is not recognized.</Message></Response>`
             );
-
-
-            // 🧠 Optional: AI-generated suggested reply
-            const prompt = `
-You are an assistant helping ${lead.company_name} respond to potential clients.
-Client message: "${incomingMessage}"
-Write a short, natural SMS reply (under 200 characters) thanking them and asking if they’d like to schedule a quick call or quote.
-`;
-            const completion = await openai.responses.create({
-                model: "gpt-4o-mini",
-                input: prompt,
-            });
-            const aiSuggestion = completion.output[0].content[0].text.trim();
-
-            // ✅ Notify the user by SMS that their lead replied
-            if (lead.phone_number) {
-                await client.messages.create({
-                    messagingServiceSid,
-                    to: lead.phone_number,
-                    body: `📩 ${lead.company_name} lead replied: "${incomingMessage}"\n💡 Suggested reply: "${aiSuggestion}"`,
-                });
-            }
-
-            return res
-                .status(200)
-                .send(`<Response><Message>Thanks for your reply! We'll get back to you shortly.</Message></Response>`);
         }
+        await pool.query(
+            `INSERT INTO lead_sms (lead_id, from_number, to_number, message_body, direction)
+     VALUES ($1, $2, $3, $4, 'inbound')`,
+            [
+                lead.lead_id,
+                fromNumber,
+                process.env.TWILIO_NUMBER,
+                incomingMessage,
+            ]
+        );
 
 
         return res.status(200).send(`<Response><Message>Send "review" or "email" to begin.</Message></Response>`);
