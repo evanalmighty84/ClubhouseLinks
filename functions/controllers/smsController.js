@@ -615,7 +615,7 @@ exports.sendLeadReply = async (req, res) => {
         const sms = await client.messages.create({
             body: message,
             to: toPhone,
-            messagingServiceSid,
+            messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
             statusCallback: `${process.env.BASE_URL}/server/lead_function/api/smsqueue/status-callback`,
         });
 
