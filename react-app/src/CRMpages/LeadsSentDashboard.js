@@ -193,7 +193,9 @@ export default function LeadsSentDashboard() {
             await axios.post(`${SMS_LEAD_BASE}/smsqueue/lead/send-reply`, {
                 lead_id: selectedLead.id,
                 message: chatMessage,
+                user_id: 79, // ← REQUIRED
             });
+
             setChatMessage("");
             await openConversation(selectedLead); // refresh messages
         } catch (err) {
