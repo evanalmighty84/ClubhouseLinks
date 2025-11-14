@@ -420,18 +420,24 @@ export default function LeadsSentDashboard() {
                         )}
                     </Modal.Body>
 
-                    <Modal.Footer>
+                    <Modal.Footer as="form" onSubmit={(e) => {
+                        e.preventDefault();
+                        sendReply();
+                    }}>
                         <Form.Control
                             type="text"
                             placeholder="Type your reply..."
                             value={chatMessage}
                             onChange={(e) => setChatMessage(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && sendReply()}
                         />
-                        <Button variant="primary" onClick={sendReply}>
+
+                        <Button variant="primary" type="submit">
                             Send
                         </Button>
                     </Modal.Footer>
+
+
+
                 </Modal>
 
             </Modal>
