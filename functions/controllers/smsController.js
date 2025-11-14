@@ -589,39 +589,65 @@ exports.sendLeadReply = async (req, res) => {
     try {
         const { lead_id, message, user_id } = req.body;
 
-        // ❌ 1. Missing required fields
+        // 1. Validate request
         if (!lead_id || !message || !user_id)
             return res.status(400).json({ error: "Missing lead_id, message, or user_id" });
 
-        // ❌ 2. Lead not found (or phone null)
+        // 2. Fetch lead phone number
         const { rows: leadRows } = await pool.query(
             `SELECT phone FROM familytreenow WHERE id = $1`,
             [lead_id]
         );
         const lead = leadRows[0];
+
         if (!lead?.phone)
             return res.status(404).json({ error: "Lead not found" });
 
         const toPhone = "+1" + lead.phone.replace(/\D/g, "");
 
-        // ❌ 3. User not found or phone_number null
+        // 3. Fetch user sending the message
         const { rows: userRows } = await pool.query(
             `SELECT id, phone_number FROM users WHERE id = $1`,
             [user_id]
         );
         const user = userRows[0];
+
         if (!user?.phone_number)
             return res.status(400).json({ error: "User has no phone number set" });
 
         const fromNumber = user.phone_number;
 
-        // ❌ 4. Twilio call throws error
+        // 4. Send text through Twilio Messaging Service
         const sms = await client.messages.create({
             body: message,
             to: toPhone,
             messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
             statusCallback: `${process.env.BASE_URL}/server/lead_function/api/smsqueue/status-callback`,
         });
+
+        // 5. Log outbound SMS
+        await pool.query(
+            `INSERT INTO lead_sms
+             (lead_id, user_id, from_number, to_number, message_body, direction, status)
+             VALUES ($1, $2, $3, $4, $5, 'outbound', 'sent')`,
+            [lead_id, user.id, fromNumber, toPhone, message]
+        );
+
+        console.log(`📤 Reply sent to ${toPhone}`);
+
+        // 6. Return success JSON
+        return res.json({
+            success: true,
+            message_sid: sms.sid
+        });
+
+    } catch (err) {
+        console.error("❌ sendLeadReply error:", err);
+        return res.status(500).json({ error: "Failed to send reply" });
+    }
+};
+
+
 
 exports.getLeadConversation = async (req, res) => {
 
