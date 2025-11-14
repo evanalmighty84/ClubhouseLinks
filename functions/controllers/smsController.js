@@ -706,25 +706,6 @@ exports.markMessagesSeen = async (req, res) => {
 exports.twilioHandleIncomingSMS = async (req, res) => {
     console.log('📩 Incoming SMS payload:', req.body);
 
-    const introMessage = `const introMessage = \`💻 Grow Your Business with Clubhouse Links
-
-🌐 Website – $599
-Modern, mobile-ready, SEO-friendly
-
-📧 Email Marketing – $69.99/mo
-www.clubhouselinks.com
-
-📲 Text Campaigns – $39.99/mo
-Direct, fast, and effective
-
-📣 Social Media – $59.99/mo
-Done-for-you posts & strategy
-
-👉 Text LAUNCH to get started or ask questions!
-📞 (214) 548-9175\`;
-`;
-
-
     try {
         const fromNumber = req.body.From?.replace(/\D/g, '');
         const incomingMessage = req.body.Body?.trim();
@@ -736,159 +717,7 @@ Done-for-you posts & strategy
             return res.status(400).send('Missing required data');
         }
 
-        const userResult = await pool.query(
-            `SELECT id, name, google_place_id, email FROM users
-             WHERE phone_number IS NOT NULL
-               AND REPLACE(phone_number, '+', '') LIKE $1`,
-            [`%${fromNumber.slice(-10)}`]
-        );
-
-        const user = userResult.rows[0];
-        if (!user) {
-            console.warn('⚠️ Unrecognized sender');
-            return res.status(200).send(`<Response><Message>Your number is not recognized.</Message></Response>`);
-        }
-
-        const session = smsSessions.get(fromNumber);
-
-        // START: Email flow
-        if (!session && lower.includes('email')) {
-            smsSessions.set(fromNumber, { awaitingEmail: true });
-            return res.status(200).send(`<Response><Message>What email should we send your message to?</Message></Response>`);
-        }
-
-        if (session?.awaitingEmail && !session.emailAddress) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(incomingMessage)) {
-                return res.status(200).send(`<Response><Message>Please provide a valid email address.</Message></Response>`);
-            }
-
-            session.emailAddress = incomingMessage;
-            session.awaitingType = true;
-            smsSessions.set(fromNumber, session);
-
-            return res.status(200).send(`<Response><Message>Would you like to send your Advertisement, Sale, or Review?</Message></Response>`);
-        }
-
-        // START: Introduction Flow
-        // START: Introduction Flow (Step 1 - ask for number)
-        if (!session && lower.includes('introduction')) {
-            smsSessions.set(fromNumber, { awaitingIntroNumber: true });
-
-            return res
-                .status(200)
-                .send(`<Response><Message>What number should we send the business info to?</Message></Response>`);
-        }
-
-// Step 2 - validate number and send intro MMS
-        if (session?.awaitingIntroNumber) {
-            const cleaned = incomingMessage.replace(/\D/g, '');
-
-            if (cleaned.length !== 10) {
-                return res
-                    .status(200)
-                    .send(`<Response><Message>Please enter a valid 10-digit phone number.</Message></Response>`);
-            }
-
-            const sendTo = '+1' + cleaned;
-
-            // Send intro MMS to the requested number
-            await client.messages.create({
-                messagingServiceSid,
-                to: sendTo,
-                body: introMessage,
-                mediaUrl: [
-                    'https://res.cloudinary.com/duz4vhtcn/image/upload/v1733523325/Clubhouse_Links_2_zut83w.png'
-                ]
-            });
-
-            // Send confirmation back to original sender
-            smsSessions.delete(fromNumber);
-
-            return res
-                .status(200)
-                .send(`<Response><Message>✅ Info sent to ${sendTo}</Message></Response>`);
-        }
-// END: Introduction Flow
-
-// END: Introduction Flow
-
-
-        if (session?.awaitingType) {
-            const type = lower;
-            let workflow;
-            if (type.includes('advertisement')) workflow = 2;
-            else if (type.includes('sale')) workflow = 3;
-            else if (type.includes('review')) workflow = 6;
-            else return res.status(200).send(`<Response><Message>Please choose: Advertisement, Sale, or Review.</Message></Response>`);
-
-            const templateResult = await pool.query(
-                `SELECT content FROM templates
-                 WHERE user_id = $1 AND workflow = $2`,
-                [user.id, workflow]
-            );
-
-            const template = templateResult.rows[0];
-            if (!template?.content) {
-                return res.status(200).send(`<Response><Message>No template found for that type.</Message></Response>`);
-            }
-
-            // Send email
-            const transporter = nodemailer.createTransport({
-                host: 'smtp.zoho.com',
-                port: 587,
-                secure: false,
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS
-                }
-            });
-
-            await transporter.sendMail({
-                from: process.env.EMAIL_USER,
-                to: session.emailAddress,
-                subject: `${user.name} sent you a message`,
-                html: template.content
-            });
-
-            smsSessions.delete(fromNumber);
-            return res.status(200).send(`<Response><Message>✅ Email sent to ${session.emailAddress}</Message></Response>`);
-        }
-        // END: Email flow
-
-        // START: Review QR Flow
-        if (!session && lower.includes('review')) {
-            smsSessions.set(fromNumber, { awaitingNumber: true });
-            return res.status(200).send(`<Response><Message>What number should we send the review QR code to?</Message></Response>`);
-        }
-
-        if (session?.awaitingNumber) {
-            const cleaned = incomingMessage.replace(/\D/g, '');
-            if (cleaned.length < 10) {
-                return res.status(200).send(`<Response><Message>Please enter a valid 10-digit number.</Message></Response>`);
-            }
-
-            const sendTo = '+1' + cleaned;
-            const reviewLink = `https://search.google.com/local/writereview?placeid=${user.google_place_id}`;
-            const qrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=${encodeURIComponent(reviewLink)}`;
-
-            await client.messages.create({
-                messagingServiceSid,
-                to: sendTo,
-                body: `${user.name} would appreciate your review!\n${reviewLink}`,
-                mediaUrl: [qrCodeUrl]
-            });
-
-            smsSessions.delete(fromNumber);
-
-            return res.status(200).send(`<Response><Message>✅ Review link sent to ${sendTo}</Message></Response>`);
-        }
-        // END: Review QR Flow
-
-
         // ================= LEAD REPLY HANDLER =================
-        // Detect if this inbound SMS is from a lead you previously messaged
-        // 1. Match only the LEAD based on phone number
         const leadLookup = await pool.query(
             `SELECT id AS lead_id, author, phone, company_name
              FROM familytreenow
@@ -905,9 +734,10 @@ Done-for-you posts & strategy
                 `<Response><Message>Your number is not recognized.</Message></Response>`
             );
         }
+
         await pool.query(
-            `INSERT INTO lead_sms (lead_id, from_number, to_number, message_body, direction)
-     VALUES ($1, $2, $3, $4, 'inbound')`,
+            `INSERT INTO lead_sms (lead_id, from_number, to_number, message_body, direction, is_new)
+             VALUES ($1, $2, $3, $4, 'inbound', TRUE)`,
             [
                 lead.lead_id,
                 fromNumber,
@@ -916,11 +746,18 @@ Done-for-you posts & strategy
             ]
         );
 
+        // 🛑 STOP HERE — DO NOT RUN USER LOGIC
+        return res.status(200).send(
+            `<Response><Message>Thanks for your message! We'll get back to you shortly.</Message></Response>`
+        );
 
-        return res.status(200).send(`<Response><Message>Send "review" or "email" to begin.</Message></Response>`);
+        // EVERYTHING BELOW THIS WAS REMOVED — because it is broken & unreachable
+
     } catch (err) {
         console.error('❌ Error handling incoming SMS:', err);
-        res.status(500).send(`<Response><Message>Something went wrong. Please try again later.</Message></Response>`);
+        return res.status(500).send(
+            `<Response><Message>Something went wrong. Please try again later.</Message></Response>`
+        );
     }
 };
 
