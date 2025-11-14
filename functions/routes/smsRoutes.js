@@ -18,6 +18,13 @@ router.post('/alert-lead', smsController.notifyUsersForLead);
 
 router.post('/message-lead', smsController.messageLead);
 
+// NEW — get new inbound messages for a user
+router.get('/new-messages/:userId', smsController.getNewMessages);
+
+// NEW — mark inbound messages as seen
+router.post('/messages/mark-seen', smsController.markMessagesSeen);
+
+
 router.post(
     '/incoming',
     express.urlencoded({ extended: false }), // only this route needs form support

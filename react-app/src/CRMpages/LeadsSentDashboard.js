@@ -48,6 +48,23 @@ export default function LeadsSentDashboard() {
     const [conversation, setConversation] = useState([]);
     const [chatMessage, setChatMessage] = useState("");
     const [chatLoading, setChatLoading] = useState(false);
+    const [notifications, setNotifications] = useState([]);
+
+    useEffect(() => {
+        const interval = setInterval(fetchNewMessages, 10000);
+        fetchNewMessages(); // initial check
+        return () => clearInterval(interval);
+    }, []);
+
+    async function fetchNewMessages() {
+        try {
+            const res = await axios.get(`${SMS_LEAD_BASE}/smsqueue/new-messages/79`);
+            setNotifications(res.data || []);
+        } catch (err) {
+            console.error("Error checking new messages:", err);
+        }
+    }
+
 
     useEffect(() => {
         fetchLeadsSent();
@@ -158,6 +175,14 @@ export default function LeadsSentDashboard() {
             alert("Failed to load conversation.");
         } finally {
             setChatLoading(false);
+            if (notifications.length > 0) {
+                await axios.post(`${SMS_LEAD_BASE}/smsqueue/messages/mark-seen`, {
+                    messageIds: notifications.map(n => n.id),
+                });
+
+                setNotifications([]); // clear frontend
+            }
+
         }
     }
 
@@ -179,7 +204,14 @@ export default function LeadsSentDashboard() {
 
 
     return (
+
         <Container className="mt-5">
+            {notifications.length > 0 && (
+                <div className="notification-bubble">
+                    {notifications.length}
+                </div>
+            )}
+
             <h1 className="mb-4 text-center">Emily's Leads Sent Dashboard</h1>
 
             <Form className="mb-4">

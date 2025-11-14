@@ -660,6 +660,46 @@ exports.getLeadConversation = async (req, res) => {
 
 
 
+exports.getNewMessages = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        const { rows } = await pool.query(
+            `SELECT l.*
+             FROM lead_sms l
+             WHERE l.user_id = $1
+               AND l.direction = 'inbound'
+               AND l.is_new = TRUE
+             ORDER BY l.created_at DESC`,
+            [userId]
+        );
+
+        res.json(rows);
+    } catch (err) {
+        console.error("❌ getNewMessages error:", err);
+        res.status(500).json({ error: "Failed to fetch notifications" });
+    }
+};
+
+
+exports.markMessagesSeen = async (req, res) => {
+    try {
+        const { messageIds } = req.body;
+
+        if (!messageIds || !messageIds.length)
+            return res.status(400).json({ error: "No IDs provided" });
+
+        await pool.query(
+            `UPDATE lead_sms SET is_new = FALSE WHERE id = ANY($1::int[])`,
+            [messageIds]
+        );
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error("❌ markMessagesSeen error:", err);
+        res.status(500).json({ error: "Failed to update messages" });
+    }
+};
 
 // We'll store a basic in-memory map of phone sessions (you can upgrade this later)
 
@@ -864,10 +904,13 @@ Done-for-you posts & strategy
 
             // 🗄️ Log inbound message
             await pool.query(
-                `INSERT INTO lead_sms (from_number, to_number, message_body, direction, lead_id, user_id)
-                 VALUES ($1, $2, $3, 'inbound', $4, $5)`,
+                `INSERT INTO lead_sms
+                 (from_number, to_number, message_body, direction, lead_id, user_id, is_new)
+                 VALUES
+                     ($1, $2, $3, 'inbound', $4, $5, TRUE)`,
                 [fromNumber, process.env.TWILIO_NUMBER, incomingMessage, lead.lead_id, lead.user_id]
             );
+
 
             // 🧠 Optional: AI-generated suggested reply
             const prompt = `
