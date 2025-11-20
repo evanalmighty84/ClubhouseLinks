@@ -12,7 +12,8 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { GoogleOAuthProvider } from "@react-oauth/google";
-
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 // Your Components
 import Checkout from "./Checkout";
 import Success from "./Success";
@@ -209,6 +210,14 @@ class App extends Component {
                             <Route path="*" element={<div style={{ padding: '2rem', color: 'red' }}>❌ 404 - Page Not Found</div>} />
                         </Routes>
                     </Elements>
+                    <ToastContainer
+                        position="top-center"
+                        autoClose={4000}
+                        hideProgressBar={false}
+                        newestOnTop={false}
+                        closeOnClick
+                        pauseOnHover
+                    />
                 </BrowserRouter>
             </GoogleOAuthProvider>
         );
