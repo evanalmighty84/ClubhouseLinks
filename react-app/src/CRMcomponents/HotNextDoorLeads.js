@@ -11,6 +11,9 @@ const NextDoorLeads = () => {
     const [selectedCity, setSelectedCity] = useState('All');
     const [selectedLeadType, setSelectedLeadType] = useState('All');
     const [onlyWithPhone, setOnlyWithPhone] = useState(false);
+    const [subscribedCities, setSubscribedCities] = useState([]);
+
+
 
     // 🚀 APIs
     const LOCAL_API = 'http://localhost:5000/server/crm_function/api';
@@ -24,8 +27,29 @@ const NextDoorLeads = () => {
             setUserId(id);
             fetchIndustryLeads(id);
             fetchUserIndustries(id);
+            fetchSubscribedCities(id);
         }
     }, []);
+
+
+
+    const fetchSubscribedCities = async (id) => {
+        try {
+            const res = await axios.get(`${HEROKU_API}/users/${id}/subscribed-areas`);
+            const list =
+                Array.isArray(res.data?.subscribed_areas)
+                    ? res.data.subscribed_areas
+                    : (res.data?.subscribed_areas || "")
+                        .split(",")
+                        .map((c) => c.trim())
+                        .filter(Boolean);
+
+            setSubscribedCities(list);
+            console.log("📍 Loaded subscribed cities:", list);
+        } catch (err) {
+            console.error("Error fetching subscribed cities:", err);
+        }
+    };
 
     // 2️⃣ Fetch Nextdoor leads (local API)
     const fetchIndustryLeads = async (id) => {
@@ -75,10 +99,12 @@ const NextDoorLeads = () => {
     );
 
     // 🏙️ City dropdown options
-    const cities = useMemo(
-        () => ['All', ...Array.from(new Set(leads.map((l) => l.city).filter(Boolean)))],
-        [leads]
-    );
+    const cities = useMemo(() => {
+        const norm = (c) => c.trim();
+        const list = [...new Set(subscribedCities.map(norm))];
+        return ['All', ...list];
+    }, [subscribedCities]);
+
 
     // 🏷️ Lead Type dropdown options — now driven by saved industries
     const leadTypes = useMemo(() => {
@@ -89,17 +115,28 @@ const NextDoorLeads = () => {
 
     // ✅ Filtering logic
     const filterLeads = (data) => {
+        const normalize = (str) => (str || '').trim().toLowerCase();
+
         return data.filter((l) => {
-            const cityOk = selectedCity === 'All' || l.city === selectedCity;
+            const cityNorm = normalize(l.city);
+
+            const cityOk =
+                (selectedCity === 'All' &&
+                    subscribedCities.map(normalize).includes(cityNorm)) ||
+                cityNorm === normalize(selectedCity);
+
             const typeOk =
                 selectedLeadType === 'All' ||
                 (l.lead_type &&
                     selectedLeadType &&
                     l.lead_type.toLowerCase().includes(selectedLeadType.toLowerCase()));
+
             const phoneOk = !onlyWithPhone || Boolean(l.phone && l.phone.trim());
+
             return cityOk && typeOk && phoneOk;
         });
     };
+
 
     const filteredHot = filterLeads(hotLeads);
     const filteredWarm = filterLeads(warmLeads);
