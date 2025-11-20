@@ -187,4 +187,34 @@ exports.updateUserSettings = async (req, res) => {
         return res.status(500).json({ error: 'Failed to update settings' });
     }
 };
+exports.getSubscribedAreas = async (req, res) => {
+    const userId = req.params.id;
+
+    try {
+        const result = await pool.query(
+            `SELECT subscribed_areas FROM users WHERE id = $1`,
+            [userId]
+        );
+
+        if (!result.rows.length) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const areas = result.rows[0].subscribed_areas;
+
+        // Normalize to always return an array
+        const list = Array.isArray(areas)
+            ? areas
+            : (areas || "")
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean);
+
+        res.json({ subscribed_areas: list });
+    } catch (e) {
+        console.error('Error fetching subscribed areas:', e);
+        res.status(500).json({ error: 'Failed to load subscribed areas' });
+    }
+};
+
 

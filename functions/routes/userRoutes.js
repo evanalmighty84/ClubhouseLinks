@@ -6,6 +6,8 @@ const userController = require('../controllers/userController');
 router.post('/update-settings', userController.updateUserSettings);
 router.get('/industries', userController.getIndustries);
 router.get('/:id/industries', userController.getUserIndustries);
+router.get('/:id/subscribed-areas', userController.getSubscribedAreas);
+
 
 
 module.exports = router;
