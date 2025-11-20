@@ -42,7 +42,7 @@ const Settings = () => {
             }
         } catch (error) {
             console.error('Error fetching SMTP settings:', error);
-            toast.error('Failed to load SMTP settings');
+
         }
     };
 
