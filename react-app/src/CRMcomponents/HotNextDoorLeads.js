@@ -10,8 +10,9 @@ const NextDoorLeads = () => {
     const [userIndustries, setUserIndustries] = useState([]);
     const [selectedCity, setSelectedCity] = useState('All');
     const [selectedLeadType, setSelectedLeadType] = useState('All');
-    const [onlyWithPhone, setOnlyWithPhone] = useState(false);
     const [subscribedCities, setSubscribedCities] = useState([]);
+    const [onlyWithPhone, setOnlyWithPhone] = useState(true);
+
 
 
 
@@ -24,6 +25,10 @@ const NextDoorLeads = () => {
         const user = localStorage.getItem('user');
         if (user) {
             const { id } = JSON.parse(user);
+
+            if (id !== 8) {
+                setOnlyWithPhone(true);
+            }
             setUserId(id);
             fetchIndustryLeads(id);
             fetchUserIndustries(id);
@@ -199,15 +204,18 @@ const NextDoorLeads = () => {
                         </Col>
                     )}
 
-                    <Col xs={12} md={4} className="d-flex align-items-end mb-2">
-                        <Form.Check
-                            type="checkbox"
-                            id="hotHasPhoneCheck"
-                            label="Has Phone Number"
-                            checked={onlyWithPhone}
-                            onChange={(e) => setOnlyWithPhone(e.target.checked)}
-                        />
-                    </Col>
+                    {userId === 8 && (
+                        <Col xs={12} md={4} className="d-flex align-items-end mb-2">
+                            <Form.Check
+                                type="checkbox"
+                                id="hotHasPhoneCheck"
+                                label="Has Phone Number"
+                                checked={onlyWithPhone}
+                                onChange={(e) => setOnlyWithPhone(e.target.checked)}
+                            />
+                        </Col>
+                    )}
+
                 </Row>
             )}
 

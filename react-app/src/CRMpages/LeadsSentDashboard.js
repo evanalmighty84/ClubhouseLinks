@@ -1,3 +1,4 @@
+//Leadsentdashboard
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {
@@ -30,7 +31,8 @@ const SMS_LEAD_BASE =
 
 
 
-export default function LeadsSentDashboard() {
+export default function LeadsSentDashboard({ forceSingleCompany = null }) {
+
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(false);
     const [filtering, setFiltering] = useState(false);
@@ -49,6 +51,16 @@ export default function LeadsSentDashboard() {
     const [chatMessage, setChatMessage] = useState("");
     const [chatLoading, setChatLoading] = useState(false);
     const [notifications, setNotifications] = useState([]);
+    const [currentUserId, setCurrentUserId] = useState(null);
+
+    useEffect(() => {
+        const user = localStorage.getItem("user");
+        if (user) {
+            setCurrentUserId(JSON.parse(user).id);
+        }
+    }, []);
+
+
 
     useEffect(() => {
         const interval = setInterval(fetchNewMessages, 10000);
@@ -265,44 +277,62 @@ export default function LeadsSentDashboard() {
                 </p>
             ) : (
                 <Row xs={1} md={2} lg={3} className="g-4">
-                    {leads.map((company) => (
-                        <Col key={company.company_name}>
-                            <Card className="h-100 shadow-sm">
-                                <Card.Body>
-                                    <Card.Title>{company.company_name}</Card.Title>
-                                    <Card.Text>
-                                        <strong>Total Leads:</strong> {company.total_leads}
-                                        <br />
-                                        <strong>Cities:</strong> {company.cities}
-                                        <br />
-                                        <strong>Last Sent:</strong>{" "}
-                                        {new Date(company.last_sent).toLocaleString()}
-                                    </Card.Text>
+                    {leads
+                        .filter((company) => {
+                            // admin users 8 & 79 see ALL companies
+                            if (currentUserId === 8 || currentUserId === 79) return true;
 
-                                    <div className="d-grid gap-2">
-                                        <Button
-                                            variant="outline-primary"
-                                            onClick={() => sendReportEmail(company)}
-                                        >
-                                            📧 Send Report
-                                        </Button>
-                                        <Button
-                                            variant="outline-success"
-                                            onClick={() => sendTutorialEmail(company)}
-                                        >
-                                            🎓 Send Tutorial
-                                        </Button>
-                                        <Button
-                                            variant="primary"
-                                            onClick={() => viewLeads(company)}
-                                        >
-                                            🔍 View Leads
-                                        </Button>
-                                    </div>
-                                </Card.Body>
-                            </Card>
-                        </Col>
-                    ))}
+                            // if forced from parent, show only that company
+                            if (forceSingleCompany) {
+                                return company.company_name === forceSingleCompany;
+                            }
+
+                            // default: normal users only see THEIR company (matching their own company_name)
+                            const user = localStorage.getItem("user");
+                            if (!user) return false;
+
+                            const { company_name } = JSON.parse(user);
+                            return company.company_name === company_name;
+                        })
+                        .map((company) => (
+                            <Col key={company.company_name}>
+                                <Card className="h-100 shadow-sm">
+                                    <Card.Body>
+                                        <Card.Title>{company.company_name}</Card.Title>
+                                        <Card.Text>
+                                            <strong>Total Leads:</strong> {company.total_leads}
+                                            <br />
+                                            <strong>Cities:</strong> {company.cities}
+                                            <br />
+                                            <strong>Last Sent:</strong>{" "}
+                                            {new Date(company.last_sent).toLocaleString()}
+                                        </Card.Text>
+
+                                        <div className="d-grid gap-2">
+                                            <Button
+                                                variant="outline-primary"
+                                                onClick={() => sendReportEmail(company)}
+                                            >
+                                                📧 Send Report
+                                            </Button>
+                                            <Button
+                                                variant="outline-success"
+                                                onClick={() => sendTutorialEmail(company)}
+                                            >
+                                                🎓 Send Tutorial
+                                            </Button>
+                                            <Button
+                                                variant="primary"
+                                                onClick={() => viewLeads(company)}
+                                            >
+                                                🔍 View Leads
+                                            </Button>
+                                        </div>
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                        ))}
+
                 </Row>
             )}
 
