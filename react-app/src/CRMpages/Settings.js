@@ -141,22 +141,41 @@ const Settings = () => {
 
     const handleIndustrySubmit = async (e) => {
         e.preventDefault();
+
+        // OPTIONAL: block from frontend before hitting backend
+        if (userId !== 8) {
+            toast.error("Only your account administrator can change industries. Please contact support@clubhouselinksmedia.com.");
+            return;
+        }
+
         try {
             const { data } = await axios.post(`${API_BASE}/users/update-settings`, {
                 userId,
-                industries: selectedIndustries, // industries-only; backend conditionally updates without password
+                industries: selectedIndustries,
             });
+
             // reflect canonical/normalized values if backend returns them
             if (Array.isArray(data?.userIndustriesArrayNormalized)) {
                 setSelectedIndustries(data.userIndustriesArrayNormalized);
             }
-            toast.success('Industries updated successfully!');
+
+            toast.success("Industries updated successfully!");
         } catch (error) {
-            console.error('Error updating industries:', error);
-            const msg = error?.response?.data?.error || error?.message || 'Failed to update industries';
-            toast.error(msg);
+            console.log("🔥 CATCH BLOCK HIT — INDUSTRY UPDATE FAILED");
+            console.log("🔥 error.response:", error?.response);
+            console.log("🔥 error.response.data:", error?.response?.data);
+
+            const msg =
+                error?.response?.data?.error ||
+                error?.response?.data?.message ||
+                error?.message ||
+                "Failed to update industries";
+
+            // GUARANTEED toast
+            toast.error(msg || "An error occurred updating industries.");
         }
     };
+
 
     return (
         <div className="settings-page p-4">
