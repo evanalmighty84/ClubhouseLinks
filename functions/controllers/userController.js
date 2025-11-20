@@ -133,6 +133,14 @@ exports.updateUserSettings = async (req, res) => {
         const wantsIndustryUpdate = Array.isArray(industries);
         const wantsPasswordUpdate = typeof currentPassword === 'string' && typeof newPassword === 'string';
 
+        // ---- NEW RESTRICTION: Only user 8 can update industries ----
+        if (wantsIndustryUpdate && Number(userId) !== 8) {
+            return res.status(403).json({
+                error: "Industry changes are restricted. Please contact support@clubhouselinksmedia.com."
+            });
+        }
+        // -------------------------------------------------------------
+
         if (!wantsIndustryUpdate && !wantsPasswordUpdate) {
             return res.status(400).json({
                 error: 'Nothing to update. Provide industries[] and/or currentPassword + newPassword.',
@@ -149,15 +157,15 @@ exports.updateUserSettings = async (req, res) => {
         if (wantsPasswordUpdate) {
             const decrypted = decryptPassword(user.password_hash);
             if (decrypted !== currentPassword) return res.status(400).json({ error: 'Current password is incorrect' });
-            if (!String(newPassword).trim())   return res.status(400).json({ error: 'New password cannot be empty' });
+            if (!String(newPassword).trim()) return res.status(400).json({ error: 'New password cannot be empty' });
             passwordHash = encryptPassword(newPassword);
         }
 
         const updateResult = await pool.query(
             `UPDATE users
-         SET industry = $1::text[], password_hash = $2
-       WHERE id = $3
-       RETURNING id, email, industry`,
+             SET industry = $1::text[], password_hash = $2
+             WHERE id = $3
+             RETURNING id, email, industry`,
             [newIndustryArray, passwordHash, userId]
         );
 
@@ -179,3 +187,4 @@ exports.updateUserSettings = async (req, res) => {
         return res.status(500).json({ error: 'Failed to update settings' });
     }
 };
+
