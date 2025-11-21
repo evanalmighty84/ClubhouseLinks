@@ -226,7 +226,7 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                 </div>
             )}
 
-            <h1 className="mb-4 text-center">Emily's Leads Sent Dashboard</h1>
+            <h1 className="mb-4 text-center">Leads Reports and Conversation</h1>
 
             <Form className="mb-4">
                 <Row className="align-items-end justify-content-center">

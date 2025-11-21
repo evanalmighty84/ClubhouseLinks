@@ -184,23 +184,44 @@ const Settings = () => {
                 <Row>
                     <Col sm={3}>
                         <Nav variant="pills" className="flex-column">
-                            <Nav.Item>
-                                <Nav.Link eventKey="overview">Overview</Nav.Link>
-                            </Nav.Item>
-                            <Nav.Item>
-                                <Nav.Link eventKey="setup">Setup Instructions</Nav.Link>
-                            </Nav.Item>
-                            <Nav.Item>
-                                <Nav.Link eventKey="form">Update SMTP Settings</Nav.Link>
-                            </Nav.Item>
-                            {/* NEW tab */}
+
+                            {/* 🔵 Lead Generation Settings */}
+                            <div className="mt-2 mb-1 px-2 py-1 rounded" style={{ background: "#e6f2ff" }}>
+                                <strong style={{ fontSize: "0.85rem", color: "#0056b3" }}>
+                                    Lead Generation Settings
+                                </strong>
+                            </div>
+
                             <Nav.Item>
                                 <Nav.Link eventKey="industries">Update Industries</Nav.Link>
                             </Nav.Item>
+
+
+                            {/* 🟣 Email Campaign Settings */}
+                            <div className="mt-4 mb-1 px-2 py-1 rounded" style={{ background: "#f3e8ff" }}>
+                                <strong style={{ fontSize: "0.85rem", color: "#6a00a3" }}>
+                                    Email Campaign Settings
+                                </strong>
+                            </div>
+
+                            <Nav.Item>
+                                <Nav.Link eventKey="form">Update SMTP Settings</Nav.Link>
+                            </Nav.Item>
+
+
+                            {/* 🔴 Administrator Settings */}
+                            <div className="mt-4 mb-1 px-2 py-1 rounded" style={{ background: "#ffe6e6" }}>
+                                <strong style={{ fontSize: "0.85rem", color: "#b30000" }}>
+                                    Administrator Settings
+                                </strong>
+                            </div>
+
                             <Nav.Item>
                                 <Nav.Link eventKey="password">User Password Settings</Nav.Link>
                             </Nav.Item>
+
                         </Nav>
+
                     </Col>
 
                     <Col sm={9}>

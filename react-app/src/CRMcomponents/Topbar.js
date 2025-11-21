@@ -59,7 +59,7 @@ const Topbar = () => {
 
             {/*        <Nav.Link onClick={() => handleNavigation('/app/signup')}>Sign Up</Nav.Link>*/}
     {/*                <Nav.Link onClick={() => handleNavigation('/app/signin')}>Sign In</Nav.Link>*/}
-                    <Nav.Link onClick={() => handleNavigation('/settings')}>Settings</Nav.Link>
+                    <Nav.Link onClick={() => handleNavigation('/settings')}>Account Settings</Nav.Link>
                     <Nav.Link onClick={() => handleNavigation('/appstore')}>Log Out</Nav.Link>
                 </Nav>
             </Navbar.Collapse>
