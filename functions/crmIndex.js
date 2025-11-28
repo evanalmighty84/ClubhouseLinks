@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const ionRoutes = require('./routes/ionRoutes');
+const aiGeneratedCampaignsAndTemplatesRoutes = require('./routes/aiGeneratedCampaignsAndTemplatesRoutes');
 const nextDoorRoutes = require('./routes/nextDoorRoutes');
 const campaignsRoutes = require('./routes/campaignsRoutes');
 const authRoutes = require('./routes/authRoutes');
@@ -83,6 +84,8 @@ app.use('/api/users', userRoutes)
 app.use('/api/unsubscribe', unSubscribeRoutes);
 
 app.use('/api/templates', templatesRoutes);
+
+app.use('/api/aiGeneratedCampaignsAndTemplates', aiGeneratedCampaignsAndTemplatesRoutes);
 
 app.use('/api/workflow', workflowRoutes);
 

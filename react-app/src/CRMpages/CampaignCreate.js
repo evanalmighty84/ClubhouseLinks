@@ -264,7 +264,7 @@ const CampaignCreate = ({ campaigns }) => {
     };
 
     return (
-        <div className="campaign-create-container p-4" style={{background:'linear-gradient(to bottom right, #f5c2d5, turquoise)'}}>
+        <div className="campaign-create-container p-4" style={{background:'linear-gradient(to right, black, steelblue, #ff0080, black)'}}>
             <Row>
                 <Col md={12}>
                     <Tabs activeKey={activeTab} onSelect={setActiveTab} id="campaign-tabs" className="mb-3">

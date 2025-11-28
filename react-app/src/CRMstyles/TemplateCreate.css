@@ -11,11 +11,11 @@
 }
 /* General styling for the container */
 .template-create-container {
-    background-color: indigo;
+    background: linear-gradient(to right, black, steelblue, #ff0080, black);
     color: white;
-    border-radius: 8px;
     padding: 20px;
 }
+
 
 /* Form and tab styling */
 .template-create-container .form-group {
@@ -24,7 +24,7 @@
 
 .template-create-container .form-label {
     color: white;
-    font-weight: bold;
+    font-weight:.5!important;
     font-size: 1.1em;
 }
 

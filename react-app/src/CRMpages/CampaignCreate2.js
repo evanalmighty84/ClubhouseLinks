@@ -89,7 +89,7 @@ const generatePreviewHTML = (category, data) => {
 
 
 
-const CampaignCreate = ({ campaigns, selectedCategory }) => {
+const CampaignCreate = ({ campaigns, selectedCategory,aiResponse }) => {
     const [activeTab, setActiveTab] = useState('details');
     const [campaignData, setCampaignData] = useState({
         name: '',
@@ -112,7 +112,7 @@ const CampaignCreate = ({ campaigns, selectedCategory }) => {
     const [useFileUpload, setUseFileUpload] = useState(false);
     const [searchModalQuery, setSearchModalQuery] = useState(''); // For modal search
     const [showAnimation, setShowAnimation] = useState(true);
-    const placeholderImage = 'https://res.cloudinary.com/duz4vhtcn/image/upload/v1741238955/58485771a6aca45b5a5c95b8_zmvivg.png';
+    const placeholderImage = 'https://res.cloudinary.com/drna15e8q/image/upload/v1764358549/envelope-clipart-envelope_a8ld9s.svg';
     const [imageLoaded, setImageLoaded] = useState(false); // Track if the image has loaded
 
 // Filtered lists based on search query
@@ -123,6 +123,42 @@ const CampaignCreate = ({ campaigns, selectedCategory }) => {
     const [searchQuery, setSearchQuery] = useState(''); // State for search input
     const [filteredLists, setFilteredLists] = useState([]); // Filtered lists for display
 
+// ---------------------------
+// PREFILL FROM AI RESPONSE
+// ---------------------------
+    useEffect(() => {
+        if (!aiResponse) return;
+
+        try {
+            const tempDiv = document.createElement("div");
+            tempDiv.innerHTML = aiResponse;
+
+            const subject = tempDiv.querySelector("h1")?.innerText || campaignData.subject;
+            const pitch = tempDiv.querySelector("p")?.innerText || campaignData.pitch;
+
+            const imgs = [...tempDiv.querySelectorAll("img")].map((i) => i.src);
+
+            const bodies = [...tempDiv.querySelectorAll("p")]
+                .map((p) => p.innerText)
+                .slice(1); // remove pitch
+
+            setCampaignData((prev) => ({
+                ...prev,
+                subject,
+                pitch,
+                emailBodies:
+                    bodies.length > 0
+                        ? bodies.slice(0, prev.emailBodies.length)
+                        : prev.emailBodies,
+                images:
+                    imgs.length > 0
+                        ? imgs.slice(0, prev.images.length)
+                        : prev.images
+            }));
+        } catch (err) {
+            console.error("AI Prefill parse error:", err);
+        }
+    }, [aiResponse]);
 
 
     useEffect(() => {
@@ -324,13 +360,10 @@ const CampaignCreate = ({ campaigns, selectedCategory }) => {
     };
     const previewData = preparePreviewData(campaignData);
     return (
-        <div className="campaign-create-container p-4" style={{   borderRadius: '8px',
+        <div className="campaign-create-container p-4" style={{
             gap: '20px',
-            marginLeft:'10em',
-            marginRight:'10em',
             borderStyle:'solid',
-            borderWidth:'3em',
-            borderColor:'antiquewhite', background:'linear-gradient(45deg, #287ea7, transparent)' }}>
+            background:'linear-gradient(to right, black, steelblue, #ff0080, black)' }}>
             <Row>
                 {/* Left Form Section */}
                 <Col md={6}>
@@ -514,7 +547,7 @@ const CampaignCreate = ({ campaigns, selectedCategory }) => {
 
                         {/* Archive Tab */}
                         <Tab eventKey="archive" title="Archive">
-                            <h3 style={{textAlign:'center'}}>Archived Campaigns</h3>
+                            <h3 style={{textAlign:'center'}}>Archived Campaigns </h3>
                             <Row>
                                 <Col md={12}>
                                     <ul className="list-unstyled">
@@ -644,19 +677,21 @@ const CampaignCreate = ({ campaigns, selectedCategory }) => {
                                     style={{
                                         width: '150px',
                                         height: '150px',
-                                        opacity: imageLoaded ? 1 : 0, // Fade in when the image is loaded
-                                        transition: 'opacity 1s ease-in', // Smooth fade in effect
+                                        opacity: imageLoaded ? 1 : 0,
+                                        transition: 'opacity 1s ease-in',
+                                        filter: 'drop-shadow(0 0 10px gold) drop-shadow(0 0 20px #FFD700)',
                                     }}
-                                    onLoad={handleImageLoad} // Set imageLoaded to true when the image loads
+                                    onLoad={handleImageLoad}
                                 />
+
                             </div>
                         )}
                     </div>
-                    <div className="email-preview" style={{ marginTop: '38px', border: '1px solid #ddd', borderRadius: '8px', paddingTop: '25px', background: '#fff' }}>
+                    <div className="email-preview" style={{ marginTop: '38px', border: '1px solid #ddd', paddingTop: '25px', background: '#fff' }}>
                         <h3 className="text-center">Email Preview</h3>
                         <div
                             dangerouslySetInnerHTML={{
-                                __html: generatePreviewHTML(selectedCategory, previewData), // ✅ Use same prepared data
+                                __html: aiResponse || generatePreviewHTML(selectedCategory, previewData),
                             }}
                         />
                     </div>                </Col>
