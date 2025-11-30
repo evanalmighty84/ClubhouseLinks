@@ -52,8 +52,8 @@ const Topbar = () => {
                 <Nav className="ms-auto">
                     <Nav.Link onClick={() => handleNavigation('/subscribers')}>Subscribers</Nav.Link>
                     <Nav.Link onClick={() => handleNavigation('/lists')}>Lists</Nav.Link>
-                    <Nav.Link onClick={() => handleNavigation('/campaigns')}>Campaigns/Workflows</Nav.Link>
-                    <Nav.Link onClick={() => handleNavigation('/emailqueued')}>Email/Text Log</Nav.Link>
+                    <Nav.Link onClick={() => handleNavigation('/campaigns')}>Email Campaigns</Nav.Link>
+                    <Nav.Link onClick={() => handleNavigation('/emailqueued')}>Email Log</Nav.Link>
                     <Nav.Link onClick={() => handleNavigation('/leads')}>Leads</Nav.Link>
 
 

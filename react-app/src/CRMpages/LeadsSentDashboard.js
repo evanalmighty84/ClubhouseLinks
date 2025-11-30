@@ -12,6 +12,7 @@ import {
     Spinner,
     Modal,
 } from "react-bootstrap";
+import logo from "../logo.png";
 
 // ✅ Localhost backend (for development)
 // OLD:
@@ -52,11 +53,14 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
     const [chatLoading, setChatLoading] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [currentUserId, setCurrentUserId] = useState(null);
+    const [companyName, setCompanyName] = useState("");
 
     useEffect(() => {
         const user = localStorage.getItem("user");
         if (user) {
-            setCurrentUserId(JSON.parse(user).id);
+            const parsed = JSON.parse(user);
+            setCurrentUserId(parsed.id);
+            setCompanyName(parsed.company_name || "");
         }
     }, []);
 
@@ -101,7 +105,7 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
     }
 
     async function sendReportEmail(company) {
-        if (!window.confirm(`Send report email for ${company.company_name}?`)) return;
+        if (!window.confirm(`Email yourself all your leads ${company.company_name}?`)) return;
         try {
             await axios.post(`${SMS_LEAD_BASE}/leads/send-summaries`, {
                 company_name: company.company_name,
@@ -225,10 +229,28 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                     {notifications.length}
                 </div>
             )}
+            <div style={{ textAlign: 'center' }}>
+                <img src={logo} style={{ width: 80 }} alt="logo" />
+                <Form.Label style={{ marginTop: 10, color: 'steelblue' }}>
+                   Send Automated Emails to all your leads below, or
+                    just text them directly from your CRM.
+                </Form.Label>
+            </div>
+            <h1
+                className="mb-4 text-center"
+                style={{
+                    background: "linear-gradient(to right, black, steelblue, #ff0080, black)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                    fontWeight: 800
+                }}
+            >
+                {companyName}
+            </h1>
 
-            <h1 className="mb-4 text-center">Leads Reports and Conversation</h1>
 
-            <Form className="mb-4">
+            <Form style={{display:'none'}} className="mb-4">
                 <Row className="align-items-end justify-content-center">
                     <Col xs={12} md={3}>
                         <Form.Group controlId="startDate">
@@ -298,34 +320,42 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                             <Col key={company.company_name}>
                                 <Card className="h-100 shadow-sm">
                                     <Card.Body>
-                                        <Card.Title>{company.company_name}</Card.Title>
+                                        <Card.Title style={{textAlign:'center',fontStyle:'bold'}}><h3>Email and Text Conversations</h3></Card.Title>
+
+
                                         <Card.Text>
-                                            <strong>Total Leads:</strong> {company.total_leads}
+                                            <strong> {company.company_name} Total Leads:</strong> {company.total_leads}
                                             <br />
-                                            <strong>Cities:</strong> {company.cities}
+                                            <strong>Cities Subscribed To:</strong> {company.cities}
                                             <br />
-                                            <strong>Last Sent:</strong>{" "}
+                                            <strong>Last Lead Generated:</strong>{" "}
                                             {new Date(company.last_sent).toLocaleString()}
                                         </Card.Text>
 
                                         <div className="d-grid gap-2">
                                             <Button
-                                                variant="outline-primary"
-                                                onClick={() => sendReportEmail(company)}
+                                                variant="primary"
+                                                onClick={() => viewLeads(company)}
                                             >
-                                                📧 Send Report
-                                            </Button>
-                                            <Button
-                                                variant="outline-success"
-                                                onClick={() => sendTutorialEmail(company)}
-                                            >
-                                                🎓 Send Tutorial
+                                                💬 Text Message Your Leads from your dashboard
                                             </Button>
                                             <Button
                                                 variant="primary"
                                                 onClick={() => viewLeads(company)}
                                             >
-                                                🔍 View Leads
+                                                💬 Email Your Leads from your dashboard
+                                            </Button>
+                                            <Button
+                                                variant="outline-primary"
+                                                onClick={() => sendReportEmail(company)}
+                                            >
+                                                📧 Generate Email Report to send to your company email
+                                            </Button>
+                                            <Button
+                                                variant="outline-success"
+                                                onClick={() => sendTutorialEmail(company)}
+                                            >
+                                                🎓 View Tutorial on how to convert leads into sales
                                             </Button>
                                         </div>
                                     </Card.Body>

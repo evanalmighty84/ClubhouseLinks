@@ -138,9 +138,6 @@ h2 {
 }
 /* Default layout (desktop/tablet): form and preview side by side */
 .template-create-container {
-    display: flex;
-    flex-direction: row;
-    gap: 20px;
 }
 
 /* Mobile layout: form on top, preview below */

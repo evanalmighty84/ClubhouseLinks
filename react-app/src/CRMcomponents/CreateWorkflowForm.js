@@ -4,6 +4,8 @@ import {FaUsers} from 'react-icons/fa';
 import AnimatedWorkFlowIcon from "../icons/WorkflowIcon";
 import logo from "../logo.png";
 import axios from "axios";
+import { toast } from 'react-toastify';
+
 
 const API_BASE = 'https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api';
 const placeholderImage = 'https://res.cloudinary.com/drna15e8q/image/upload/v1764358549/envelope-clipart-envelope_a8ld9s.svg';
@@ -61,6 +63,10 @@ const CreateWorkflowForm = ({
     const handlePageChange = (pageNumber) => {
         setCurrentPage(pageNumber);
     };
+    const requireStepOne = () => {
+        toast.error("Please complete Step 1: Choose an email type.");
+    };
+
 
     // Load user + recent events + scheduled events
     useEffect(() => {
@@ -190,26 +196,45 @@ const CreateWorkflowForm = ({
                         <h1 style={{textAlign:'center'}}> Step 2</h1>
                         <AnimatedWorkFlowIcon/>
                         {/* AI Button */}
-                        {workflowData.name && (
-                            <div className="d-flex justify-content-center py-2">
-                                <Button
-                                    type="button"
-                                    variant="danger"
-                                    style={{ backgroundColor: 'red', border: 'none' }}
-                                    onClick={() => onRequestAiDesign(workflowData.name)}
-                                >
-                                   Click here to Have A.I. Design your Email
-                                </Button>
-                            </div>
-                        )}
+                        {/* AI Button */}
+                        <div className="d-flex justify-content-center py-2">
+                            <Button
+                                type="button"
+                                variant="danger"
+                                style={{
+                                    backgroundColor: 'red',
+                                    border: 'none',
+                                    opacity: workflowData.name ? 1 : 0.5,
+                                }}
+                                onClick={() => {
+                                    if (!workflowData.name) return requireStepOne();
+                                    onRequestAiDesign(workflowData.name);
+                                }}
+                            >
+                                Click here to Have A.I. Design your Email
+                            </Button>
+                        </div>
 
-                        <h3 style={{textAlign:'center'}}>or</h3>
-                        {/* Continue Button */}
+                        <h3 style={{ textAlign: 'center' }}>or</h3>
+
+                        {/* CONTINUE BUTTON */}
                         <div className="d-flex justify-content-center">
-                            <Button type="submit" variant="primary" style={{ background: 'steelblue' }}>
+                            <Button
+                                type="button"
+                                variant="primary"
+                                style={{
+                                    background: 'steelblue',
+                                    opacity: workflowData.name ? 1 : 0.5,
+                                }}
+                                onClick={() => {
+                                    if (!workflowData.name) return requireStepOne();
+                                    document.querySelector("form").dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+                                }}
+                            >
                                 Click here to Continue to Manual Template Design
                             </Button>
                         </div>
+
                     </Form>
 
                     {/* EDITOR OR PREVIEW */}
