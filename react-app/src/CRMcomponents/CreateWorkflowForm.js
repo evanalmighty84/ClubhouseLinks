@@ -159,17 +159,18 @@ const CreateWorkflowForm = ({
                     }}
                 >
                     <h2
+                        className="big-header-text"
                         style={{
                             fontWeight: 900,
-                            fontSize: "46px",
                             margin: 0,
                             color: "white",
                             textShadow: "0px 2px 4px rgba(0,0,0,0.3)",
                             textAlign: "center"
                         }}
                     >
-                      Step 1:  Create a new Email Campaign
+                        Step 1: Create a new Email Campaign
                     </h2>
+
                 </div>
                 <div>
                 <img src={logo} style={{ width: 80, margin:"0 auto", display:"block" }} alt="logo" />
@@ -242,17 +243,18 @@ const CreateWorkflowForm = ({
                             }}
                         >
                             <h2
+                                className="big-header-text"
                                 style={{
                                     fontWeight: 900,
-                                    fontSize: "46px",
                                     margin: 0,
                                     color: "white",
                                     textShadow: "0px 2px 4px rgba(0,0,0,0.3)",
                                     textAlign: "center"
                                 }}
                             >
-                             Step 2: Design Your Email
+                               Step 2: Design your Email
                             </h2>
+
                         </div>
                         <AnimatedWorkFlowIcon/>
                         {/* AI Button */}

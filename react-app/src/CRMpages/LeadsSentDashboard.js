@@ -424,8 +424,7 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                             <div
                                     style={{
                                         borderRadius: "20px",
-                                        border: "1em",
-                                        borderStyle: "solid"
+                                        border: "1px solid #ddd",
                                     }}
                                 >
                                 <Card className="h-100 shadow-sm" style={{border:'none'}}>
@@ -444,7 +443,7 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                                         <h2
                                             style={{
                                                 fontWeight: 900,
-                                                fontSize: "46px",
+                                                fontSize: "1.5em",
                                                 margin: 0,
                                                 color: "white",
                                                 textShadow: "0px 2px 4px rgba(0,0,0,0.3)",

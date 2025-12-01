@@ -179,9 +179,9 @@ const NextDoorLeads = () => {
                 }}
             >
                 <h2
+                    className="big-header-text"
                     style={{
                         fontWeight: 900,
-                        fontSize: "46px",
                         margin: 0,
                         color: "white",
                         textShadow: "0px 2px 4px rgba(0,0,0,0.3)",
@@ -190,6 +190,7 @@ const NextDoorLeads = () => {
                 >
                     {label}
                 </h2>
+
             </div>
 
 
