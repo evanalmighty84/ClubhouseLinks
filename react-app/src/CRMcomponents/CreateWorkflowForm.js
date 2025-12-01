@@ -145,8 +145,35 @@ const CreateWorkflowForm = ({
     return (
         <Col>
             <Card className="recent-campaign-card mb-3" style={{ background: 'white' }}>
-                <h4 style={{ textAlign: 'center' }}>Create a New Email Campaign</h4>
-                <h1 style={{textAlign:'center'}}> Step 1</h1>
+                {/* BIG GRADIENT HEADER */}
+                <div
+                    style={{
+                        width: "100%",
+                        padding: "25px 0",
+                        background: "linear-gradient(to right, #ff0080, orange, steelblue)",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        marginBottom: "20px",
+                        borderRadius: "6px"
+                    }}
+                >
+                    <h2
+                        style={{
+                            fontWeight: 900,
+                            fontSize: "46px",
+                            margin: 0,
+                            color: "white",
+                            textShadow: "0px 2px 4px rgba(0,0,0,0.3)",
+                            textAlign: "center"
+                        }}
+                    >
+                      Step 1:  Create a new Email Campaign
+                    </h2>
+                </div>
+                <div>
+                <img src={logo} style={{ width: 80, margin:"0 auto", display:"block" }} alt="logo" />
+                </div>
                 <img
                     src={placeholderImage}
                     alt="Placeholder"
@@ -172,9 +199,18 @@ const CreateWorkflowForm = ({
                         {/* Workflow Category */}
                         <Form.Group className="mb-3">
                             <div style={{ textAlign: 'center' }}>
-                                <img src={logo} style={{ width: 80 }} alt="logo" />
                                 <Form.Label style={{ marginTop: 10, color: 'steelblue' }}>
-                                    Choose which type of Email you want AI to send
+                                    Choose which type of Email you want AI to send<br/>
+                                    Choose Google Review/ Thank you Email if you would like to say thank you to a customer <br/>
+                                    Choose Automated Email if you want to send a recurring email to stay top of mind. <br/>
+                                    Choose Advertisement or Sale Email if you would like to send a one time email to a lead<br/>
+                                    <span style={{ fontWeight: 800, color: 'orangered' }}>
+    ⭐ (New) Choose Send after Opening Email if you would like to send a one time only automatic email to a lead after they've opened a previous email.
+</span>
+
+
+
+
                                 </Form.Label>
                             </div>
                             <Form.Control
@@ -188,12 +224,36 @@ const CreateWorkflowForm = ({
                                 <option value="Thank you for your business">Thank You / Review Email</option>
                                 <option value="Advertisement">Advertisement Email</option>
                                 <option value="Sale">Sale Email</option>
-                                <option value="Top of Mind">Automated Monthly Email</option>
-                                <option value="Opened Email Hot List">Automated Weekly Email</option>
-                                <option value="Opened Email List">Automated Opened Email</option>
+                                <option value="Top of Mind">Automated Monthly Email Campaign</option>
+                                <option value="Opened Email Hot List">Automated Weekly Email Campaign</option>
+                                <option value="Opened Email List">Send after Opening Email Campaign</option>
                             </Form.Control>
                         </Form.Group>
-                        <h1 style={{textAlign:'center'}}> Step 2</h1>
+                        <div
+                            style={{
+                                width: "100%",
+                                padding: "25px 0",
+                                background: "linear-gradient(to right, #ff0080, orange, steelblue)",
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                marginBottom: "20px",
+                                borderRadius: "6px"
+                            }}
+                        >
+                            <h2
+                                style={{
+                                    fontWeight: 900,
+                                    fontSize: "46px",
+                                    margin: 0,
+                                    color: "white",
+                                    textShadow: "0px 2px 4px rgba(0,0,0,0.3)",
+                                    textAlign: "center"
+                                }}
+                            >
+                             Step 2: Design Your Email
+                            </h2>
+                        </div>
                         <AnimatedWorkFlowIcon/>
                         {/* AI Button */}
                         {/* AI Button */}

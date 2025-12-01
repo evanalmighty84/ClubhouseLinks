@@ -116,6 +116,7 @@ const ConditionalHeader = () => {
     ];
     const showTopBarRoutes = [
         "/dashboard",
+        "/calendar",
         "/campaigns",
         "/workflow",
         "/campaigns/create",
@@ -187,7 +188,8 @@ class App extends Component {
                             <Route path="/samplePortfolios4" element={<SamplePortfolios4 />} />
                             <Route path="/success" element={<Success />} />
                             <Route path="/cancel" element={<Cancel />} />
-                            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                            <Route path="/dashboard" element={<ProtectedRoute><LeadsPage/></ProtectedRoute>} />
+                            <Route path="/calendar" element={<ProtectedRoute><Dashboard/></ProtectedRoute>} />
                             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                             <Route path="/campaigns" element={<ProtectedRoute><CampaignPage /></ProtectedRoute>} />
                             <Route path="/campaigns/create" element={<ProtectedRoute><CampaignCreate /></ProtectedRoute>} />

@@ -156,8 +156,43 @@ const NextDoorLeads = () => {
 
     // 🧱 Table Renderer
     const renderTable = (data, label) => (
-        <Card className="p-4 my-4">
-            <h3 style={{ textAlign: 'center', color: 'teal' }}>{label}</h3>
+        <Card className="p-4 my-4" style={{ border: "none" }}>
+
+            {/* LABEL ABOVE */}
+
+
+            {/* BIG GRADIENT HEADER */}
+            <div
+                style={{
+                    width: "100%",
+                    padding: "25px 0",
+                    background: label.includes("Hot")
+                        ? "linear-gradient(to right, #ff0080, orange, steelblue)"
+                        : "linear-gradient(to right, steelblue, #ff0080)",
+
+
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    marginBottom: "20px",
+                    borderRadius: "6px"
+                }}
+            >
+                <h2
+                    style={{
+                        fontWeight: 900,
+                        fontSize: "46px",
+                        margin: 0,
+                        color: "white",
+                        textShadow: "0px 2px 4px rgba(0,0,0,0.3)",
+                        textAlign: "center"
+                    }}
+                >
+                    {label}
+                </h2>
+            </div>
+
+
             <p style={{ textAlign: 'center' }}>
                 {label.includes('Hot')
                     ? 'These are people who have inquired about your industry within the past 7 days. Leads older than one week automatically move to the warm lead category.'
@@ -218,59 +253,103 @@ const NextDoorLeads = () => {
 
                 </Row>
             )}
+            <style>
+                {`
+  /* Remove Bootstrap's default table borders (outer + inner) */
+  .table-bordered > :not(caption) > * {
+      border-width: 0 !important;
+  }
+  .table-bordered > :not(caption) > * > * {
+      border-width: 0 !important;
+  }
+`}
+            </style>
 
             {data.length === 0 ? (
                 <p style={{ textAlign: 'center' }}>No {label.toLowerCase()} found.</p>
             ) : (
-                <Table striped bordered hover responsive>
+                <Table
+                    striped
+                    bordered
+                    hover
+                    responsive
+                    style={{
+                        border: "1px solid rgba(255, 105, 180, 0.35)",
+                        borderRadius: "8px",
+                        overflow: "hidden",
+                    }}
+                >
                     <thead>
-                    <tr>
-                        <th>Author</th>
-                        <th>Location</th>
-                        <th>City</th>
-                        <th>Lead Type</th>
-                        <th>Phone</th>
-                        <th>Description</th>
-                        <th>Date</th>
+                    <tr
+                        style={{
+                            background: "linear-gradient(to right, black, steelblue, #ff0080)",
+                            color: "white",
+                            fontWeight: 700,
+                            textAlign: "center",
+                        }}
+                    >
+                        <th style={{ padding: "12px",color:'white' }}>Author</th>
+                        <th style={{ padding: "12px",color:'white' }}>Location</th>
+                        <th style={{ padding: "12px",color:'white' }}>City</th>
+                        <th style={{ padding: "12px",color:'white' }}>Lead Type</th>
+                        <th style={{ padding: "12px",color:'white' }}>Phone</th>
+                        <th style={{ padding: "12px",color:'white' }}>Description</th>
+                        <th style={{ padding: "12px",color:'white' }}>Date</th>
                     </tr>
                     </thead>
+
                     <tbody>
                     {data.map((lead, idx) => (
-                        <tr key={idx}>
+                        <tr
+                            key={idx}
+                            style={{
+                                borderLeft: "6px solid",
+                                borderImage:
+                                    "linear-gradient(to bottom, #ff0080, orange, steelblue) 1",
+                                cursor: "pointer",
+                                transition: "all 0.2s ease"
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background =
+                                    "linear-gradient(to right, rgba(255,0,128,0.05), rgba(30,144,255,0.05))";
+                                e.currentTarget.style.boxShadow =
+                                    "0 0 10px rgba(255,0,128,0.25)";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = "transparent";
+                                e.currentTarget.style.boxShadow = "none";
+                            }}
+                        >
                             <td>{lead.author}</td>
                             <td>{lead.location}</td>
                             <td>{lead.city}</td>
                             <td>{lead.lead_type}</td>
-                            <td>{lead.phone || '-'}</td>
+                            <td>{lead.phone || "-"}</td>
                             <td
                                 style={{
                                     maxWidth: 400,
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
+                                    whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    color: "steelblue",
+                                    fontWeight: 500,
+                                    cursor: lead.description ? "pointer" : "default",
+                                    textDecoration: lead.description ? "underline" : "none"
                                 }}
+                                onClick={() =>
+                                    lead.description && openDescription(lead.description)
+                                }
                             >
-                                {lead.description ? (
-                                    <span
-                                        style={{
-                                            color: 'teal',
-                                            textDecoration: 'underline',
-                                            cursor: 'pointer',
-                                        }}
-                                        onClick={() => openDescription(lead.description)}
-                                    >
-                                            {lead.description.length > 100
-                                                ? lead.description.slice(0, 100) + '...'
-                                                : lead.description}
-                                        </span>
-                                ) : (
-                                    '-'
-                                )}
+                                {lead.description
+                                    ? lead.description.length > 100
+                                        ? lead.description.slice(0, 100) + "..."
+                                        : lead.description
+                                    : "-"}
                             </td>
                             <td>
                                 {lead.timestamp
-                                    ? moment(lead.timestamp).format('M/D/YYYY')
-                                    : '-'}
+                                    ? moment(lead.timestamp).format("M/D/YYYY")
+                                    : "-"}
                             </td>
                         </tr>
                     ))}

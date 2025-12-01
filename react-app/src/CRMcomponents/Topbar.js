@@ -50,11 +50,12 @@ const Topbar = () => {
                     {localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).name : 'Guest'}
                 </p>
                 <Nav className="ms-auto">
+                    <Nav.Link onClick={() => handleNavigation('/calendar')}>Calendar</Nav.Link>
                     <Nav.Link onClick={() => handleNavigation('/subscribers')}>Subscribers</Nav.Link>
                     <Nav.Link onClick={() => handleNavigation('/lists')}>Lists</Nav.Link>
                     <Nav.Link onClick={() => handleNavigation('/campaigns')}>Email Campaigns</Nav.Link>
                     <Nav.Link onClick={() => handleNavigation('/emailqueued')}>Email Log</Nav.Link>
-                    <Nav.Link onClick={() => handleNavigation('/leads')}>Leads</Nav.Link>
+
 
 
             {/*        <Nav.Link onClick={() => handleNavigation('/app/signup')}>Sign Up</Nav.Link>*/}

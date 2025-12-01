@@ -13,6 +13,11 @@ import {
     Modal,
 } from "react-bootstrap";
 import logo from "../logo.png";
+import { toast } from 'react-toastify';
+import { useNavigate } from "react-router-dom";
+
+
+
 
 // ✅ Localhost backend (for development)
 // OLD:
@@ -29,6 +34,11 @@ const SMS_LEAD_BASE =
         ? "https://crm-function-app-5d4de511071d.herokuapp.com/server/lead_function/api"
         : "http://localhost:5000/server/lead_function/api";
 
+const EMAIL_LEAD_BASE=
+    process.env.NODE_ENV === "production"
+        ? "https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api"
+        : "http://localhost:5000/server/crm_function/api";
+
 
 
 
@@ -39,6 +49,13 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
     const [filtering, setFiltering] = useState(false);
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
+    const [autoEmailEnabled, setAutoEmailEnabled] = useState(false);
+    const [autoEmailType, setAutoEmailType] = useState("");
+    const [autoEmailTemplate, setAutoEmailTemplate] = useState(null);
+    const [showPreviewModal, setShowPreviewModal] = useState(false);
+
+
+
 
     // Modal state
     const [selectedCompany, setSelectedCompany] = useState(null);
@@ -47,6 +64,12 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
     const [showModal, setShowModal] = useState(false);
 // 💬 Chat modal state
     const [showChat, setShowChat] = useState(false);
+    const [showEmailModal, setShowEmailModal] = useState(false);
+    const [emailCompanyLeads, setEmailCompanyLeads] = useState([]);
+    const [selectedEmailLead, setSelectedEmailLead] = useState(null);
+    const [emailViewMode, setEmailViewMode] = useState("list"); // "list" or "detail"
+    const [emailMessage, setEmailMessage] = useState("");
+    const [emailCompanyName, setEmailCompanyName] = useState("");
     const [selectedLead, setSelectedLead] = useState(null);
     const [conversation, setConversation] = useState([]);
     const [chatMessage, setChatMessage] = useState("");
@@ -54,6 +77,23 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
     const [notifications, setNotifications] = useState([]);
     const [currentUserId, setCurrentUserId] = useState(null);
     const [companyName, setCompanyName] = useState("");
+    const [showTemplateSendModal, setShowTemplateSendModal] = useState(false);
+    const [templateHTML, setTemplateHTML] = useState("");
+    const [templateCategory, setTemplateCategory] = useState("");
+    const [sendToLead, setSendToLead] = useState(null);
+    const [archivedCampaigns, setArchivedCampaigns] = useState([]);
+    const [currentArchiveIndex, setCurrentArchiveIndex] = useState(0);
+
+
+    const navigate = useNavigate();
+    const currentCampaign = archivedCampaigns[currentArchiveIndex];
+
+
+
+
+
+
+
 
     useEffect(() => {
         const user = localStorage.getItem("user");
@@ -85,6 +125,106 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
     useEffect(() => {
         fetchLeadsSent();
     }, []);
+
+
+    async function loadArchivedCampaigns() {
+        try {
+            const user = JSON.parse(localStorage.getItem("user"));
+            const res = await axios.get(`${EMAIL_LEAD_BASE}/campaigns/user/${user.id}`);
+
+            const sorted = res.data.sort(
+                (a, b) => new Date(b.created_at) - new Date(a.created_at)
+            );
+
+            setArchivedCampaigns(sorted);
+        } catch (err) {
+            console.error("Error loading campaigns:", err);
+        }
+    }
+    async function sendArchivedCampaign(lead, campaign) {
+        if (!lead || !campaign) return alert("No lead or campaign selected");
+
+        const confirm = window.confirm(
+            `Send the "${campaign.name}" campaign to ${lead.author}?`
+        );
+
+        if (!confirm) return;
+
+        try {
+            await axios.post(`${API_BASE}/emailQueue/campaignsandtemplates`, {
+                lead_id: lead.id,
+                email: lead.email,
+                content: campaign.content,
+                campaign_id: campaign.id,
+            });
+
+            alert("Campaign sent successfully!");
+        } catch (err) {
+            console.error("Error sending campaign:", err);
+            alert("Failed to send campaign.");
+        }
+    }
+
+    async function viewEmailLeads(company) {
+        try {
+            setEmailCompanyName(company.company_name);
+            setShowEmailModal(true);
+            setModalLoading(true);
+
+            // ⭐ Load leads first
+            const res = await axios.get(
+                `${API_BASE}/leads/company/${encodeURIComponent(company.company_name)}`
+            );
+
+            setEmailCompanyLeads(
+                (res.data || []).map((lead) => ({
+                    ...lead,
+                    company_name: company.company_name
+                }))
+            );
+
+            setEmailViewMode("list");
+            setSelectedEmailLead(null);
+            setEmailMessage("");
+
+
+
+        } catch (err) {
+            console.error("Error loading email leads:", err);
+            alert("Failed to load leads for email.");
+        } finally {
+            setModalLoading(false);
+        }
+    }
+
+
+    async function loadAutoEmailTemplate(emailType) {
+        try {
+            const user = JSON.parse(localStorage.getItem("user"));
+
+            const response = await axios.get(
+                `${API_BASE}/templates`,
+                {
+                    params: {
+                        category: emailType,
+                        user_id: user.id
+                    }
+                }
+            );
+
+            if (response.data?.template?.content) {
+                setAutoEmailTemplate(response.data.template.content);
+                return true;
+            } else {
+                setAutoEmailTemplate(null);
+                return false;
+            }
+        } catch (err) {
+            console.error("Error loading auto-email template:", err);
+            return false;
+        }
+    }
+
 
     async function fetchLeadsSent() {
         try {
@@ -229,13 +369,7 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                     {notifications.length}
                 </div>
             )}
-            <div style={{ textAlign: 'center' }}>
-                <img src={logo} style={{ width: 80 }} alt="logo" />
-                <Form.Label style={{ marginTop: 10, color: 'steelblue' }}>
-                   Send Automated Emails to all your leads below, or
-                    just text them directly from your CRM.
-                </Form.Label>
-            </div>
+
             <h1
                 className="mb-4 text-center"
                 style={{
@@ -243,12 +377,230 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                     backgroundClip: "text",
-                    fontWeight: 800
+                    fontWeight: 800,
+                    textShadow: "0px 2px 4px rgba(0,0.1,0,0.1)"
+
                 }}
             >
-                {companyName}
+                {companyName} Dashboard
             </h1>
 
+            {loading ? (
+                <div className="text-center py-5">
+                    <Spinner animation="border" role="status" />
+                    <p className="mt-2">Loading lead data...</p>
+                </div>
+            ) : leads.length === 0 ? (
+                <p className="text-muted fst-italic text-center">
+                    No leads found for this period.
+                </p>
+            ) : (
+                <Row xs={1} md={2} lg={9} className="g-4">
+                    {leads
+                        .filter((company) => {
+                            // admin users 8 & 79 see ALL companies
+                            if (currentUserId === 8 || currentUserId === 79) return true;
+
+                            // if forced from parent, show only that company
+                            if (forceSingleCompany) {
+                                return company.company_name === forceSingleCompany;
+                            }
+
+                            // default: normal users only see THEIR company (matching their own company_name)
+                            const user = localStorage.getItem("user");
+                            if (!user) return false;
+
+                            const { company_name } = JSON.parse(user);
+                            return company.company_name === company_name;
+                        })
+                        .map((company) => (
+                            <Col
+                                key={company.company_name}
+                                style={{
+                                    display: currentUserId === 8 ? "flex" : "block"
+                                }}
+                            >
+
+                            <div
+                                    style={{
+                                        borderRadius: "20px",
+                                        border: "1em",
+                                        borderStyle: "solid"
+                                    }}
+                                >
+                                <Card className="h-100 shadow-sm" style={{border:'none'}}>
+                                    <div
+                                        style={{
+                                            width: "100%",
+                                            padding: "25px 0",
+                                            background: "linear-gradient(to right, black, steelblue, #ff0080, black)",
+                                            display: "flex",
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                            borderRadius: "0px"
+                                        }}
+                                    >
+                                        <img src={logo} style={{ width: 80 }} alt="logo" />
+                                        <h2
+                                            style={{
+                                                fontWeight: 900,
+                                                fontSize: "46px",
+                                                margin: 0,
+                                                color: "white",
+                                                textShadow: "0px 2px 4px rgba(0,0,0,0.3)",
+                                                textAlign:"center"
+                                            }}
+                                        >
+                                            Message Center
+                                        </h2>
+                                    </div>
+                                    <Card.Body>
+
+                                        <div style={{ textAlign: 'center' }}>
+
+
+                                            <Form.Label style={{ marginTop: 10, color: 'steelblue' }}>
+                                                Send Automated Emails or
+                                                just text your leads directly from here!
+                                            </Form.Label>
+                                        </div>
+
+
+
+                                        <Card.Text>
+                                            <strong
+                                                style={{
+                                                    background: "linear-gradient(to right, black, steelblue, #ff0080, black)",
+                                                    WebkitBackgroundClip: "text",
+                                                    WebkitTextFillColor: "transparent",
+                                                    backgroundClip: "text",
+                                                    fontWeight: 800
+                                                }}
+                                            >
+                                                {company.company_name} Total Leads: {company.total_leads}
+                                            </strong>
+
+
+                                            <br />
+
+                                            <strong
+                                                style={{
+                                                    background: "linear-gradient(to right, black, steelblue, #ff0080, black)",
+                                                    WebkitBackgroundClip: "text",
+                                                    WebkitTextFillColor: "transparent",
+                                                    backgroundClip: "text",
+                                                    fontWeight: 800
+                                                }}
+                                            >
+                                                Last Lead Generated: {" "}
+                                                {new Date(company.last_sent).toLocaleString()}
+                                            </strong>
+
+
+                                        </Card.Text>
+
+                                        <div className="d-grid gap-2">
+
+                                            {/* 1. Text Message Button (old #4 gradient) */}
+                                            <Button
+                                                onClick={() => viewLeads(company)}
+                                                style={{
+                                                    background: "linear-gradient(to right, #ff0080, orange)",
+                                                    border: "none",
+                                                    color: "white",
+                                                    fontWeight: 600,
+                                                    transition: "all 0.25s ease"
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.target.style.transform = "scale(1.04)";
+                                                    e.target.style.boxShadow = "0 4px 12px rgba(255, 128, 0, 0.45)";
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.target.style.transform = "scale(1)";
+                                                    e.target.style.boxShadow = "none";
+                                                }}
+                                            >
+                                                💬 Text Message Your Leads
+                                            </Button>
+
+                                            {/* 2. Email Button (old #3 gradient) */}
+                                            <Button
+                                                onClick={() => viewEmailLeads(company)}
+                                                style={{
+                                                    background: "linear-gradient(to right, steelblue, #ff0080)",
+                                                    border: "none",
+                                                    color: "white",
+                                                    fontWeight: 600,
+                                                    transition: "all 0.25s ease"
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.target.style.transform = "scale(1.04)";
+                                                    e.target.style.boxShadow = "0 4px 12px rgba(255, 0, 128, 0.45)";
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.target.style.transform = "scale(1)";
+                                                    e.target.style.boxShadow = "none";
+                                                }}
+                                            >
+                                                💬 Email Your Leads
+                                            </Button>
+
+                                            {/* 3. Tutorial Button (old #2 gradient) */}
+                                            <Button
+                                                onClick={() => sendTutorialEmail(company)}
+                                                style={{
+                                                    background: "linear-gradient(to right, purple, steelblue)",
+                                                    border: "none",
+                                                    color: "white",
+                                                    fontWeight: 600,
+                                                    transition: "all 0.25s ease"
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.target.style.transform = "scale(1.04)";
+                                                    e.target.style.boxShadow = "0 4px 12px rgba(128, 0, 255, 0.45)";
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.target.style.transform = "scale(1)";
+                                                    e.target.style.boxShadow = "none";
+                                                }}
+                                            >
+                                                🎓 View Tutorial on how to convert leads into sales
+                                            </Button>
+
+                                            {/* 4. Email Report Button (old #1 gradient) */}
+                                            <Button
+                                                onClick={() => sendReportEmail(company)}
+                                                style={{
+                                                    background: "linear-gradient(to right, black, steelblue)",
+                                                    border: "none",
+                                                    color: "white",
+                                                    fontWeight: 600,
+                                                    transition: "all 0.25s ease"
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.target.style.transform = "scale(1.04)";
+                                                    e.target.style.boxShadow = "0 4px 12px rgba(0, 128, 255, 0.45)";
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.target.style.transform = "scale(1)";
+                                                    e.target.style.boxShadow = "none";
+                                                }}
+                                            >
+                                                📧 Generate Email Report
+                                            </Button>
+
+                                        </div>
+
+
+
+                                    </Card.Body>
+                                </Card>
+                                </div>
+                            </Col>
+                        ))}
+
+                </Row>
+            )}
 
             <Form style={{display:'none'}} className="mb-4">
                 <Row className="align-items-end justify-content-center">
@@ -288,166 +640,153 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                 </Row>
             </Form>
 
-            {loading ? (
-                <div className="text-center py-5">
-                    <Spinner animation="border" role="status" />
-                    <p className="mt-2">Loading lead data...</p>
-                </div>
-            ) : leads.length === 0 ? (
-                <p className="text-muted fst-italic text-center">
-                    No leads found for this period.
-                </p>
-            ) : (
-                <Row xs={1} md={2} lg={3} className="g-4">
-                    {leads
-                        .filter((company) => {
-                            // admin users 8 & 79 see ALL companies
-                            if (currentUserId === 8 || currentUserId === 79) return true;
 
-                            // if forced from parent, show only that company
-                            if (forceSingleCompany) {
-                                return company.company_name === forceSingleCompany;
-                            }
-
-                            // default: normal users only see THEIR company (matching their own company_name)
-                            const user = localStorage.getItem("user");
-                            if (!user) return false;
-
-                            const { company_name } = JSON.parse(user);
-                            return company.company_name === company_name;
-                        })
-                        .map((company) => (
-                            <Col key={company.company_name}>
-                                <Card className="h-100 shadow-sm">
-                                    <Card.Body>
-                                        <Card.Title style={{textAlign:'center',fontStyle:'bold'}}><h3>Email and Text Conversations</h3></Card.Title>
-
-
-                                        <Card.Text>
-                                            <strong> {company.company_name} Total Leads:</strong> {company.total_leads}
-                                            <br />
-                                            <strong>Cities Subscribed To:</strong> {company.cities}
-                                            <br />
-                                            <strong>Last Lead Generated:</strong>{" "}
-                                            {new Date(company.last_sent).toLocaleString()}
-                                        </Card.Text>
-
-                                        <div className="d-grid gap-2">
-                                            <Button
-                                                variant="primary"
-                                                onClick={() => viewLeads(company)}
-                                            >
-                                                💬 Text Message Your Leads from your dashboard
-                                            </Button>
-                                            <Button
-                                                variant="primary"
-                                                onClick={() => viewLeads(company)}
-                                            >
-                                                💬 Email Your Leads from your dashboard
-                                            </Button>
-                                            <Button
-                                                variant="outline-primary"
-                                                onClick={() => sendReportEmail(company)}
-                                            >
-                                                📧 Generate Email Report to send to your company email
-                                            </Button>
-                                            <Button
-                                                variant="outline-success"
-                                                onClick={() => sendTutorialEmail(company)}
-                                            >
-                                                🎓 View Tutorial on how to convert leads into sales
-                                            </Button>
-                                        </div>
-                                    </Card.Body>
-                                </Card>
-                            </Col>
-                        ))}
-
-                </Row>
-            )}
 
             {/* 🔍 Modal for viewing company-specific leads */}
             <Modal
                 show={showModal}
                 onHide={() => setShowModal(false)}
-                size="lg"
+                size="xl"
                 centered
+                style={{
+                    borderRadius: "12px",
+                    overflow: "hidden",
+                    maxWidth: "90vw"
+                }}
             >
-                <Modal.Header closeButton>
-                    <Modal.Title>
-                        Leads for {selectedCompany || "Company"}
+                {/* 🔥 Gradient Modal Header */}
+                <Modal.Header
+                    closeButton
+                    style={{
+                        background: "linear-gradient(to right, black, steelblue, #ff0080, orange)",
+                        color: "white",
+                        borderBottom: "none",
+                    }}
+                >
+                    <Modal.Title style={{ fontWeight: 800 }}>
+                     Text Message Leads for {selectedCompany || "Company"}
                     </Modal.Title>
                 </Modal.Header>
-                <Modal.Body>
-                    {modalLoading ? (
+
+                {/* MODAL BODY */}
+                <Modal.Body
+                    style={{
+                        maxHeight: "70vh",
+                        overflowY: "auto",
+                        background: "#fafafa"
+                    }}
+                >
+
+                {modalLoading ? (
                         <div className="text-center py-4">
                             <Spinner animation="border" />
                         </div>
                     ) : companyLeads.length === 0 ? (
                         <p>No leads found for this company.</p>
                     ) : (
-                        <Table striped bordered hover>
-                            <thead>
-                            <tr>
-                                <th>Actions</th>
-                                <th>Name</th>
-                                <th>Type</th>
-                                <th>City</th>
-                                <th>State</th>
-                                <th>Phone</th>
-                                <th>Description</th>
-                                <th>Date</th>
 
+                        <Table
+                            striped
+                            bordered
+                            hover
+                            responsive
+                            style={{
+                                border: "1px solid rgba(255, 105, 180, 0.35)",
+                                borderRadius: "8px",
+                                overflow: "hidden"
+                            }}
+
+                        >
+                            <thead>
+                            <tr
+                                style={{
+                                    background: "linear-gradient(to right, black, steelblue, #ff0080)",
+                                    color: "white",        // ← ensures column names are white
+                                    fontWeight: 700,
+                                    textAlign: "center"
+                                }}
+                            >
+                                <th style={{ padding: "12px", color: "white" }}>Actions</th>
+                                <th style={{ padding: "12px", color: "white" }}>Name</th>
+                                <th style={{ padding: "12px", color: "white" }}>Type</th>
+                                <th style={{ padding: "12px", color: "white" }}>City</th>
+                                <th style={{ padding: "12px", color: "white" }}>State</th>
+                                <th style={{ padding: "12px", color: "white" }}>Phone</th>
+                                <th style={{ padding: "12px", color: "white" }}>Description</th>
+                                <th style={{ padding: "12px", color: "white" }}>Date</th>
                             </tr>
                             </thead>
+
+
                             <tbody>
-                            {companyLeads.map((lead, i) => {
-                                console.log("LEAD OBJECT:", lead);   //  ← ADD THIS LINE
+                            {companyLeads.map((lead, i) => (
+                                <tr
+                                    key={i}
+                                    style={{
+                                        borderLeft: "6px solid",
+                                        borderImage:
+                                            "linear-gradient(to bottom, #ff0080, orange, steelblue) 1",
+                                        cursor: "pointer",
+                                        transition: "all 0.2s ease"
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.background =
+                                            "linear-gradient(to right, rgba(255,0,128,0.05), rgba(30,144,255,0.05))";
+                                        e.currentTarget.style.boxShadow =
+                                            "0 0 10px rgba(255,0,128,0.25)";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.background = "transparent";
+                                        e.currentTarget.style.boxShadow = "none";
+                                    }}
+                                >
+                                    <td>
+                                        <div className="d-flex gap-2">
+                                            <Button
+                                                variant="outline-primary"
+                                                size="sm"
+                                                onClick={() => sendLeadMessage(lead)}
+                                            >
+                                                💬Send A.I. Generated Message
+                                            </Button>
+                                            <Button
+                                                variant="outline-secondary"
+                                                size="sm"
+                                                onClick={() => openConversation(lead)}
+                                            >
+                                                🗨️ Open Chat
+                                            </Button>
+                                        </div>
+                                    </td>
 
-                                return (
-                                    <tr key={i}>
-                                        <td>
-                                            <div className="d-flex gap-2">
-                                                <Button
-                                                    variant="outline-primary"
-                                                    size="sm"
-                                                    onClick={() => sendLeadMessage(lead)}
-                                                >
-                                                    💬 Message
-                                                </Button>
-                                                <Button
-                                                    variant="outline-secondary"
-                                                    size="sm"
-                                                    onClick={() => openConversation(lead)}
-                                                >
-                                                    🗨️ Open Chat
-                                                </Button>
-                                            </div>
-                                        </td>
-
-                                        <td>{lead.author}</td>
-                                        <td>{lead.lead_type}</td>
-                                        <td>{lead.city}</td>
-                                        <td>{lead.state}</td>
-                                        <td>{lead.phone || "—"}</td>
-                                        <td>{lead.description || "—"}</td>
-                                        <td>{new Date(lead.post_date).toLocaleDateString()}</td>
-                                    </tr>
-                                );
-                            })}
-
+                                    <td>{lead.author}</td>
+                                    <td>{lead.lead_type}</td>
+                                    <td>{lead.city}</td>
+                                    <td>{lead.state}</td>
+                                    <td>{lead.phone || "—"}</td>
+                                    <td>{lead.description || "—"}</td>
+                                    <td>{new Date(lead.post_date).toLocaleDateString()}</td>
+                                </tr>
+                            ))}
                             </tbody>
                         </Table>
                     )}
                 </Modal.Body>
-                {/* 💬 Chat Modal for Lead Conversation */}
+
+                {/* SECOND MODAL (CHAT) */}
                 <Modal
                     show={showChat}
                     onHide={() => setShowChat(false)}
                     size="lg"
                     centered
                 >
-                    <Modal.Header closeButton>
+                    <Modal.Header
+                        closeButton
+                        style={{
+                            background: "linear-gradient(to right, #ff0080, steelblue)",
+                            color: "white",
+                        }}
+                    >
                         <Modal.Title>
                             Conversation with {selectedLead?.author || "Lead"}
                         </Modal.Title>
@@ -471,7 +810,10 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                                     }`}
                                     style={{ maxWidth: "75%" }}
                                 >
-                                    <small className="d-block text-muted" style={{ fontSize: "0.7rem" }}>
+                                    <small
+                                        className="d-block text-muted"
+                                        style={{ fontSize: "0.7rem" }}
+                                    >
                                         {new Date(msg.created_at).toLocaleTimeString()}
                                     </small>
                                     <div>{msg.message_body}</div>
@@ -480,10 +822,13 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                         )}
                     </Modal.Body>
 
-                    <Modal.Footer as="form" onSubmit={(e) => {
-                        e.preventDefault();
-                        sendReply();
-                    }}>
+                    <Modal.Footer
+                        as="form"
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            sendReply();
+                        }}
+                    >
                         <Form.Control
                             type="text"
                             placeholder="Type your reply..."
@@ -495,12 +840,499 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                             Send
                         </Button>
                     </Modal.Footer>
-
-
-
                 </Modal>
-
             </Modal>
+
+            <Modal
+                show={showEmailModal}
+                onHide={() => setShowEmailModal(false)}
+                size="xl"
+                centered
+                dialogClassName="email-modal-width"
+            >
+                {/* Gradient header */}
+                <Modal.Header
+                    closeButton
+                    style={{
+                        background: "linear-gradient(to right, steelblue, #ff0080, orange)",
+                        color: "white",
+                        borderBottom: "none",
+                    }}
+                >
+                    <Modal.Title style={{ fontWeight: 800 }}>
+                        Email Leads for {emailCompanyName || "Company"}
+                    </Modal.Title>
+                </Modal.Header>
+
+                <Modal.Body
+                    style={{
+                        maxHeight: "70vh",
+                        overflowY: "auto",
+                        background: "#fafafa"
+                    }}
+                >
+                    <>{/* ⚡ AUTOMATED EMAIL SETTINGS */}
+                        <div
+                            style={{
+                                padding: "15px",
+                                marginBottom: "15px",
+                                background: "linear-gradient(to right, steelblue, #ff0080)",
+                                borderRadius: "8px",
+                                color: "white",
+                                boxShadow: "0 4px 10px rgba(0,0,0,0.3)"
+                            }}
+                        >
+                            <Form.Check
+                                type="checkbox"
+                                id="autoEmailsToggle"
+                                label="Turn Automated Emails On For All Leads"
+                                checked={autoEmailEnabled}
+                                onChange={(e) => setAutoEmailEnabled(e.target.checked)}
+                                style={{
+                                    fontWeight: 700,
+                                    marginBottom: autoEmailEnabled ? "10px" : "0"
+                                }}
+                            />
+
+                            {autoEmailEnabled && (
+                                <div style={{ marginLeft: "20px" }}>
+                                    {/* Monthly */}
+                                    <Form.Check
+                                        type="radio"
+                                        name="autoEmailType"
+                                        id="autoMonthly"
+                                        label="Automated Monthly"
+                                        value="Top of Mind"
+                                        checked={autoEmailType === "Top of Mind"}
+                                        onChange={async (e) => {
+                                            setAutoEmailType(e.target.value);
+                                            await loadAutoEmailTemplate(e.target.value);
+                                        }}
+                                    />
+
+                                    {/* Weekly */}
+                                    <Form.Check
+                                        type="radio"
+                                        name="autoEmailType"
+                                        id="autoWeekly"
+                                        label="Automated Weekly"
+                                        value="Opened Email Hot List"
+                                        checked={autoEmailType === "Opened Email Hot List"}
+                                        onChange={async (e) => {
+                                            setAutoEmailType(e.target.value);
+                                            await loadAutoEmailTemplate(e.target.value);
+                                        }}
+                                    />
+
+                                    {/* Opened Email */}
+                                    <Form.Check
+                                        type="radio"
+                                        name="autoEmailType"
+                                        id="autoOpened"
+                                        label="Automated Opened Email"
+                                        value="Opened Email List"
+                                        checked={autoEmailType === "Opened Email List"}
+                                        onChange={async (e) => {
+                                            setAutoEmailType(e.target.value);
+                                            await loadAutoEmailTemplate(e.target.value);
+                                        }}
+                                    />
+
+                                    {/* Preview Button */}
+                                    <Button
+                                        className="mt-3"
+                                        variant="light"
+                                        style={{ fontWeight: 700 }}
+                                        onClick={() => {
+                                            if (!autoEmailType) {
+                                                toast.error("Please choose an automated email type first.");
+                                                return;
+                                            }
+
+                                            if (!autoEmailTemplate) {
+                                                // No template exists → offer redirect to campaign creator
+                                                if (window.confirm(
+                                                    "No template exists yet. Would you like to create one?"
+                                                )) {
+                                                    navigate("/campaigns", { state: { selectWorkflow: autoEmailType } });
+                                                }
+                                            } else {
+                                                setShowPreviewModal(true);
+                                            }
+                                        }}
+                                    >
+                                        Preview Current Automated Email
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    </>
+                    {/* MODE: LIST – show table of leads */}
+                    {emailViewMode === "list" && (
+                        <>
+                            {modalLoading ? (
+                                <div className="text-center py-4">
+                                    <Spinner animation="border" />
+                                </div>
+                            ) : emailCompanyLeads.length === 0 ? (
+                                <p>No leads found for this company.</p>
+                            ) : (
+
+                                <Table
+                                    striped
+                                    bordered
+                                    hover
+                                    responsive
+                                    style={{
+                                        border: "1px solid rgba(255, 105, 180, 0.35)",
+                                        borderRadius: "8px",
+                                        overflow: "hidden"
+                                    }}
+                                >
+                                    <thead>
+                                    <tr
+                                        style={{
+                                            background:
+                                                "linear-gradient(to right, black, steelblue, #ff0080)",
+                                            color: "white",
+                                            fontWeight: 700,
+                                            textAlign: "center"
+                                        }}
+                                    >
+                                        <th style={{ padding: "12px", color: "white" }}>Actions</th>
+                                        <th style={{ padding: "12px", color: "white" }}>Name</th>
+                                        <th style={{ padding: "12px", color: "white" }}>Type</th>
+                                        <th style={{ padding: "12px", color: "white" }}>City</th>
+                                        <th style={{ padding: "12px", color: "white" }}>State</th>
+                                        <th style={{ padding: "12px", color: "white" }}>Phone</th>
+                                        <th style={{ padding: "12px", color: "white" }}>Description</th>
+                                        <th style={{ padding: "12px", color: "white" }}>Date</th>
+                                    </tr>
+                                    </thead>
+
+                                    <tbody>
+                                    {emailCompanyLeads.map((lead, i) => (
+                                        <tr
+                                            key={i}
+                                            style={{
+                                                borderLeft: "6px solid",
+                                                borderImage:
+                                                    "linear-gradient(to bottom, #ff0080, orange, steelblue) 1",
+                                                cursor: "pointer",
+                                                transition: "all 0.2s ease"
+                                            }}
+                                            // ⬇ click row switches into DETAIL mode
+                                            onClick={() => {
+                                                setSelectedEmailLead(lead);
+                                                setEmailViewMode("detail");
+                                                setEmailMessage("");
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.background =
+                                                    "linear-gradient(to right, rgba(255,0,128,0.05), rgba(30,144,255,0.05))";
+                                                e.currentTarget.style.boxShadow =
+                                                    "0 0 10px rgba(255,0,128,0.25)";
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.background = "transparent";
+                                                e.currentTarget.style.boxShadow = "none";
+                                            }}
+                                        >
+                                            <td>
+                                                <Button
+                                                    variant="outline-primary"
+                                                    size="sm"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedEmailLead(lead);
+                                                        setEmailViewMode("detail");
+                                                        setEmailMessage("");
+                                                        loadArchivedCampaigns()
+                                                    }}
+                                                >
+                                                    ✉️ Email
+                                                </Button>
+                                            </td>
+                                            <td>{lead.author}</td>
+                                            <td>{lead.lead_type}</td>
+                                            <td>{lead.city}</td>
+                                            <td>{lead.state}</td>
+                                            <td>{lead.phone || "—"}</td>
+                                            <td>{lead.description || "—"}</td>
+                                            <td>{new Date(lead.post_date).toLocaleDateString()}</td>
+                                        </tr>
+                                    ))}
+                                    </tbody>
+                                </Table>
+                            )}
+                        </>
+                    )}
+
+                    {/* MODE: DETAIL – show a single "email this lead" view, replacing table */}
+                    {emailViewMode === "detail" && selectedEmailLead && (
+                        <div>
+                            <Button
+                                variant="secondary"
+                                className="mb-3"
+                                onClick={() => setEmailViewMode("list")}
+                            >
+                                ← Back to All Leads
+                            </Button>
+
+                            <Card className="" style={{ border: "none",paddingTop:0,paddingBottom:0 }}>
+                                <h1
+                                    style={{
+                                        textAlign: "center",
+                                        fontWeight: 900,
+                                        background:
+                                            "linear-gradient(to right, steelblue, #ff0080, orange)",
+                                        WebkitBackgroundClip: "text",
+                                        WebkitTextFillColor: "transparent"
+                                    }}
+                                >
+                                     {selectedEmailLead.author}
+                                </h1>
+<hr/>
+                                <Row className="mt-3">
+
+                                    <Col md={6}>
+
+                                        {/* 🟪 Previous Campaigns Section */}
+                                        <div style={{ marginTop: "0px" }}>
+
+                                            {archivedCampaigns.length > 0 && currentCampaign && (
+                                                <div
+                                                    style={{
+                                                        border: "1px solid #ddd",
+                                                        padding: "20px",
+                                                        margin: "20px auto",
+                                                        borderRadius: "12px",
+                                                        background: "white",
+                                                        maxWidth: "700px",
+                                                        boxShadow: "0 4px 10px rgba(0,0,0,0.1)"
+                                                    }}
+                                                >
+                                                    <h3 style={{
+                                                        textAlign: "center",
+                                                        fontWeight: 900,
+                                                        fontSize: "32px",
+                                                        background: "linear-gradient(to right, steelblue, #ff0080, orange)",
+                                                        WebkitBackgroundClip: "text",
+                                                        WebkitTextFillColor: "transparent",
+                                                    }}>Send a current campaign template OR write a personal email below</h3>
+<hr/>
+                                                {/*    <h3 style={{
+                                                        textAlign: "center",
+                                                        marginBottom: "15px",
+                                                        background: "linear-gradient(to right, steelblue, #ff0080, orange)",
+                                                        WebkitBackgroundClip: "text",
+                                                        WebkitTextFillColor: "transparent",
+                                                        fontWeight: 900
+                                                    }}>
+                                                        {currentCampaign.name}
+                                                    </h3>*/}
+
+                                                    {/* HTML PREVIEW ALWAYS OPEN */}
+                                                    <div
+                                                        style={{
+                                                            border: "1px solid #eee",
+                                                            padding: "15px",
+                                                            borderRadius: "8px",
+                                                            background: "#fafafa",
+                                                            maxHeight: "400px",
+                                                            overflowY: "auto",
+                                                            marginBottom: "15px"
+                                                        }}
+                                                        dangerouslySetInnerHTML={{ __html: currentCampaign.content }}
+                                                    />
+
+                                                    {/* Send Button */}
+                                                    <Button
+                                                        variant="primary"
+                                                        style={{
+                                                            width: "100%",
+                                                            padding: "12px",
+                                                            fontWeight: 700,
+                                                            background: "linear-gradient(to right, #ff0080, steelblue)",
+                                                            border: "none"
+                                                        }}
+                                                        onClick={() => sendArchivedCampaign(selectedEmailLead, currentCampaign)}
+                                                    >
+                                                        Send to {selectedEmailLead?.author}
+                                                    </Button>
+
+                                                    {/* PAGINATION CONTROLS */}
+                                                    <div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>
+                                                        <Button
+                                                            variant="light"
+                                                            disabled={currentArchiveIndex === 0}
+                                                            onClick={() => setCurrentArchiveIndex((i) => i - 1)}
+                                                            style={{ marginRight: 10 }}
+                                                        >
+                                                            ← Previous
+                                                        </Button>
+
+                                                        {archivedCampaigns.map((_, idx) => (
+                                                            <Button
+                                                                key={idx}
+                                                                variant={idx === currentArchiveIndex ? "primary" : "outline-primary"}
+                                                                onClick={() => setCurrentArchiveIndex(idx)}
+                                                                style={{ margin: "0 4px" }}
+                                                            >
+                                                                {idx + 1}
+                                                            </Button>
+                                                        ))}
+
+                                                        <Button
+                                                            variant="light"
+                                                            disabled={currentArchiveIndex === archivedCampaigns.length - 1}
+                                                            onClick={() => setCurrentArchiveIndex((i) => i + 1)}
+                                                            style={{ marginLeft: 10 }}
+                                                        >
+                                                            Next →
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+
+
+                                        </div>
+
+{/*
+                                        <p><strong>Lead Type:</strong> {selectedEmailLead.lead_type}</p>
+*/}
+
+
+
+
+
+
+
+                                    </Col>
+                                    <Col md={6}>
+                                        <p>
+                                            <strong>Date:</strong>{" "}
+                                            {new Date(selectedEmailLead.post_date).toLocaleDateString()}
+                                        </p>
+                                        <p><strong>Description:</strong> {selectedEmailLead.description}</p>
+                                        <p><strong>Phone:</strong> {selectedEmailLead.phone || "—"}</p>
+                                        <p><strong>City:</strong> {selectedEmailLead.city}</p>
+                                        <p><strong>State:</strong> {selectedEmailLead.state}</p>
+
+                                    </Col>
+                                </Row>
+
+                                <Form className="mt-4">
+                                    <Form.Group controlId="emailMessage">
+                                        <Form.Label><strong>Compose a pesronalized Email Message</strong></Form.Label>
+                                        <Form.Control
+                                            as="textarea"
+                                            rows={8}
+                                            placeholder="Write your email to this lead..."
+                                            value={emailMessage}
+                                            onChange={(e) => setEmailMessage(e.target.value)}
+                                        />
+                                    </Form.Group>
+
+                                    <Button
+                                        className="mt-3"
+                                        variant="primary"
+                                        onClick={() => {
+                                            // TODO: wire this to your actual email API
+                                            console.log("Send email to lead:", selectedEmailLead.id, emailMessage);
+                                            alert("This is where your send-email API call will go.");
+                                        }}
+                                    >
+                                        Send Email
+                                    </Button>
+                                </Form>
+                            </Card>
+                        </div>
+                    )}
+                </Modal.Body>
+            </Modal>
+
+            <Modal
+                show={showPreviewModal}
+                onHide={() => setShowPreviewModal(false)}
+                size="lg"
+                centered
+            >
+                <Modal.Header closeButton>
+                    <Modal.Title>Preview: {autoEmailType}</Modal.Title>
+                </Modal.Header>
+
+                <Modal.Body style={{ maxHeight: "70vh", overflowY: "auto" }}>
+                    {autoEmailTemplate ? (
+                        <div
+                            className="p-3"
+                            style={{ background: "white", borderRadius: "8px" }}
+                            dangerouslySetInnerHTML={{ __html: autoEmailTemplate }}
+                        />
+                    ) : (
+                        <p className="text-muted">No template found.</p>
+                    )}
+                </Modal.Body>
+
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowPreviewModal(false)}>
+                        Close
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+            <Modal
+                show={showTemplateSendModal}
+                onHide={() => setShowTemplateSendModal(false)}
+                size="lg"
+                centered
+            >
+                <Modal.Header closeButton>
+                    <Modal.Title>
+                        Send {templateCategory} Email to {sendToLead?.author}
+                    </Modal.Title>
+                </Modal.Header>
+
+                <Modal.Body style={{ maxHeight: "70vh", overflowY: "auto" }}>
+                    {templateHTML ? (
+                        <div
+                            className="p-3"
+                            style={{
+                                background: "white",
+                                borderRadius: "8px",
+                                boxShadow: "0 0 10px rgba(0,0,0,0.15)"
+                            }}
+                            dangerouslySetInnerHTML={{ __html: templateHTML }}
+                        />
+                    ) : (
+                        <p className="text-center text-muted">Loading template...</p>
+                    )}
+                </Modal.Body>
+
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowTemplateSendModal(false)}>
+                        Cancel
+                    </Button>
+
+                    <Button
+                        variant="primary"
+                        onClick={async () => {
+                            await axios.post(`${EMAIL_LEAD_BASE}/email/send-template-lead`, {
+                                lead: sendToLead,
+                                category: templateCategory
+                            });
+
+                            toast.success("Email sent successfully!");
+                            setShowTemplateSendModal(false);
+                        }}
+                    >
+                        Send Email
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+
+
         </Container>
     );
 }

@@ -104,7 +104,6 @@ const Dashboard = () => {
                     <hr/>
 <br/>
 
-                    <VideoOverlay />
 
                     {/* Second Card Section */}
                 </div>
