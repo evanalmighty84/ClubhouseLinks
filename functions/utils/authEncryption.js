@@ -1,11 +1,8 @@
 const crypto = require('crypto');
 
 // Define a static encryption key (32 bytes for AES-256). Example here uses a 32-byte hexadecimal string.
-/*
 const ENCRYPTION_KEY = Buffer.from('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef', 'hex'); // 64 hex characters
-*/
 // 32 bytes (256-bit key)
-const ENCRYPTION_KEY = Buffer.from(process.env.ENCRYPTION_KEY, 'base64');
 
 
 // Validate the key length to ensure it's correct
