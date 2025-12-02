@@ -505,6 +505,44 @@ Tone: casual, helpful, offer a quote if relevant.
 
 
 
+exports.testTexasSmsSend = async (req, res) => {
+    try {
+        const { to } = req.body;
+
+        if (!to) {
+            return res.status(400).json({
+                success: false,
+                error: "Missing 'to' phone number in request body"
+            });
+        }
+
+        console.log("📤 Testing Texas SMS send to:", to);
+
+        const msg = await client.messages.create({
+            to,
+            messagingServiceSid: texasMessagingServiceSid,
+            body: "This is a test SMS from the Texas Messaging Service 🚀"
+        });
+
+        return res.status(200).json({
+            success: true,
+            sid: msg.sid,
+            status: msg.status,
+            to: msg.to,
+            messagingServiceSid: texasMessagingServiceSid,
+            message: "Texas SMS sent successfully"
+        });
+
+    } catch (err) {
+        console.error("❌ Error testing Texas SMS send:", err);
+        return res.status(500).json({
+            success: false,
+            error: err.message
+        });
+    }
+};
+
+
 
 
 

@@ -5,6 +5,8 @@ const smsController = require('../controllers/smsController');
 // Existing
 router.post('/send', smsController.sendSMS);
 router.post('/texas', smsController.testTexasNumber);
+router.post('/test-send-texas', smsController.testTexasSmsSend);
+
 
 // ✅ NEW route
 router.get('/scheduled/:userId', smsController.getScheduledSMS);
