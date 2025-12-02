@@ -135,15 +135,21 @@ const SubscribersPage = () => {
                 return;
             }
 
-            const response = await fetch(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/templates/thankyou`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            const BASE_URL =
+                process.env.NODE_ENV === "production"
+                    ? "https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function"
+                    : "http://localhost:5000/server/crm_function";
+
+            const response = await fetch(`${BASE_URL}/api/templates/thankyou`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     subscriberId: subscriber.id,
                     userId: user.id,
-                    name: subscriber?.name, // Pass the name in the thank-you payload
+                    name: subscriber?.name,
                 }),
             });
+
 
             if (!response.ok) {
                 throw new Error('Failed to send thank-you email');

@@ -6,6 +6,9 @@ const { decryptPassword } = require('../utils/encryption');
 
 dotenv.config(); // Load environment variables from .env
 
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
+
 exports.sendThankYouTemplate = async (req, res) => {
     const { name, userId, subscriberId } = req.body;
 
@@ -63,14 +66,17 @@ exports.sendThankYouTemplate = async (req, res) => {
                 tls: { rejectUnauthorized: false },
             });
         } else {
-            console.log('Fallback: Using default Zoho SMTP settings...');
+            console.log('Fallback: Using default Gmail SMTP settings...');
             transporter = nodemailer.createTransport({
-                host: 'smtp.zoho.com',
-                port: 587,
-                secure: false, // Use STARTTLS
+                host: 'smtp.gmail.com',   // ✅ Gmail SMTP host
+                port: 587,                // ✅ Gmail TLS port
+                secure: false,            // STARTTLS (true for port 465 SSL)
                 auth: {
-                    user: process.env.EMAIL_USER, // Zoho email
-                    pass: process.env.EMAIL_PASS, // Zoho app-specific password
+                    user: EMAIL_USER,
+                    pass: EMAIL_PASS,     // must be an App Password
+                },
+                tls: {
+                    rejectUnauthorized: false,
                 },
             });
         }
@@ -262,12 +268,15 @@ exports.sendGoogleFormTerri = async (req, res) => {
             });
         } else {
             transporter = nodemailer.createTransport({
-                host: 'smtp.zoho.com',
-                port: 587,
-                secure: false,
+                host: 'smtp.gmail.com',   // ✅ Gmail SMTP host
+                port: 587,                // ✅ Gmail TLS port
+                secure: false,            // STARTTLS (true for port 465 SSL)
                 auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS,
+                    user: EMAIL_USER,
+                    pass: EMAIL_PASS,     // must be an App Password
+                },
+                tls: {
+                    rejectUnauthorized: false,
                 },
             });
         }
@@ -310,11 +319,12 @@ exports.sendGoogleFormJohn = async (req, res) => {
 
         // Step 1: Get thank-you template
         const templateResult = await pool.query(
-            `SELECT id AS template_id, content 
-             FROM templates 
-             WHERE user_id = $1 AND workflow = $2`,
-            [userId, 6]
+            `SELECT id AS template_id, content
+             FROM templates
+             WHERE user_id = $1 AND workflow::text = $2`,
+            [parseInt(userId, 10), "6"] // Workflow 6 as STRING, since DB stores it as VARCHAR
         );
+
 
         if (templateResult.rows.length === 0) {
             return res.status(404).json({ error: 'Thank-you template not found' });
