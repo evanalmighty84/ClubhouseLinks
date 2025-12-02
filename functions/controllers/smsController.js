@@ -1,5 +1,5 @@
 const dotenv = require('dotenv');
-const { client, messagingServiceSid } = require('../utils/twilioClient');
+const { client, messagingServiceSid , texasMessagingServiceSid } = require('../utils/twilioClient');
 const pool = require('../db/db');
 const nodemailer = require('nodemailer'); // if not already imported
 dotenv.config();
