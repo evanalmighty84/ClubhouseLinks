@@ -144,26 +144,47 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
     async function sendArchivedCampaign(lead, campaign) {
         if (!lead || !campaign) return alert("No lead or campaign selected");
 
-        const confirm = window.confirm(
-            `Send the "${campaign.name}" campaign to ${lead.author}?`
+        if (!lead.email) {
+            console.error("No email on this lead:", lead);
+            return alert("This lead does not have an email address.");
+        }
+
+        const confirmSend = window.confirm(
+            `Send the "${campaign.name}" campaign to ${lead.email}?`
         );
 
-        if (!confirm) return;
+        if (!confirmSend) return;
 
         try {
-            await axios.post(`${API_BASE}/emailQueue/campaignsandtemplates`, {
-                lead_id: lead.id,
-                email: lead.email,
-                content: campaign.content,
-                campaign_id: campaign.id,
-            });
+            const currentUser = JSON.parse(localStorage.getItem("user"));
+            const currentUserId = currentUser?.id;
 
-            alert("Campaign sent successfully!");
+            if (!currentUserId) {
+                return alert("Could not determine current user.");
+            }
+
+            await axios.post(
+                `${EMAIL_LEAD_BASE}/campaigns/send-to-lead/${campaign.id}`,
+                {
+                    userId: currentUserId,
+                    leadId: lead.id,
+                    email: lead.email,   // 👈 send directly to this lead's email
+                }
+            );
+
+            alert("Campaign sent to lead successfully!");
         } catch (err) {
-            console.error("Error sending campaign:", err);
-            alert("Failed to send campaign.");
+            console.error(
+                "Error sending campaign to lead:",
+                err.response?.data || err.message
+            );
+            alert("Failed to send campaign to this lead.");
         }
     }
+
+
+
+
 
     async function viewEmailLeads(company) {
         try {

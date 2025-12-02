@@ -6,6 +6,11 @@ import '../CRMstyles/CampaignContent.css';
 import Lottie from "lottie-react";
 import animationData from "../CRMcomponents/Animation - 1741235903291.json";
 
+// ✅ Base for ALL CRM (lists, campaigns, uploads, etc.)
+const EMAIL_LEAD_BASE =
+    process.env.NODE_ENV === "production"
+        ? "https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api"
+        : "http://localhost:5000/server/crm_function/api";
 
 // Utility function to generate the email preview HTML
 const preparePreviewData = (data) => {
@@ -21,11 +26,13 @@ const preparePreviewData = (data) => {
         images: preparedImages
     };
 };
+
+// ✅ Use base URL so this works on localhost + prod
 const uploadImageToNode = async (file) => {
     const formData = new FormData();
     formData.append('image', file);
 
-    const res = await fetch('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/upload', {
+    const res = await fetch(`${EMAIL_LEAD_BASE}/upload`, {
         method: 'POST',
         body: formData
     });
@@ -33,7 +40,6 @@ const uploadImageToNode = async (file) => {
     const data = await res.json();
     return data.url; // will be used in images[]
 };
-
 
 const generatePreviewHTML = (category, data) => {
     const formattedContactInfo = (data.contactInfo || '').replace(/\n/g, '<br>');
@@ -79,17 +85,14 @@ const generatePreviewHTML = (category, data) => {
         <p style="text-align: center; color: gray;">${formattedContactInfo}</p>
         <footer style="text-align: center; color: gray;"></footer>
         ${(data.attachments || []).map((url, index) => `
-    <p style="text-align:center;">
-        <a href="${url}" target="_blank">Download Attachment ${index + 1}</a>
-    </p>
-`).join('')}
-
+            <p style="text-align:center;">
+                <a href="${url}" target="_blank">Download Attachment ${index + 1}</a>
+            </p>
+        `).join('')}
     </div>`;
 };
 
-
-
-const CampaignCreate = ({ campaigns, selectedCategory,aiResponse }) => {
+const CampaignCreate = ({ campaigns, selectedCategory, aiResponse }) => {
     const [activeTab, setActiveTab] = useState('details');
     const [campaignData, setCampaignData] = useState({
         name: '',
@@ -98,8 +101,8 @@ const CampaignCreate = ({ campaigns, selectedCategory,aiResponse }) => {
         contactInfo: '',
         website: '',
         pitch: '',
-        emailBodies: selectedCategory === 'Sale' ? [''] : ['', '', '', ''], // Adjusted initialization
-        images: selectedCategory === 'Sale' ? [''] : ['', '', '', ''], // Adjusted initialization
+        emailBodies: selectedCategory === 'Sale' ? [''] : ['', '', '', ''],
+        images: selectedCategory === 'Sale' ? [''] : ['', '', '', ''],
         listIds: [],
     });
     const [userLists, setUserLists] = useState([]);
@@ -110,22 +113,20 @@ const CampaignCreate = ({ campaigns, selectedCategory,aiResponse }) => {
     const navigate = useNavigate();
     const itemsPerPage = 5;
     const [useFileUpload, setUseFileUpload] = useState(false);
-    const [searchModalQuery, setSearchModalQuery] = useState(''); // For modal search
+    const [searchModalQuery, setSearchModalQuery] = useState('');
     const [showAnimation, setShowAnimation] = useState(true);
     const placeholderImage = 'https://res.cloudinary.com/drna15e8q/image/upload/v1764358549/envelope-clipart-envelope_a8ld9s.svg';
-    const [imageLoaded, setImageLoaded] = useState(false); // Track if the image has loaded
+    const [imageLoaded, setImageLoaded] = useState(false);
 
-// Filtered lists based on search query
+    // Filtered lists based on search query (modal)
     const filteredModalLists = userLists.filter((list) =>
         list.name.toLowerCase().includes(searchModalQuery.toLowerCase())
     );
 
-    const [searchQuery, setSearchQuery] = useState(''); // State for search input
-    const [filteredLists, setFilteredLists] = useState([]); // Filtered lists for display
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filteredLists, setFilteredLists] = useState([]);
 
-// ---------------------------
-// PREFILL FROM AI RESPONSE
-// ---------------------------
+    // PREFILL FROM AI RESPONSE
     useEffect(() => {
         if (!aiResponse) return;
 
@@ -160,32 +161,35 @@ const CampaignCreate = ({ campaigns, selectedCategory,aiResponse }) => {
         }
     }, [aiResponse]);
 
-
+    // Lottie → image transition
     useEffect(() => {
-        // Set a timeout to switch to the image after 5 seconds
         const timer = setTimeout(() => {
-            setShowAnimation(false); // Switch to image after 5 seconds
+            setShowAnimation(false);
         }, 8000);
         return () => clearTimeout(timer);
     }, []);
+
+    // Filter userLists based on search query (main list selector)
     useEffect(() => {
-        // Filter userLists based on search query
         const filtered = userLists.filter((list) =>
             list.name.toLowerCase().includes(searchQuery.toLowerCase())
         );
         setFilteredLists(filtered);
-    }, [searchQuery, userLists]); // Runs when searchQuery or userLists changes
-
+    }, [searchQuery, userLists]);
 
     const isSale = selectedCategory === 'Sale';
 
+    // ✅ Fetch user lists via LISTS controller (dev/prod safe)
     useEffect(() => {
         const fetchUserLists = async () => {
             try {
-                const userId = JSON.parse(localStorage.getItem('user')).id;
-                const response = await axios.get(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/lists/user/${userId}`);
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (!user) return;
+
+                const response = await axios.get(
+                    `${EMAIL_LEAD_BASE}/lists/user/${user.id}`
+                );
                 setUserLists(response.data);
-                console.log(userLists.toString(),'here is the user list')
             } catch (error) {
                 console.error('Error fetching lists:', error);
                 setUserLists([]);
@@ -200,7 +204,7 @@ const CampaignCreate = ({ campaigns, selectedCategory,aiResponse }) => {
     };
 
     const handleImageLoad = () => {
-        setImageLoaded(true); // Set imageLoaded to true once the image is fully loaded
+        setImageLoaded(true);
     };
 
     const handleArrayInputChange = (index, type, value) => {
@@ -215,15 +219,26 @@ const CampaignCreate = ({ campaigns, selectedCategory,aiResponse }) => {
     };
 
     const handleEditLists = (campaign) => {
-        setSelectedCampaign(campaign); // Set the selected campaign
-        setSelectedCampaignLists(campaign.listIds); // Populate the selected lists
-        setShowModal(true); // Show the modal
+        setSelectedCampaign(campaign);
+        setSelectedCampaignLists(campaign.listIds || []);
+        setShowModal(true);
     };
+
+    // ✅ Save lists for an archived campaign → PUT /campaigns/:id with { list_ids }
     const handleSaveLists = async () => {
+        if (!selectedCampaign) return;
+
         try {
-            const updatedCampaign = { ...selectedCampaign, listIds: selectedCampaignLists };
-            await axios.put(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/campaigns/${selectedCampaign.id}`, updatedCampaign);
-            setShowModal(false); // Close the modal
+            const payload = {
+                list_ids: (selectedCampaignLists || []).map((id) => parseInt(id, 10)),
+            };
+
+            await axios.put(
+                `${EMAIL_LEAD_BASE}/campaigns/${selectedCampaign.id}`,
+                payload
+            );
+
+            setShowModal(false);
             alert('Campaign lists updated successfully!');
         } catch (error) {
             console.error('Error updating campaign lists:', error);
@@ -231,77 +246,79 @@ const CampaignCreate = ({ campaigns, selectedCategory,aiResponse }) => {
         }
     };
 
-
+    // ✅ Create/send campaign → POST /campaigns/create
     const handleCreateCampaign = async (e) => {
         e.preventDefault();
 
         try {
-            const user = JSON.parse(localStorage.getItem('user')); // Get current user
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) {
+                alert('User not found in localStorage');
+                return;
+            }
 
-            // 🔁 Upload images if they are File objects
+            // Upload images if they are File objects
             const uploadedImages = await Promise.all(
                 campaignData.images.map(async (img) => {
                     if (img instanceof File) {
                         return await uploadImageToNode(img);
                     }
-                    return img; // it's already a URL
+                    return img;
                 })
             );
 
-            // ✅ Upload attachments if they are File objects
+            // Upload attachments if they are File objects
             const uploadedAttachments = await Promise.all(
                 (campaignData.attachments || []).map(async (file) => {
                     if (file instanceof File) {
                         const formData = new FormData();
-                        formData.append('image', file); // using same endpoint
-                        const res = await fetch('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/upload', {
+                        formData.append('image', file); // same /upload endpoint
+                        const res = await fetch(`${EMAIL_LEAD_BASE}/upload`, {
                             method: 'POST',
                             body: formData
                         });
                         const data = await res.json();
                         return data.url;
                     }
-                    return file; // already a URL
+                    return file;
                 })
             );
 
-            // ✨ Build new campaignData with uploaded assets
             const finalData = {
                 ...campaignData,
                 images: uploadedImages,
                 attachments: uploadedAttachments
             };
 
-            // 🔥 Generate preview HTML with real image URLs
+            const listIdsAsInts = (finalData.listIds || []).map((id) => parseInt(id, 10));
+
             const campaignToSubmit = {
-                ...finalData,
-                userId: user.id,
+                name: finalData.name,
+                subject: finalData.subject,
+                from_address: finalData.fromAddress || 'noreply@user@yoursite.com',
+                listIds: listIdsAsInts,
                 content: generatePreviewHTML(selectedCategory, finalData),
+                userId: user.id,
+                attachments: finalData.attachments || [],
                 status: 'sent',
                 scheduledDate: null
             };
 
-            // 🚀 Submit to backend
-            const response = await axios.post('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/campaigns/create', campaignToSubmit);
+            const response = await axios.post(
+                `${EMAIL_LEAD_BASE}/campaigns/create`,
+                campaignToSubmit
+            );
+
             console.log('Campaign created successfully:', response.data);
-
-            // ✅ Navigate away
             navigate('/dashboard');
-
         } catch (error) {
             console.error('Error creating campaign:', error);
             alert('Failed to create the campaign.');
         }
     };
 
-
-
-
-
-
     const getCampaignLists = (listIds = []) => {
-        // Ensure listIds is always an array
-        return listIds
+        return (listIds || [])
             .map((id) => {
                 const list = userLists.find((list) => list.id === id);
                 return list ? list.name : `List ID: ${id}`;
@@ -309,15 +326,20 @@ const CampaignCreate = ({ campaigns, selectedCategory,aiResponse }) => {
             .join(', ');
     };
 
+    // ✅ “Run Again” → POST /campaigns/send/:id with { userId }
     const handleRunCampaignAgain = async (campaignId) => {
         try {
-            // Fetch the existing campaign data
-            const response = await axios.get(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/campaigns/${campaignId}`);
-            const campaignData = response.data;
-            const userId = JSON.parse(localStorage.getItem('user')).id;
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) {
+                alert('User not found in localStorage');
+                return;
+            }
 
-            // Resend the campaign
-            await axios.post(`https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/campaigns/send/${campaignId}`, { ...campaignData, userId });
+            await axios.post(
+                `${EMAIL_LEAD_BASE}/campaigns/send/${campaignId}`,
+                { userId: user.id }
+            );
+
             alert('Campaign sent successfully!');
         } catch (error) {
             console.error('Error resending campaign:', error);
@@ -331,12 +353,6 @@ const CampaignCreate = ({ campaigns, selectedCategory,aiResponse }) => {
         <html>
             <head>
                 <title>Campaign Preview</title>
-                <style>
-           /*         body {
-                        font-family: Arial, sans-serif;
-                        padding: 20px;
-                    }*/
-                </style>
             </head>
             <body>
                 ${htmlContent}
@@ -351,13 +367,14 @@ const CampaignCreate = ({ campaigns, selectedCategory,aiResponse }) => {
     const currentCampaigns = campaigns.slice(indexOfFirstItem, indexOfLastItem);
     const totalPages = Math.ceil(campaigns.length / itemsPerPage);
 
-
-
-
-// Handle page change
     const handlePageChange = (pageNumber) => {
         setCurrentPage(pageNumber);
     };
+
+    // ⬇️ your JSX/return continues here as you already have:
+    // const previewData = preparePreviewData(campaignData);
+    // return ( ... );
+
     const previewData = preparePreviewData(campaignData);
     return (
         <div className="campaign-create-container p-4" style={{

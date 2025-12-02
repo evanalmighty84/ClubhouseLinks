@@ -65,11 +65,12 @@ exports.getCompanyLeads = async (req, res) => {
                 f.state,
                 f.lead_type,
                 f.phone,
+                f.email,                     -- 🔥 Add this
+                f.physical_address,          -- (optional, nice to have)
                 f.description,
                 COALESCE(n.timestamp, f.scraped_at) AS post_date
             FROM familytreenow f
-                     LEFT JOIN nextdoor_messages n
-                               ON f.lead_id = n.id
+                     LEFT JOIN nextdoor_messages n ON f.lead_id = n.id
             WHERE f.company_name @> ARRAY[$1]
               AND f.lead_sent = TRUE
             ORDER BY post_date DESC;
@@ -83,6 +84,7 @@ exports.getCompanyLeads = async (req, res) => {
         res.status(500).json({ error: "Failed to retrieve company leads" });
     }
 };
+
 
 
 
