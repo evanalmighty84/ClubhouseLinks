@@ -169,6 +169,7 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                     userId: currentUserId,
                     leadId: lead.id,
                     email: lead.email,   // 👈 send directly to this lead's email
+                    name: lead.author || lead.name || "Lead"
                 }
             );
 

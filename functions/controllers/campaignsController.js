@@ -178,7 +178,7 @@ exports.sendCampaignToLead = async (req, res) => {
     try {
         // 🔹 Make sure we have a clean integer id
         const campaignId = parseInt(req.params.id, 10);
-        const { userId, email } = req.body;
+        const { userId, email, name } = req.body;
 
         if (!campaignId || !userId || !email) {
             console.log('❌ Missing fields in sendCampaignToLead:', {
@@ -269,7 +269,8 @@ exports.sendCampaignToLead = async (req, res) => {
              VALUES ($1, $2, $3, NOW(), NOW())
                  ON CONFLICT (email, user_id) DO NOTHING
             `,
-            ["Lead", email, userId]
+            [name || "Lead", email, userId]
+
         );
 
         return res.status(200).json({
