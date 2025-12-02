@@ -4,25 +4,7 @@ const smsController = require('../controllers/smsController');
 
 // Existing
 router.post('/send', smsController.sendSMS);
-// Test endpoint for Texas Messaging Service
-exports.testTexasNumber = async (req, res) => {
-    try {
-        console.log("🔵 Texas Messaging Service test endpoint hit");
-
-        return res.status(200).json({
-            success: true,
-            message: "Texas Messaging Service is active and reachable."
-        });
-
-    } catch (err) {
-        console.error("❌ Error in testTexasNumber:", err);
-        return res.status(500).json({
-            success: false,
-            error: "Internal server error"
-        });
-    }
-};
-
+router.post('/texas', smsController.testTexasNumber);
 
 // ✅ NEW route
 router.get('/scheduled/:userId', smsController.getScheduledSMS);
