@@ -172,23 +172,27 @@ exports.sendLeadSummaries = async (req, res) => {
             </p>
 
             <!-- ⭐ NEW SECTION ADDED BELOW ⭐ -->
+<!-- ⭐ UPDATED TUTORIAL SECTION ⭐ -->
 
-            <h3 style="margin-top: 24px;">See tutorial on how to get the most Return On Investment from your hot leads:</h3>
+<h3 style="margin-top: 24px; text-align: center; color: hotpink;">
+    Click the links below to see how to get the most return on investment from your Clubhouse Links CRM hot leads.
+</h3>
 
-            <div style="text-align:center; margin-top: 12px;">
-                <img src="https://res.cloudinary.com/duz4vhtcn/image/upload/v1765155432/phonecall_odl0ou.webp"
-                     alt="Phone Call Tutorial"
-                     style="max-width: 400px; width: 100%; border-radius: 8px;">
-            </div>
+<div style="text-align:center; margin-top: 12px;">
+    <img src="https://res.cloudinary.com/duz4vhtcn/image/upload/v1765155432/phonecall_odl0ou.webp"
+         alt="Phone Call Tutorial"
+         style="max-width: 400px; width: 100%; border-radius: 8px;">
+</div>
 
-            <p style="text-align:center; margin-top: 12px;">
-                <a href="https://www.canva.com/design/DAG6PZLvpUE/Fl6hv33MDHcHOQ8nPeCA9Q/view?utm_content=DAG6PZLvpUE&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=hd30cbe3f30"
-                   style="font-size: 18px; color: #007bff; text-decoration: none;">
-                    Click here to view tutorial
-                </a>
-            </p>
+<p style="text-align:center; margin-top: 12px;">
+    <a href="https://www.canva.com/design/DAG6PZLvpUE/Fl6hv33MDHcHOQ8nPeCA9Q/view?utm_content=DAG6PZLvpUE&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=hd30cbe3f30"
+       style="font-size: 18px; color: orange; text-decoration: none; font-weight: bold;">
+        Click here to view the video tutorial
+    </a>
+</p>
 
-            <!-- ⭐ END NEW SECTION ⭐ -->
+<!-- ⭐ END UPDATED SECTION ⭐ -->
+
         `;
 
         await sendEmail(to, `Your Lead Summary Report — ${company_name}`, html);
