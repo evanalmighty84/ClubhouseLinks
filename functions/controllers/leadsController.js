@@ -174,8 +174,8 @@ exports.sendLeadSummaries = async (req, res) => {
             <!-- ⭐ NEW SECTION ADDED BELOW ⭐ -->
 <!-- ⭐ UPDATED TUTORIAL SECTION ⭐ -->
 
-<h3 style="margin-top: 24px; text-align: center; color: hotpink;">
-    Click the links below to see how to get the most return on investment from your Clubhouse Links CRM hot leads.
+<h3 style="margin-top: 24px; text-align: center; color:#ff0080;">
+    Click the link below to see how to get the most return on investment from your Clubhouse Links CRM hot leads.
 </h3>
 
 <div style="text-align:center; margin-top: 12px;">
