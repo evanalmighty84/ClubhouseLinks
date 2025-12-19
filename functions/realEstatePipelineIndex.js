@@ -1,15 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
-const nextDoorRoutes = require('./routes/nextDoorRoutes');
-const templatesRoutes = require('./routes/templatesRoutes')
-const poolRoutes = require('./routes/poolRoutes')
-const leadRoutes = require('./routes/leadRoutes')
-const smsRoutes = require('./routes/smsRoutes')
-const reportsRoutes = require('./routes/reportRoutes')
-
-
-
+const dotenv = require('dotenv');const agentPipelineEmailRoutes = require("./routes/agentPipelineEmailRoutes");
 const path = require('path');
 
 // Initialize express app
@@ -35,20 +26,10 @@ app.use(express.json({ limit: '5mb' }));
 
 // Authentication Routes
 
-app.use('/api/pool', poolRoutes); // Pool routes
-
-app.use('/api/smsqueue', smsRoutes);
-
-app.use('/api/templates', templatesRoutes);
-
-app.use('/api/nextdoor', nextDoorRoutes);
-
-app.use('/api/reports', reportsRoutes);
-
-app.use('/api/leads',leadRoutes);
+app.use('/api/agentpipelinecrm', agentPipelineEmailRoutes); // Pool routes
 
 app.use('/api/test', (req, res) => {
-    res.send('✅ CRM app is responding');
+    res.send('✅ Agent Pipeline app is responding');
 });
 
 

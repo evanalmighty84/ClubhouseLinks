@@ -5,10 +5,6 @@
 	"author": "evanligon7@gmail.com",
 	"scripts": {
 		"start": "node server.js",
-		"hotlist-cron": "node hotlist_cron/index.js",
-		"warmlist-cron": "node warmlist_cron/index.js",
-		"topofmind-cron": "node topofmind_cron/index.js",
-		"emailreport-cron": "node emailreport_cron/index.js",
 		"sendemail-cron": "node sendemail_cron/index.js",
 		"ionwave-cron": "node ionwave_cron/index.js",
 		"outlookcleaner_cron": "node outlookcleaner_cron/index.js",
