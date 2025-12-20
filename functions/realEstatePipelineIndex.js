@@ -19,9 +19,7 @@ app.use((req, res, next) => {
 });
 
 
-// Increase the JSON payload size to 5MB
 
-app.use(express.json({ limit: '5mb' }));
 // Increase the URL-encoded form data payload size to 5MB
 
 // Authentication Routes

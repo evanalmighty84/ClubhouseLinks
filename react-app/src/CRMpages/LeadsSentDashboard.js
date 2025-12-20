@@ -15,6 +15,8 @@ import {
 import logo from "../logo.png";
 import { toast } from 'react-toastify';
 import { useNavigate } from "react-router-dom";
+import IndustryReports from "./IndustryReports";
+
 
 
 
@@ -1352,6 +1354,9 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                 </Modal.Footer>
             </Modal>
 
+            {(currentUserId === 8 || currentUserId === 79) && (
+                <IndustryReports userId={currentUserId} />
+            )}
 
 
         </Container>
