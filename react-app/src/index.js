@@ -69,6 +69,7 @@ import PoolServiceHomepage from "./PoolService/PoolServiceHomePage";
 import ContactUs from "./components/landing-pages/ContactSection";
 import EmailLeadsSection from "./components/landing-pages/EmailLeadsSection";
 import PlumbingSection from "./components/landing-pages/PlumbingSection";
+import PrivacyPolicy from "./CRMpages/PrivacyPolicy";
 
 
 const stripePromise = loadStripe("pk_live_4s4TtIY6HXHbiKpHOoFGvQRf");
@@ -208,6 +209,7 @@ class App extends Component {
                             <Route path="/lists/:id/edit" element={<ProtectedRoute><ListForm /></ProtectedRoute>} />
                             <Route path="/signup" element={<SignUp />} />
                             <Route path="/signin" element={<CrmSignIn />} />
+                            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                             <Route path="/unsubscribe-success" element={<UnsubscribePage />} />
                             <Route path="*" element={<div style={{ padding: '2rem', color: 'red' }}>❌ 404 - Page Not Found</div>} />
                         </Routes>
