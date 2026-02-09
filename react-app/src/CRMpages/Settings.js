@@ -3,7 +3,7 @@ import { Form, Button, Col, Row, Tab, Nav, Card } from 'react-bootstrap';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import '../CRMstyles/Settings.css'; // Custom styles
-
+const LEAD_API_BASE = 'https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api';
 const API_BASE = 'https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api';
 
 const Settings = () => {
@@ -45,7 +45,7 @@ const Settings = () => {
 
     const fetchSubscriptionStatus = async (userId) => {
         try {
-            const res = await axios.get(`${API_BASE}/stripe/subscription/${userId}`);
+            const res = await axios.get(`${LEAD_API_BASE}/stripe/subscription/${userId}`);
             setSubscription(res.data);
         } catch (err) {
             console.error('Failed to load subscription:', err);
@@ -55,7 +55,7 @@ const Settings = () => {
     const handleSubscribe = async () => {
         try {
             setLoadingBilling(true);
-            const res = await axios.post(`${API_BASE}/stripe/checkout`, { userId });
+            const res = await axios.post(`${LEAD_API_BASE}/stripe/checkout`, { userId });
             window.location.href = res.data.url; // Stripe Checkout
         } catch (err) {
             toast.error('Failed to start subscription');
@@ -69,7 +69,7 @@ const Settings = () => {
 
         try {
             setLoadingBilling(true);
-            await axios.post(`${API_BASE}/stripe/cancel-subscription`, { userId });
+            await axios.post(`${LEAD_API_BASE}/stripe/cancel-subscription`, { userId });
             toast.success('Subscription canceled');
             fetchSubscriptionStatus(userId);
         } catch (err) {
