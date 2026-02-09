@@ -10,7 +10,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 
 
-const smsSessions = new Map(); // Simple in-memory session tracking
+
 
 /* ---------- helpers: canonicalization ---------- */
 

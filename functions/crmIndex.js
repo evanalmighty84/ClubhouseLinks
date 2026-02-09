@@ -19,6 +19,7 @@ const templatesRoutes = require('./routes/templatesRoutes')
 const workflowRoutes = require('./routes/workflowRoutes')
 const emailQueuedRoutes = require('./routes/emailQueuedRoutes')
 const smsRoutes = require('./routes/smsRoutes')
+const smsMobileRoutes = require('./routes/smsMobileRoutes')
 const paymentRoutes = require('./routes/paymentRoutes')
 const poolRoutes = require('./routes/poolRoutes')
 
@@ -71,6 +72,8 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/smtp', smtpRoutes);
 
 app.use('/api/smsqueue', smsRoutes);
+
+app.use('/api/smsmobilequeue', smsMobileRoutes);
 
 app.use('/api/payments', express.raw({ type: 'application/json' }), paymentRoutes);
 

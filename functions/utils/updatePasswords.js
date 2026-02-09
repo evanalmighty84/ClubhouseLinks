@@ -14,22 +14,29 @@ const pool = new Pool({
     }
 });
 
-const updatePasswords = async () => {
+const updatePasswordForUser974 = async () => {
     try {
+        const userId = 974;
+
         // Encrypt the new password
         const plainTextPassword = 'Godlovesme24!';
         const encryptedPassword = encryptPassword(plainTextPassword);
         console.log('Encrypted Password:', encryptedPassword);
 
-        // Update all users with the new encrypted password
+        // Update ONLY user 974
         const result = await pool.query(
-            'UPDATE users SET password_hash = $1',
-            [encryptedPassword]
+            'UPDATE users SET password_hash = $1 WHERE id = $2',
+            [encryptedPassword, userId]
         );
 
-        console.log(`Passwords updated for ${result.rowCount} users.`);
+        if (result.rowCount === 0) {
+            console.log('❌ No user found with id 974.');
+        } else {
+            console.log('✅ Password updated for user 974.');
+        }
+
     } catch (error) {
-        console.error('Error updating passwords:', error);
+        console.error('Error updating password for user 974:', error);
     } finally {
         await pool.end();
         console.log('Database connection closed.');
@@ -37,4 +44,4 @@ const updatePasswords = async () => {
 };
 
 // Run the script
-updatePasswords();
+updatePasswordForUser974();

@@ -7,6 +7,7 @@ const poolRoutes = require('./routes/poolRoutes')
 const leadRoutes = require('./routes/leadRoutes')
 const smsRoutes = require('./routes/smsRoutes')
 const reportsRoutes = require('./routes/reportRoutes')
+const paymentRoutes = require('./routes/paymentRoutes')
 
 
 
@@ -44,6 +45,8 @@ app.use('/api/templates', templatesRoutes);
 app.use('/api/nextdoor', nextDoorRoutes);
 
 app.use('/api/reports', reportsRoutes);
+
+app.use('/api/stripe',paymentRoutes);
 
 app.use('/api/leads',leadRoutes);
 

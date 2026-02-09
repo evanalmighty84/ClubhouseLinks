@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "author": "Sheila Flannery",
+    "city": "Rockwall",
+    "state": "TX",
+    "lead_type": "plumber",
+    "description": "Looking for a plumber to check a slow leak.",
+    "processed": false
+  },
+  {
+    "id": 2,
+    "author": "Mike Johnson",
+    "city": "Plano",
+    "state": "TX",
+    "lead_type": "roofer",
+    "description": "Need roof repair after recent storm.",
+    "processed": false
+  }
+]

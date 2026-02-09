@@ -1,0 +1,21 @@
+{
+  "+15551234567": {
+    "step": "AWAITING_START",
+    "leadIndex": 0,
+    "leads": [
+      {
+        "id": 101,
+        "author": "Sheila Flannery",
+        "city": "Rockwall",
+        "state": "TX",
+        "location": "Rockwall, TX",
+        "lead_type": "plumber",
+        "description": "Looking for a plumber to check a slow leak."
+      }
+    ],
+    "selectedLead": null,
+    "selectedRecordUrl": null,
+    "lastUpdated": "2026-01-15T22:15:00.000Z"
+  },
+  "activeLeadId": 1
+}

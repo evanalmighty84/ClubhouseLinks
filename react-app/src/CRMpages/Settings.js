@@ -21,6 +21,9 @@ const Settings = () => {
     // NEW: industries state
     const [industryOptions, setIndustryOptions] = useState([]);
     const [selectedIndustries, setSelectedIndustries] = useState([]);
+    const [subscription, setSubscription] = useState(null);
+    const [loadingBilling, setLoadingBilling] = useState(false);
+
 
     const userId = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).id : null;
 
@@ -31,6 +34,50 @@ const Settings = () => {
             // (Optional) if you add GET /users/:id/industries, preload selections here.
         }
     }, [userId]);
+
+    useEffect(() => {
+        if (userId) {
+            fetchSmtpSettings(userId);
+            fetchIndustryOptions().then(() => preloadUserIndustries(userId));
+            fetchSubscriptionStatus(userId);
+        }
+    }, [userId]);
+
+    const fetchSubscriptionStatus = async (userId) => {
+        try {
+            const res = await axios.get(`${API_BASE}/stripe/subscription/${userId}`);
+            setSubscription(res.data);
+        } catch (err) {
+            console.error('Failed to load subscription:', err);
+        }
+    };
+
+    const handleSubscribe = async () => {
+        try {
+            setLoadingBilling(true);
+            const res = await axios.post(`${API_BASE}/stripe/checkout`, { userId });
+            window.location.href = res.data.url; // Stripe Checkout
+        } catch (err) {
+            toast.error('Failed to start subscription');
+        } finally {
+            setLoadingBilling(false);
+        }
+    };
+
+    const handleCancelSubscription = async () => {
+        if (!window.confirm('Are you sure you want to cancel your subscription?')) return;
+
+        try {
+            setLoadingBilling(true);
+            await axios.post(`${API_BASE}/stripe/cancel-subscription`, { userId });
+            toast.success('Subscription canceled');
+            fetchSubscriptionStatus(userId);
+        } catch (err) {
+            toast.error('Failed to cancel subscription');
+        } finally {
+            setLoadingBilling(false);
+        }
+    };
 
     const fetchSmtpSettings = async (userId) => {
         try {
@@ -195,6 +242,15 @@ const Settings = () => {
                             <Nav.Item>
                                 <Nav.Link eventKey="industries">Update Industries</Nav.Link>
                             </Nav.Item>
+                            <div className="mt-4 mb-1 px-2 py-1 rounded" style={{ background: "#e8fff3" }}>
+                                <strong style={{ fontSize: "0.85rem", color: "#0f7a4a" }}>
+                                    Billing
+                                </strong>
+                            </div>
+
+                            <Nav.Item>
+                                <Nav.Link eventKey="billing">Billing & Subscription</Nav.Link>
+                            </Nav.Item>
 
 
                             {/* 🟣 Email Campaign Settings */}
@@ -339,6 +395,50 @@ const Settings = () => {
                                     </Button>
                                 </Form>
                             </Tab.Pane>
+                            <Tab.Pane eventKey="billing">
+                                <Card className="p-3">
+                                    <h4>Billing & Subscription</h4>
+
+                                    <p>
+                                        <strong>Status:</strong>{' '}
+                                        {subscription?.status
+                                            ? subscription.status.toUpperCase()
+                                            : 'No subscription'}
+                                    </p>
+
+                                    {subscription?.status === 'active' || subscription?.status === 'trialing' ? (
+                                        <>
+                                            <p>
+                                                Your subscription is active. You can cancel anytime — your
+                                                access will remain until the end of the billing period.
+                                            </p>
+
+                                            <Button
+                                                variant="danger"
+                                                onClick={handleCancelSubscription}
+                                                disabled={loadingBilling}
+                                            >
+                                                Cancel Subscription
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <p>
+                                                You are not currently subscribed. Subscribe to enable all features.
+                                            </p>
+
+                                            <Button
+                                                variant="success"
+                                                onClick={handleSubscribe}
+                                                disabled={loadingBilling}
+                                            >
+                                                Subscribe
+                                            </Button>
+                                        </>
+                                    )}
+                                </Card>
+                            </Tab.Pane>
+
 
                             {/* NEW: industries-only tab */}
                             <Tab.Pane eventKey="industries">
