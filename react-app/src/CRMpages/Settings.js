@@ -3,7 +3,7 @@ import { Form, Button, Col, Row, Tab, Nav, Card } from 'react-bootstrap';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import '../CRMstyles/Settings.css'; // Custom styles
-const LEAD_API_BASE = 'https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api';
+const LEAD_API_BASE = 'https://crm-function-app-5d4de511071d.herokuapp.com/server/lead_function/api';
 const API_BASE = 'https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api';
 
 const Settings = () => {
