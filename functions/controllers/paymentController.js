@@ -21,18 +21,37 @@ exports.stripeWebhook = async (req, res) => {
     try {
         switch (event.type) {
 
+            // ✅ THIS is what activates the UI
+            case 'checkout.session.completed': {
+                if (data.mode !== 'subscription') break;
+
+                await pool.query(`
+                    UPDATE subscriptions
+                    SET
+                        stripe_subscription_id = $1,
+                        status = 'active',
+                        updated_at = NOW()
+                    WHERE stripe_customer_id = $2
+                `, [
+                    data.subscription,
+                    data.customer
+                ]);
+
+                break;
+            }
+
             case 'customer.subscription.created':
             case 'customer.subscription.updated':
                 await pool.query(`
-          UPDATE subscriptions
-          SET
-            stripe_subscription_id = $1,
-            status = $2,
-            price_id = $3,
-            current_period_end = to_timestamp($4),
-            updated_at = NOW()
-          WHERE stripe_customer_id = $5
-        `, [
+                    UPDATE subscriptions
+                    SET
+                        stripe_subscription_id = $1,
+                        status = $2,
+                        price_id = $3,
+                        current_period_end = to_timestamp($4),
+                        updated_at = NOW()
+                    WHERE stripe_customer_id = $5
+                `, [
                     data.id,
                     data.status,
                     data.items.data[0].price.id,
@@ -43,26 +62,26 @@ exports.stripeWebhook = async (req, res) => {
 
             case 'customer.subscription.deleted':
                 await pool.query(`
-          UPDATE subscriptions
-          SET status = 'canceled', updated_at = NOW()
-          WHERE stripe_customer_id = $1
-        `, [data.customer]);
+                    UPDATE subscriptions
+                    SET status = 'canceled', updated_at = NOW()
+                    WHERE stripe_customer_id = $1
+                `, [data.customer]);
                 break;
 
             case 'invoice.payment_failed':
                 await pool.query(`
-          UPDATE subscriptions
-          SET status = 'past_due'
-          WHERE stripe_customer_id = $1
-        `, [data.customer]);
+                    UPDATE subscriptions
+                    SET status = 'past_due'
+                    WHERE stripe_customer_id = $1
+                `, [data.customer]);
                 break;
 
             case 'invoice.paid':
                 await pool.query(`
-          UPDATE subscriptions
-          SET status = 'active'
-          WHERE stripe_customer_id = $1
-        `, [data.customer]);
+                    UPDATE subscriptions
+                    SET status = 'active'
+                    WHERE stripe_customer_id = $1
+                `, [data.customer]);
                 break;
         }
 
@@ -72,6 +91,7 @@ exports.stripeWebhook = async (req, res) => {
         res.status(500).send('Webhook handler failed');
     }
 };
+
 
 // 🔹 Helper: ensure Stripe customer + subscription row exists
 exports.ensureStripeCustomer = async (user) => {
