@@ -264,6 +264,56 @@ exports.syncStripeSubscription = async (req, res) => {
     }
 };
 
+exports.getBillingHistory = async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        // 1️⃣ Get user email
+        const { rows } = await pool.query(
+            'SELECT email FROM users WHERE id = $1',
+            [userId]
+        );
+
+        if (!rows.length) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const email = rows[0].email;
+
+        // 2️⃣ Find Stripe customer by email
+        const customers = await stripe.customers.list({
+            email,
+            limit: 1
+        });
+
+        if (!customers.data.length) {
+            return res.json([]);
+        }
+
+        const customerId = customers.data[0].id;
+
+        // 3️⃣ Get invoices
+        const invoices = await stripe.invoices.list({
+            customer: customerId,
+            limit: 10
+        });
+
+        const formatted = invoices.data.map(inv => ({
+            id: inv.id,
+            amount: (inv.amount_paid / 100).toFixed(2),
+            currency: inv.currency.toUpperCase(),
+            status: inv.status,
+            date: new Date(inv.created * 1000),
+            url: inv.hosted_invoice_url
+        }));
+
+        res.json(formatted);
+
+    } catch (err) {
+        console.error("Billing history error:", err);
+        res.status(500).json({ error: "Failed to load billing history" });
+    }
+};
 
 
 
