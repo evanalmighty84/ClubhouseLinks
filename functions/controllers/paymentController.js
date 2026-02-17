@@ -182,6 +182,89 @@ exports.cancelSubscription = async (req, res) => {
     res.json({ success: true });
 };
 
+exports.syncStripeSubscription = async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        // 1️⃣ Get user email
+        const { rows } = await pool.query(
+            'SELECT id, email FROM users WHERE id = $1',
+            [userId]
+        );
+
+        if (!rows.length) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const user = rows[0];
+
+        // 2️⃣ Find Stripe customer by email
+        const customers = await stripe.customers.list({
+            email: user.email,
+            limit: 1
+        });
+
+        if (!customers.data.length) {
+            return res.json({ status: 'no_subscription' });
+        }
+
+        const customer = customers.data[0];
+
+        // 3️⃣ Get active subscriptions
+        const subscriptions = await stripe.subscriptions.list({
+            customer: customer.id,
+            status: 'all',
+            limit: 1
+        });
+
+        if (!subscriptions.data.length) {
+            return res.json({ status: 'no_subscription' });
+        }
+
+        const sub = subscriptions.data[0];
+
+        // 4️⃣ Upsert into DB
+        await pool.query(`
+            INSERT INTO subscriptions (
+                user_id,
+                stripe_customer_id,
+                stripe_subscription_id,
+                status,
+                price_id,
+                current_period_end,
+                created_at,
+                updated_at
+            )
+            VALUES ($1,$2,$3,$4,$5,to_timestamp($6),NOW(),NOW())
+            ON CONFLICT (user_id)
+            DO UPDATE SET
+                stripe_customer_id = EXCLUDED.stripe_customer_id,
+                stripe_subscription_id = EXCLUDED.stripe_subscription_id,
+                status = EXCLUDED.status,
+                price_id = EXCLUDED.price_id,
+                current_period_end = EXCLUDED.current_period_end,
+                updated_at = NOW()
+        `, [
+            user.id,
+            customer.id,
+            sub.id,
+            sub.status,
+            sub.items.data[0].price.id,
+            sub.current_period_end
+        ]);
+
+        res.json({
+            status: sub.status,
+            price_id: sub.items.data[0].price.id
+        });
+
+    } catch (err) {
+        console.error('Stripe sync error:', err);
+        res.status(500).json({ error: 'Sync failed' });
+    }
+};
+
+
 
 
 

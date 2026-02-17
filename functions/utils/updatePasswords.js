@@ -14,9 +14,9 @@ const pool = new Pool({
     }
 });
 
-const updatePasswordForUser974 = async () => {
+const updatePasswordForUser971 = async () => {
     try {
-        const userId = 974;
+        const userId = 971;
 
         // Encrypt the new password
         const plainTextPassword = 'Godlovesme24!';
@@ -44,4 +44,4 @@ const updatePasswordForUser974 = async () => {
 };
 
 // Run the script
-updatePasswordForUser974();
+updatePasswordForUser971();

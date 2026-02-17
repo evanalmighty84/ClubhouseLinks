@@ -109,9 +109,69 @@ async function findByPhone(phoneDigits, table) {
     return rows[0];
 }
 
+
+
+exports.incomingTwilioWebhook = async (req, res) => {
+    try {
+        const from = digitsOnly(req.body.From || "");
+        const body = (req.body.Body || "").trim();
+
+        if (!from || !body) {
+            return res.sendStatus(200);
+        }
+
+        console.log("📩 Incoming SMS from:", from, "| Body:", body);
+
+        // 1️⃣ Is this a professional replying?
+        const { rows: userMatch } = await pool.query(
+            `SELECT id, name, company_name
+             FROM users
+             WHERE regexp_replace(phone_number,'\\D','','g') = $1
+             LIMIT 1`,
+            [from]
+        );
+
+        let label = "Unknown Sender";
+
+        if (userMatch.length) {
+            label = `Professional: ${userMatch[0].company_name || userMatch[0].name}`;
+        } else {
+
+            // 2️⃣ Is this tied to a sent alert?
+            const { rows: alertMatch } = await pool.query(
+                `SELECT lead_phone, lead_city, lead_type
+                 FROM lead_alerts_sent
+                 WHERE regexp_replace(to_number,'\\D','','g') = $1
+                 ORDER BY sent_at DESC
+                 LIMIT 1`,
+                [from]
+            );
+
+            if (alertMatch.length) {
+                label = `Lead: ${alertMatch[0].lead_type} (${alertMatch[0].lead_city})`;
+            }
+        }
+
+        // 3️⃣ Forward to Evan (your personal phone)
+        await client.messages.create({
+            to: "+14699032836", // your personal number
+            messagingServiceSid: process.env.TWILIO_TEXAS_MESSAGING_SERVICE_SID,
+            body: `📲 ${label}\nFrom: ${from}\n\n${body}`
+        });
+
+        res.sendStatus(200);
+
+    } catch (err) {
+        console.error("❌ Incoming webhook error:", err.message);
+        res.sendStatus(500);
+    }
+};
+
+
 /********************************************
  * MAIN notifyUsersForLead
  ********************************************/
+
 exports.notifyUsersForLead = async (req, res) => {
     const {
         lead_id,
@@ -250,16 +310,40 @@ exports.notifyUsersForLead = async (req, res) => {
                 // Build SMS body specific to this phone
                 const phoneLine = `📞 ${prettyPh}`;
 
-                const text = [
-                    `🔔 New ${leadTypes.map(titleCase).join("/")} lead in ${titleCase(city)}`,
-                    `👤 ${lead.author || "Unknown"}`,
-                    lead.timestamp ? `🕒 ${fmtCST(lead.timestamp)} (CST)` : "",
-                    `📍 ${lead.location || "Unknown"}${
-                        finalPhysicalAddress ? " • " + finalPhysicalAddress : ""
-                    }`,
-                    phoneLine,
-                    lead.description ? `📝 ${truncate(lead.description, 300)}` : ""
-                ].filter(Boolean).join("\n");
+                // Build SMS body
+                let text;
+
+                if (lead.lead_type?.toLowerCase() === "prospect") {
+
+                    // 🔵 AI / Networking Prospect Template
+                    text = [
+                        `Hi this is Evan Ligon.`,
+                        `I got your number from the ${u.networking_source || "Plano Chamber of Commerce / LeTip"}.`,
+                        ``,
+                        `I built a lead generation CRM and thought this lead might be useful to you.`,
+                        ``,
+                        lead.description ? truncate(lead.description, 250) : "",
+                        ``,
+                        `If you find value in it, maybe we could meet later this week and talk about subscribing.`,
+                        ``,
+                        `Thanks!`
+                    ].filter(Boolean).join("\n");
+
+                } else {
+
+                    // 🟢 NORMAL CRM ALERT
+                    text = [
+                        `🔔 New ${leadTypes.map(titleCase).join("/")} lead in ${titleCase(city)}`,
+                        `👤 ${lead.author || "Unknown"}`,
+                        lead.timestamp ? `🕒 ${fmtCST(lead.timestamp)} (CST)` : "",
+                        `📍 ${lead.location || "Unknown"}${
+                            finalPhysicalAddress ? " • " + finalPhysicalAddress : ""
+                        }`,
+                        phoneLine,
+                        lead.description ? `📝 ${truncate(lead.description, 300)}` : ""
+                    ].filter(Boolean).join("\n");
+                }
+
 
                 // Per-phone dedupe key
                 const perPhoneLeadKey = lead.id

@@ -29,4 +29,9 @@ router.get(
     paymentController.getSubscription
 );
 
+router.get(
+    '`/sync/${userId}`',
+    paymentController.getSubscription
+);
+
 module.exports = router;
