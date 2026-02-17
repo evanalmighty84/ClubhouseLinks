@@ -30,8 +30,8 @@ router.get(
 );
 
 router.get(
-    '`/sync/${userId}`',
-    paymentController.getSubscription
+    '`/sync/:userId`',
+    paymentController.syncStripeSubscription
 );
 
 module.exports = router;
