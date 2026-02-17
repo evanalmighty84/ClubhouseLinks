@@ -30,7 +30,7 @@ router.get(
 );
 
 router.get(
-    '`/sync/:userId`',
+    '/sync/:userId',
     paymentController.syncStripeSubscription
 );
 
