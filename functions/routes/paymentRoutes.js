@@ -33,7 +33,7 @@ router.get(
     '/sync/:userId',
     paymentController.syncStripeSubscription
 );
-router.get('/stripe/billing-history/:userId',
+router.get('/billing-history/:userId',
     paymentController.getBillingHistory);
 
 module.exports = router;
