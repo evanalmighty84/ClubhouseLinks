@@ -40,6 +40,7 @@ const Settings = () => {
             fetchSmtpSettings(userId);
             fetchIndustryOptions().then(() => preloadUserIndustries(userId));
             fetchSubscriptionStatus(userId);
+            fetchBillingHistory(user.id); // 👈 MUST BE HERE
         }
     }, [userId]);
 
