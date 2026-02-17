@@ -43,14 +43,24 @@ const Settings = () => {
         }
     }, [userId]);
 
-    const fetchSubscriptionStatus = async (userId) => {
+/*    const fetchSubscriptionStatus = async (userId) => {
         try {
             const res = await axios.get(`${LEAD_API_BASE}/stripe/subscription/${userId}`);
             setSubscription(res.data);
         } catch (err) {
             console.error('Failed to load subscription:', err);
         }
+    };*/
+
+    const fetchSubscriptionStatus = async (userId) => {
+        try {
+            const res = await axios.get(`${LEAD_API_BASE}/stripe/sync/${userId}`);
+            setSubscription(res.data);
+        } catch (err) {
+            console.error('Failed to load subscription:', err);
+        }
     };
+
 
     const handleSubscribe = async () => {
         try {
