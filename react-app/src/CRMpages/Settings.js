@@ -14,7 +14,7 @@ const Settings = () => {
         smtp_password: '',
         tls_enabled: true,
     });
-
+    const [billingHistory, setBillingHistory] = useState([]);
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
 
@@ -73,6 +73,18 @@ const Settings = () => {
             setLoadingBilling(false);
         }
     };
+
+    const fetchBillingHistory = async (userId) => {
+        try {
+            const res = await axios.get(
+                `${LEAD_API_BASE}/stripe/billing-history/${userId}`
+            );
+            setBillingHistory(res.data);
+        } catch (err) {
+            console.error("Failed to load billing history:", err);
+        }
+    };
+
 
     const handleCancelSubscription = async () => {
         if (!window.confirm('Are you sure you want to cancel your subscription?')) return;
@@ -416,12 +428,61 @@ const Settings = () => {
                                             : 'No subscription'}
                                     </p>
 
-                                    {subscription?.status === 'active' || subscription?.status === 'trialing' ? (
+                                    {(subscription?.status === 'active' ||
+                                        subscription?.status === 'trialing') && (
                                         <>
                                             <p>
                                                 Your subscription is active. You can cancel anytime — your
                                                 access will remain until the end of the billing period.
                                             </p>
+
+                                            {/* 🔹 Billing History Section */}
+                                            {billingHistory.length > 0 && (
+                                                <div className="mb-4">
+                                                    <h5 className="mt-3 mb-3">Billing History</h5>
+
+                                                    <div className="border rounded">
+                                                        {billingHistory.map((invoice, index) => (
+                                                            <div
+                                                                key={invoice.id}
+                                                                className={`d-flex justify-content-between align-items-center p-3 ${
+                                                                    index !== billingHistory.length - 1
+                                                                        ? "border-bottom"
+                                                                        : ""
+                                                                }`}
+                                                            >
+                                                                <div>
+                                                                    <div className="fw-semibold">
+                                                                        {new Date(invoice.date).toLocaleDateString()}
+                                                                    </div>
+                                                                    <small className="text-muted">
+                                                                        ${invoice.amount} {invoice.currency}
+                                                                    </small>
+                                                                </div>
+
+                                                                <div
+                                                                    className={`fw-semibold ${
+                                                                        invoice.status === "paid"
+                                                                            ? "text-success"
+                                                                            : "text-danger"
+                                                                    }`}
+                                                                >
+                                                                    {invoice.status.toUpperCase()}
+                                                                </div>
+
+                                                                <a
+                                                                    href={invoice.url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="text-primary text-decoration-none"
+                                                                >
+                                                                    View Receipt →
+                                                                </a>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
 
                                             <Button
                                                 variant="danger"
@@ -431,10 +492,15 @@ const Settings = () => {
                                                 Cancel Subscription
                                             </Button>
                                         </>
-                                    ) : (
+                                    )}
+
+                                    {(!subscription?.status ||
+                                        subscription.status === "inactive" ||
+                                        subscription.status === "canceled") && (
                                         <>
                                             <p>
-                                                You are not currently subscribed. Subscribe to enable all features.
+                                                You are not currently subscribed. Subscribe to enable all
+                                                features.
                                             </p>
 
                                             <Button
@@ -448,6 +514,7 @@ const Settings = () => {
                                     )}
                                 </Card>
                             </Tab.Pane>
+
 
 
                             {/* NEW: industries-only tab */}
