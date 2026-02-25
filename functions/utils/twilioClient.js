@@ -7,10 +7,12 @@ const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 
 // Original toll-free messaging service
-const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+
+const messagingServiceSid = process.env.TWILIO_TEXAS_MESSAGING_SERVICE_SID;
 
 // NEW Texas local messaging service
-const texasMessagingServiceSid = process.env.TWILIO_TEXAS_MESSAGING_SERVICE_SID;
+
+const texasMessagingServiceSid =  process.env.TWILIO_MESSAGING_SERVICE_SID;
 
 // Safety checks — these will show up in logs if something is missing
 if (!accountSid) console.error("❌ Missing TWILIO_ACCOUNT_SID in environment variables");
