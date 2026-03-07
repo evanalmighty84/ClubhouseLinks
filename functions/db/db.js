@@ -2,10 +2,10 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const pool = new Pool({
-    user: process.env.DB_USER || 'u33njb102j0u34',
-    host: process.env.DB_HOST || 'cd27da2sn4hj7h.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com',
-    database: process.env.DB_NAME || 'd65u30168cmrfd',
-    password: process.env.DB_PASSWORD || 'p5b557ec255a19888a4da1ae53d1408d0167f02c01e289c9f74f54af2515419e8',
+    user: process.env.DB_USER || 'u7muruj2vbt8hd',
+    host: process.env.DB_HOST || 'cet8r1hlj0mlnt.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com',
+    database: process.env.DB_NAME || 'd76ltqhsvgublb',
+    password: process.env.DB_PASSWORD || 'p86422e1e6c223a2bac5c595aa748a2d3398003bdab10653f42ffa9345c0cc556',
     port: process.env.DB_PORT || 5432,
     ssl: { rejectUnauthorized: false },
     max: 50, // Allow 50 concurrent connections
