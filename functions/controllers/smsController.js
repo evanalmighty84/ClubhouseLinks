@@ -191,7 +191,11 @@ exports.notifyUsersForLead = async (req, res) => {
     const hasPhone = phone || mobile_phone;
 
     // Basic guard
-
+    if (!lead_id && (!hasPhone || !(name || author) || !lead_type)) {
+        return res.status(400).json({
+            error: "Provide lead_id OR (name AND phone/mobile_phone AND lead_type).",
+        });
+    }
 
     try {
         let lead;
@@ -208,12 +212,7 @@ exports.notifyUsersForLead = async (req, res) => {
             lead = rows[0];
         }
 
-        if (!lead) {
-            return res.status(404).json({
-                error: "Lead not found in nextdoor_messages",
-                lead_id
-            });
-        }
+
 
         /** 3) Overlay request body */
         const providedName = (name || author || "").trim();
