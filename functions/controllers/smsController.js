@@ -173,6 +173,7 @@ exports.incomingTwilioWebhook = async (req, res) => {
  ********************************************/
 
 exports.notifyUsersForLead = async (req, res) => {
+    console.log("🚨 notifyUsersForLead endpoint hit");
     const {
         lead_id,
         phone,
