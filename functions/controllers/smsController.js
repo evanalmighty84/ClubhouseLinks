@@ -212,11 +212,11 @@ exports.notifyUsersForLead = async (req, res) => {
             lead = rows[0];
         }
 
-        /** 2) If no lead found yet, search by phone */
-        if (!lead && phoneDigits) {
-            lead =
-                (await findByPhone(phoneDigits, "recent_nextdoor_messages")) ||
-                (await findByPhone(phoneDigits, "nextdoor_messages"));
+        if (!lead) {
+            return res.status(404).json({
+                error: "Lead not found in nextdoor_messages",
+                lead_id
+            });
         }
 
         /** 3) Overlay request body */
