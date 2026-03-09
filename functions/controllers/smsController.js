@@ -191,11 +191,7 @@ exports.notifyUsersForLead = async (req, res) => {
     const hasPhone = phone || mobile_phone;
 
     // Basic guard
-    if (!lead_id && (!hasPhone || !(name || author) || !lead_type)) {
-        return res.status(400).json({
-            error: "Provide lead_id OR (name AND phone/mobile_phone AND lead_type).",
-        });
-    }
+
 
     try {
         let lead;
