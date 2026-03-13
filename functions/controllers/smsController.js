@@ -821,13 +821,13 @@ exports.markMessagesSeen = async (req, res) => {
 
 // We'll store a basic in-memory map of phone sessions (you can upgrade this later)
 
-exports.twilioHandleIncomingSMS = async (req, res) => {
+/*exports.twilioHandleIncomingSMS = async (req, res) => {
     console.log('📩 Incoming SMS payload:', req.body);
 
     try {
+
         const fromNumber = req.body.From?.replace(/\D/g, '');
         const incomingMessage = req.body.Body?.trim();
-        const lower = incomingMessage?.toLowerCase();
 
         console.log(`🔍 From: ${fromNumber}, Message: ${incomingMessage}`);
 
@@ -835,12 +835,90 @@ exports.twilioHandleIncomingSMS = async (req, res) => {
             return res.status(400).send('Missing required data');
         }
 
-        // ================= LEAD REPLY HANDLER =================
+        //------------------------------------------------------
+        // 1️⃣ CHECK IF MESSAGE IS FROM A PROFESSIONAL
+        //------------------------------------------------------
+
+        const professionalLookup = await pool.query(
+            `SELECT id, name, company_name, phone_number
+             FROM users
+             WHERE regexp_replace(phone_number,'\\D','','g') LIKE $1
+             LIMIT 1`,
+            [`%${fromNumber.slice(-10)}`]
+        );
+
+        const professional = professionalLookup.rows[0];
+
+        if (professional) {
+
+            console.log("👷 Message from professional:", professional.name);
+
+            //--------------------------------------------------
+            // Find most recent lead conversation
+            //--------------------------------------------------
+
+            const lastLead = await pool.query(
+                `SELECT f.id AS lead_id, f.phone
+                 FROM familytreenow f
+                 JOIN lead_sms s ON s.lead_id = f.id
+                 ORDER BY s.id DESC
+                 LIMIT 1`
+            );
+
+            if (!lastLead.rows.length) {
+                console.warn("⚠️ No recent lead found to forward message");
+                return res.sendStatus(200);
+            }
+
+            const leadPhone = lastLead.rows[0].phone;
+            const leadId = lastLead.rows[0].lead_id;
+
+            //--------------------------------------------------
+            // Forward professional reply to lead
+            //--------------------------------------------------
+
+            await client.messages.create({
+                body: incomingMessage,
+                to: "+1" + leadPhone.replace(/\D/g,''),
+                messagingServiceSid
+            });
+
+            console.log("📤 Professional reply forwarded to lead");
+
+            //--------------------------------------------------
+            // Log outbound reply
+            //--------------------------------------------------
+
+            await pool.query(
+                `INSERT INTO lead_sms
+                 (lead_id, from_number, to_number, message_body, direction, status)
+                 VALUES ($1,$2,$3,$4,'outbound','sent')`,
+                [
+                    leadId,
+                    fromNumber,
+                    leadPhone,
+                    incomingMessage
+                ]
+            );
+
+            return res.sendStatus(200);
+        }
+
+        //------------------------------------------------------
+        // 2️⃣ OTHERWISE MESSAGE IS FROM LEAD
+        //------------------------------------------------------
+
         const leadLookup = await pool.query(
-            `SELECT id AS lead_id, author, phone, company_name
+            `SELECT 
+                id AS lead_id,
+                author,
+                phone,
+                company_name,
+                professionalnumbertocall
              FROM familytreenow
              WHERE regexp_replace(phone, '\\D', '', 'g') LIKE $1
-             ORDER BY id DESC LIMIT 1`,
+             ORDER BY id DESC 
+             LIMIT 1`,
             [`%${fromNumber.slice(-10)}`]
         );
 
@@ -853,32 +931,266 @@ exports.twilioHandleIncomingSMS = async (req, res) => {
             );
         }
 
+        //------------------------------------------------------
+        // Log inbound message
+        //------------------------------------------------------
+
         await pool.query(
-            `INSERT INTO lead_sms (lead_id, from_number, to_number, message_body, direction, is_new)
-             VALUES ($1, $2, $3, $4, 'inbound', TRUE)`,
+            `INSERT INTO lead_sms 
+             (lead_id, from_number, to_number, message_body, direction, is_new)
+             VALUES ($1,$2,$3,$4,'inbound',TRUE)`,
             [
                 lead.lead_id,
                 fromNumber,
                 process.env.TWILIO_NUMBER,
-                incomingMessage,
+                incomingMessage
             ]
         );
 
-        // 🛑 STOP HERE — DO NOT RUN USER LOGIC
+        //------------------------------------------------------
+        // 🚨 ALERT PROFESSIONAL
+        //------------------------------------------------------
+
+        if (lead.professionalnumbertocall) {
+
+            const alertMessage = `📩 Lead replied!
+
+"${incomingMessage}"
+
+Lead: ${lead.author}
+Phone: ${lead.phone}
+
+What would you like to say to them?`;
+
+            await client.messages.create({
+                body: alertMessage,
+                to: "+1" + lead.professionalnumbertocall.replace(/\D/g, ""),
+                messagingServiceSid
+            });
+
+            console.log("📲 Alert sent to professional:", lead.professionalnumbertocall);
+        }
+
+        //------------------------------------------------------
+        // Twilio response to lead
+        //------------------------------------------------------
+
         return res.status(200).send(
             `<Response><Message>Thanks for your message! We'll get back to you shortly.</Message></Response>`
         );
 
-        // EVERYTHING BELOW THIS WAS REMOVED — because it is broken & unreachable
-
     } catch (err) {
         console.error('❌ Error handling incoming SMS:', err);
+
         return res.status(500).send(
             `<Response><Message>Something went wrong. Please try again later.</Message></Response>`
         );
     }
-};
+};*/
+exports.twilioHandleIncomingSMS = async (req, res) => {
+    console.log("📩 Incoming SMS:", req.body);
 
+    try {
+
+        const fromNumber = req.body.From?.replace(/\D/g, "");
+        const incomingMessage = req.body.Body?.trim();
+
+        if (!fromNumber || !incomingMessage) {
+            return res.status(400).send("Missing required data");
+        }
+
+        //-----------------------------------------------------
+        // 1️⃣ Check if this is a contractor choosing a lead
+        //-----------------------------------------------------
+
+        const pendingChoice = await pool.query(
+            `SELECT * FROM sms_pending_choice
+             WHERE professional_phone = $1`,
+            [fromNumber]
+        );
+
+        if (pendingChoice.rows.length) {
+
+            const choices = pendingChoice.rows[0].choices;
+            const choiceIndex = parseInt(incomingMessage) - 1;
+
+            if (choices[choiceIndex]) {
+
+                const leadId = choices[choiceIndex].lead_id;
+                const leadPhone = choices[choiceIndex].phone;
+
+                await client.messages.create({
+                    body: choices[choiceIndex].pending_message,
+                    to: "+1" + leadPhone.replace(/\D/g, ""),
+                    messagingServiceSid
+                });
+
+                await pool.query(
+                    `DELETE FROM sms_pending_choice
+                     WHERE professional_phone = $1`,
+                    [fromNumber]
+                );
+
+                return res.send(
+                    `<Response><Message>✅ Message sent.</Message></Response>`
+                );
+            }
+
+        }
+
+        //-----------------------------------------------------
+        // 2️⃣ Check if message came from a lead
+        //-----------------------------------------------------
+
+        const leadLookup = await pool.query(
+            `SELECT id AS lead_id, author, phone, professionalnumbertocall
+             FROM familytreenow
+             WHERE regexp_replace(phone,'\\D','','g') LIKE $1
+             ORDER BY id DESC LIMIT 1`,
+            [`%${fromNumber.slice(-10)}`]
+        );
+
+        const lead = leadLookup.rows[0];
+
+        if (lead) {
+
+            //-------------------------------------------------
+            // Log inbound lead message
+            //-------------------------------------------------
+
+            await pool.query(
+                `INSERT INTO lead_sms
+                (lead_id, from_number, to_number, message_body, direction, is_new)
+                 VALUES ($1,$2,$3,$4,'inbound',TRUE)`,
+                [
+                    lead.lead_id,
+                    fromNumber,
+                    process.env.TWILIO_NUMBER,
+                    incomingMessage
+                ]
+            );
+
+            //-------------------------------------------------
+            // Notify contractor
+            //-------------------------------------------------
+
+            const contractorPhone =
+                "+1" + lead.professionalnumbertocall.replace(/\D/g, "");
+
+            await client.messages.create({
+                to: contractorPhone,
+                messagingServiceSid,
+                body:
+                    `📩 Lead replied!
+
+"${incomingMessage}"
+
+Lead: ${lead.author}
+
+What would you like to say back?`
+            });
+
+            return res.send("<Response></Response>");
+        }
+
+        //-----------------------------------------------------
+        // 3️⃣ Message from contractor replying to a lead
+        //-----------------------------------------------------
+
+        const recentLeads = await pool.query(
+            `
+                SELECT DISTINCT f.id, f.author, f.phone
+                FROM familytreenow f
+                         JOIN lead_sms s ON s.lead_id = f.id
+                WHERE s.created_at > NOW() - INTERVAL '2 hours'
+                ORDER BY s.created_at DESC
+            `
+        );
+
+        if (recentLeads.rows.length === 1) {
+
+            //-------------------------------------------------
+            // Only one active conversation → send immediately
+            //-------------------------------------------------
+
+            const lead = recentLeads.rows[0];
+
+            await client.messages.create({
+                body: incomingMessage,
+                to: "+1" + lead.phone.replace(/\D/g, ""),
+                messagingServiceSid
+            });
+
+            await pool.query(
+                `INSERT INTO lead_sms
+                (lead_id, from_number, to_number, message_body, direction)
+                 VALUES ($1,$2,$3,$4,'outbound')`,
+                [
+                    lead.id,
+                    process.env.TWILIO_NUMBER,
+                    lead.phone,
+                    incomingMessage
+                ]
+            );
+
+            return res.send(
+                `<Response><Message>✅ Message sent.</Message></Response>`
+            );
+
+        } else if (recentLeads.rows.length > 1) {
+
+            //-------------------------------------------------
+            // Multiple recent leads → ask contractor to choose
+            //-------------------------------------------------
+
+            let message = "You have multiple recent leads.\n\n";
+            const choices = [];
+
+            recentLeads.rows.forEach((lead, i) => {
+
+                message += `${i + 1}️⃣ ${lead.author}\n`;
+
+                choices.push({
+                    lead_id: lead.id,
+                    phone: lead.phone,
+                    pending_message: incomingMessage
+                });
+
+            });
+
+            message += "\nReply with the number.";
+
+            await pool.query(
+                `INSERT INTO sms_pending_choice
+                (professional_phone, choices)
+                 VALUES ($1,$2)
+                 ON CONFLICT (professional_phone)
+                 DO UPDATE SET choices=$2, created_at=NOW()`,
+                [fromNumber, JSON.stringify(choices)]
+            );
+
+            return res.send(
+                `<Response><Message>${message}</Message></Response>`
+            );
+        }
+
+        //-----------------------------------------------------
+        // No recent conversations
+        //-----------------------------------------------------
+
+        return res.send(
+            `<Response><Message>No active lead conversations found.</Message></Response>`
+        );
+
+    } catch (err) {
+
+        console.error("❌ SMS webhook error:", err);
+
+        return res.status(500).send(
+            `<Response><Message>Error processing message.</Message></Response>`
+        );
+    }
+};
 
 
 
