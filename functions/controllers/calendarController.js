@@ -1,5 +1,5 @@
 const ical = require("ical-generator");
-const pool = require("../db");
+const pool = require("../db/db");
 
 exports.getCalendarICS = async (req, res) => {
     const { userId } = req.params;
