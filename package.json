@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "homepage": "https://clubhouselinks.com",
-  "workspaces": ["functions"],
+  "workspaces": [
+    "functions"
+  ],
   "scripts": {
     "predeploy": "npm run build --prefix react-app && rm -rf app && mkdir app && cp -r react-app/build/* app/",
     "deploy": "catalyst deploy",
@@ -11,5 +13,8 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "ical-generator": "^10.1.0"
+  }
 }

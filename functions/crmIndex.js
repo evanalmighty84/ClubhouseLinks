@@ -22,6 +22,7 @@ const smsRoutes = require('./routes/smsRoutes')
 const smsMobileRoutes = require('./routes/smsMobileRoutes')
 const paymentRoutes = require('./routes/paymentRoutes')
 const poolRoutes = require('./routes/poolRoutes')
+const calendarRoutes = require("./routes/calendarRoutes");
 
 
 const path = require('path');
@@ -72,6 +73,9 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/smtp', smtpRoutes);
 
 app.use('/api/smsqueue', smsRoutes);
+
+
+app.use("/api/calendar", calendarRoutes);
 
 app.use('/api/smsmobilequeue', smsMobileRoutes);
 
