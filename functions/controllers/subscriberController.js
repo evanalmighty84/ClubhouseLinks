@@ -184,9 +184,9 @@ exports.getSubscribersByUserId = async (req, res) => {
                    COUNT(DISTINCT ec.id) AS clicks,          -- Count email click events
                    COUNT(DISTINCT eo.id) AS opens            -- Count email open events
             FROM subscribers s
-            LEFT JOIN list_subscribers ls ON s.id = ls.subscriber_id
+          /*  LEFT JOIN list_subscribers ls ON s.id = ls.subscriber_id
             LEFT JOIN email_click_events ec ON s.id = ec.subscriber_id
-            LEFT JOIN email_open_events eo ON s.id = eo.subscriber_id
+            LEFT JOIN email_open_events eo ON s.id = eo.subscriber_id*/
             WHERE s.user_id = $1
             GROUP BY s.id
         `, [userId]);
