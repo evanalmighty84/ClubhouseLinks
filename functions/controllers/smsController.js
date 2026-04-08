@@ -257,7 +257,7 @@ exports.notifyUsersForLead = async (req, res) => {
          * SQL — match ANY industry
          **********************************************/
         const usersSql = `
-            SELECT id, name, phone_number, industry, subscribed_areas
+            SELECT id, name, phone_number, company_name, industry, subscribed_areas
             FROM users
             WHERE phone_number IS NOT NULL
               AND EXISTS (
@@ -355,6 +355,7 @@ exports.notifyUsersForLead = async (req, res) => {
                 if (already.rowCount > 0) {
                     results.push({
                         userId: u.id,
+                        company_name: u.company_name,
                         phone: prettyPh,
                         sent: false,
                         reason: "duplicate",
@@ -415,6 +416,7 @@ exports.notifyUsersForLead = async (req, res) => {
 
                     results.push({
                         userId: u.id,
+                        company_name: u.company_name, // ✅ THIS FIXES YOUR ISSUE
                         phone: prettyPh,
                         sent: true,
                         sid: msg.sid,
@@ -445,6 +447,7 @@ exports.notifyUsersForLead = async (req, res) => {
 
                     results.push({
                         userId: u.id,
+                        company_name: u.company_name,
                         phone: prettyPh,
                         sent: false,
                         error: e.message,

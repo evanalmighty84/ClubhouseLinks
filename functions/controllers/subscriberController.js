@@ -174,7 +174,7 @@ exports.getQueuedEmailsForSubscriber = async (req, res) => {
 
 
 // Get a subscriber by ID for a specific user with their associated lists
-exports.getSubscribersByUserId = async (req, res) => {
+/*exports.getSubscribersByUserId = async (req, res) => {
     const { userId } = req.params;
 
     try {
@@ -184,9 +184,9 @@ exports.getSubscribersByUserId = async (req, res) => {
                    COUNT(DISTINCT ec.id) AS clicks,          -- Count email click events
                    COUNT(DISTINCT eo.id) AS opens            -- Count email open events
             FROM subscribers s
-          /*  LEFT JOIN list_subscribers ls ON s.id = ls.subscriber_id
+          /!*  LEFT JOIN list_subscribers ls ON s.id = ls.subscriber_id
             LEFT JOIN email_click_events ec ON s.id = ec.subscriber_id
-            LEFT JOIN email_open_events eo ON s.id = eo.subscriber_id*/
+            LEFT JOIN email_open_events eo ON s.id = eo.subscriber_id*!/
             WHERE s.user_id = $1
             GROUP BY s.id
         `, [userId]);
@@ -200,9 +200,29 @@ exports.getSubscribersByUserId = async (req, res) => {
         console.error('Error fetching subscribers:', error);
         res.status(500).json({ error: 'Failed to fetch subscribers' });
     }
+};*/
+
+exports.getSubscribersByUserId = async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        const { rows } = await pool.query(`
+            SELECT 
+                s.*,
+                0 AS list_count,
+                0 AS clicks,
+                0 AS opens
+            FROM subscribers s
+            WHERE s.user_id = $1
+            ORDER BY s.created_at DESC
+        `, [userId]);
+
+        return res.status(200).json(rows);
+    } catch (error) {
+        console.error('Error fetching subscribers:', error);
+        return res.status(500).json({ error: 'Failed to fetch subscribers' });
+    }
 };
-
-
 
 exports.getSubscriberById = async (req, res) => {
     const { id } = req.params;
