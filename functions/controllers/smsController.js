@@ -486,11 +486,12 @@ exports.notifyUsersForLead = async (req, res) => {
         location: locationOverride,
         physical_address: physicalAddrOv,
         timestamp: messageSentAtOv,
+        company_name,
+        professionalnumbertocall
     } = req.body || {};
 
     const hasPhone = phone || mobile_phone;
 
-    // Basic guard
     if (!lead_id && (!hasPhone || !(name || author) || !lead_type)) {
         return res.status(400).json({
             error: "Provide lead_id OR (name AND phone/mobile_phone AND lead_type).",
@@ -499,7 +500,6 @@ exports.notifyUsersForLead = async (req, res) => {
 
     try {
         let lead;
-        const phoneDigits = digitsOnly(phone || "");
 
         /** 1) Load by lead_id */
         if (lead_id) {
@@ -527,15 +527,16 @@ exports.notifyUsersForLead = async (req, res) => {
             mobile_phone: mobile_phone ?? lead?.mobile_phone ?? null,
             physical_address: physicalAddrOv ?? lead?.physical_address ?? null,
             description: description ?? lead?.description ?? null,
+
+            // ✅ IMPORTANT FOR PROSPECTS
+            company_name: company_name || null,
+            professionalnumbertocall: professionalnumbertocall || null,
         };
 
-        /** 4) Canonical fields */
         const city = canonText(lead.city);
-
-        // MULTI-INDUSTRY FIX
         const leadTypes = splitLeadTypes(lead.lead_type);
 
-        /** 5) Collect all phones */
+        /** Collect phones (still used for normal flow only) */
         const phones = [];
         if (lead.mobile_phone) phones.push(lead.mobile_phone);
         if (lead.phone) phones.push(lead.phone);
@@ -543,40 +544,36 @@ exports.notifyUsersForLead = async (req, res) => {
         const deduped = [...new Set(phones.map((p) => formatUSPhone(p)).filter(Boolean))];
         const finalPhysicalAddress = lead.physical_address || null;
 
-        // ✅ FIXED GUARD (allow prospect to pass without city/industry)
-        if (
-            deduped.length === 0 ||
-            (lead.lead_type?.toLowerCase() !== "prospect" && (!city || leadTypes.length === 0))
-        ) {
-            return res.status(200).json({
-                message: "Missing phone/city/industry; no alerts sent.",
-                lead,
-            });
-        }
-
         /**********************************************
-         * 🚨 PROSPECT BYPASS (ONLY ADDITION)
+         * 🚨 PROSPECT BYPASS (STRICT — NO FALLBACK)
          **********************************************/
         if (lead.lead_type?.toLowerCase() === "prospect") {
 
-            const toNumbers = deduped
+            if (!lead.professionalnumbertocall || !lead.professionalnumbertocall.length) {
+                return res.status(200).json({
+                    message: "Prospect has no professionalnumbertocall.",
+                    lead
+                });
+            }
+
+            const toNumbers = lead.professionalnumbertocall
                 .map(p => normalizeToE164(p))
                 .filter(Boolean);
 
             if (!toNumbers.length) {
                 return res.status(200).json({
-                    message: "Prospect lead but no valid phone.",
+                    message: "Invalid professional numbers.",
                     lead
                 });
             }
 
             const text = [
                 `Hi this is Evan Ligon.`,
-                `I got your number from a networking source.`,
+                `I got your number from ${lead.company_name || "a networking source"}.`,
                 ``,
                 lead.description ? truncate(lead.description, 250) : "",
                 ``,
-                `If this is helpful, I’d love to connect and show you how I generate these leads.`,
+                `If you find value in it, maybe we could meet later this week and talk about subscribing.`,
                 ``,
                 `Thanks!`
             ].filter(Boolean).join("\n");
@@ -592,6 +589,7 @@ exports.notifyUsersForLead = async (req, res) => {
                     });
 
                     results.push({
+                        company: lead.company_name,
                         to,
                         sent: true,
                         sid: msg.sid
@@ -599,6 +597,7 @@ exports.notifyUsersForLead = async (req, res) => {
 
                 } catch (e) {
                     results.push({
+                        company: lead.company_name,
                         to,
                         sent: false,
                         error: e.message
@@ -607,14 +606,23 @@ exports.notifyUsersForLead = async (req, res) => {
             }
 
             return res.status(200).json({
-                message: "Prospect SMS sent directly",
+                message: "Prospect SMS sent to company",
                 results
             });
         }
 
         /**********************************************
-         * SQL — match ANY industry
+         * NORMAL CRM FLOW (UNCHANGED)
          **********************************************/
+
+        // Original guard (unchanged for normal leads)
+        if (deduped.length === 0 || !city || leadTypes.length === 0) {
+            return res.status(200).json({
+                message: "Missing phone/city/industry; no alerts sent.",
+                lead,
+            });
+        }
+
         const usersSql = `
             SELECT id, name, phone_number, company_name, industry, subscribed_areas
             FROM users
@@ -641,64 +649,65 @@ exports.notifyUsersForLead = async (req, res) => {
             });
         }
 
-        /**********************************************
-         * REST OF YOUR FUNCTION (UNCHANGED)
-         **********************************************/
+        const results = [];
 
-        //------------------------------------------------------
-        // Log inbound message
-        //------------------------------------------------------
+        for (const u of users) {
+            const to = normalizeToE164(u.phone_number);
+            if (!to) continue;
 
-        await pool.query(
-            `INSERT INTO lead_sms 
-             (lead_id, from_number, to_number, message_body, direction, is_new)
-             VALUES ($1,$2,$3,$4,'inbound',TRUE)`,
-            [
-                lead.lead_id,
-                fromNumber,
-                process.env.TWILIO_NUMBER,
-                incomingMessage
-            ]
-        );
+            for (const rawPhone of deduped) {
+                const ph = digitsOnly(rawPhone);
+                const prettyPh = formatUSPhone(ph);
 
-        //------------------------------------------------------
-        // 🚨 ALERT PROFESSIONAL
-        //------------------------------------------------------
+                const phoneLine = `📞 ${prettyPh}`;
 
-        if (lead.professionalnumbertocall) {
+                const text = [
+                    `🔔 New ${leadTypes.map(titleCase).join("/")} lead in ${titleCase(city)}`,
+                    `👤 ${lead.author || "Unknown"}`,
+                    lead.timestamp ? `🕒 ${fmtCST(lead.timestamp)} (CST)` : "",
+                    `📍 ${lead.location || "Unknown"}${
+                        finalPhysicalAddress ? " • " + finalPhysicalAddress : ""
+                    }`,
+                    phoneLine,
+                    lead.description ? `📝 ${truncate(lead.description, 300)}` : ""
+                ].filter(Boolean).join("\n");
 
-            const alertMessage = `📩 Lead replied!
+                try {
+                    const msg = await client.messages.create({
+                        to,
+                        body: text,
+                        messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
+                    });
 
-"${incomingMessage}"
+                    results.push({
+                        userId: u.id,
+                        company_name: u.company_name,
+                        phone: prettyPh,
+                        sent: true,
+                        sid: msg.sid,
+                    });
 
-Lead: ${lead.author}
-Phone: ${lead.phone}
-
-What would you like to say to them?`;
-
-            await client.messages.create({
-                body: alertMessage,
-                to: "+1" + lead.professionalnumbertocall.replace(/\D/g, ""),
-                messagingServiceSid
-            });
-
-            console.log("📲 Alert sent to professional:", lead.professionalnumbertocall);
+                } catch (e) {
+                    results.push({
+                        userId: u.id,
+                        sent: false,
+                        error: e.message,
+                    });
+                }
+            }
         }
 
-        //------------------------------------------------------
-        // Twilio response to lead
-        //------------------------------------------------------
-
-        return res.status(200).send(
-            `<Response><Message>Thanks for your message! We'll get back to you shortly.</Message></Response>`
-        );
+        return res.status(200).json({
+            message: "Alert processing complete",
+            matchedUsers: users.length,
+            results,
+        });
 
     } catch (err) {
-        console.error('❌ Error handling incoming SMS:', err);
-
-        return res.status(500).send(
-            `<Response><Message>Something went wrong. Please try again later.</Message></Response>`
-        );
+        console.error("❌ notifyUsersForLead error:", err);
+        return res.status(500).json({
+            error: "Internal Server Error",
+        });
     }
 };
 exports.testTexasNumber = async (req, res) => {
