@@ -219,7 +219,30 @@ export default function IndustryReports({ userId }) {
             </Row>
 
             {/* 📊 SUMMARY */}
-            <h4>Opportunity Summary</h4>
+            <div
+                style={{
+                    width: "100%",
+                    padding: "20px 0",
+                    background: "linear-gradient(to right, steelblue, #ff0080)",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    marginTop: "20px",
+                    marginBottom: "15px",
+                    borderRadius: "6px"
+                }}
+            >
+                <h3
+                    style={{
+                        fontWeight: 900,
+                        color: "white",
+                        margin: 0,
+                        textShadow: "0px 2px 4px rgba(0,0,0,0.3)"
+                    }}
+                >
+                    Opportunity Summary
+                </h3>
+            </div>
             <table border="1" width="100%" cellPadding="8">
                 <thead style={{ background: "#f2f2f2" }}>
                 <tr>

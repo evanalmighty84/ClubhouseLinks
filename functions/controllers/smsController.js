@@ -1316,8 +1316,18 @@ exports.twilioHandleIncomingSMS = async (req, res) => {
             // Notify contractor
             //-------------------------------------------------
 
-            const contractorPhone =
-                "+1" + lead.professionalnumbertocall.replace(/\D/g, "");
+            const rawPhone = Array.isArray(lead.professionalnumbertocall)
+                ? lead.professionalnumbertocall[0]
+                : lead.professionalnumbertocall;
+
+            const cleaned = rawPhone?.toString().replace(/\D/g, "");
+
+            if (!cleaned) {
+                console.warn("⚠️ Invalid contractor phone");
+                return res.send("<Response></Response>");
+            }
+
+            const contractorPhone = "+1" + cleaned;
 
             await client.messages.create({
                 to: contractorPhone,
