@@ -1001,7 +1001,7 @@ exports.twilioStatusCallback = async (req, res) => {
 };
 
 
-exports.sendLeadReply = async (req, res) => {
+/*exports.sendLeadReply = async (req, res) => {
     try {
         const { lead_id, message, user_id } = req.body;
 
@@ -1048,9 +1048,120 @@ exports.sendLeadReply = async (req, res) => {
         console.error("❌ sendLeadReply error:", err);
         return res.status(500).json({ error: "Failed to send reply" });
     }
+};*/
+
+const uploadToCloudinaryFromBuffer = async (buffer, mimetype) => {
+    const base64 = buffer.toString("base64");
+    const dataUri = `data:${mimetype};base64,${base64}`;
+
+    const timestamp = Math.floor(Date.now() / 1000);
+
+    const signatureString = `timestamp=${timestamp}${process.env.CLOUDINARY_API_SECRET}`;
+    const signature = require("crypto")
+        .createHash("sha1")
+        .update(signatureString)
+        .digest("hex");
+
+    const FormData = require("form-data");
+    const axios = require("axios");
+
+    const form = new FormData();
+    form.append("file", dataUri);
+    form.append("api_key", process.env.CLOUDINARY_API_KEY);
+    form.append("timestamp", timestamp);
+    form.append("signature", signature);
+
+    const uploadRes = await axios.post(
+        `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload`,
+        form,
+        { headers: form.getHeaders() }
+    );
+
+    return uploadRes.data.secure_url;
 };
 
+exports.sendLeadReply = async (req, res) => {
+    try {
+        const { lead_id, message, user_id } = req.body;
 
+        // ✅ allow message OR files
+        if (!lead_id || !user_id)
+            return res.status(400).json({ error: "Missing lead_id or user_id" });
+
+        const { rows: leadRows } = await pool.query(
+            `SELECT phone FROM familytreenow WHERE id = $1`,
+            [lead_id]
+        );
+        const lead = leadRows[0];
+        if (!lead?.phone)
+            return res.status(404).json({ error: "Lead not found" });
+
+        const toPhone = "+1" + lead.phone.replace(/\D/g, "");
+
+        const { rows: userRows } = await pool.query(
+            `SELECT id, phone_number FROM users WHERE id = $1`,
+            [user_id]
+        );
+        const user = userRows[0];
+        if (!user?.phone_number)
+            return res.status(400).json({ error: "User has no phone number set" });
+
+        const fromNumber = user.phone_number;
+
+        //-----------------------------------------------------
+        // 🖼️ Upload files (if any)
+        //-----------------------------------------------------
+        const mediaUrls = [];
+
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                const url = await uploadToCloudinaryFromBuffer(
+                    file.buffer,
+                    file.mimetype
+                );
+                mediaUrls.push(url);
+            }
+        }
+
+        //-----------------------------------------------------
+        // 📤 Send via Twilio (SMS or MMS)
+        //-----------------------------------------------------
+        const sms = await client.messages.create({
+            body: message || "",
+            to: toPhone,
+            from: process.env.TWILIO_TEXAS_NUMBER,
+            mediaUrl: mediaUrls.length > 0 ? mediaUrls : undefined, // ✅ KEY
+            statusCallback: `${process.env.BASE_URL}/server/lead_function/api/smsqueue/status-callback`,
+        });
+
+        //-----------------------------------------------------
+        // 💾 Save to DB (include media_urls)
+        //-----------------------------------------------------
+        await pool.query(
+            `INSERT INTO lead_sms
+             (lead_id, user_id, from_number, to_number, message_body, media_urls, direction, status)
+             VALUES ($1, $2, $3, $4, $5, $6, 'outbound', 'sent')`,
+            [
+                lead_id,
+                user.id,
+                fromNumber,
+                toPhone,
+                message || "",
+                mediaUrls.length > 0 ? mediaUrls : null,
+            ]
+        );
+
+        return res.json({
+            success: true,
+            message_sid: sms.sid,
+            media_urls: mediaUrls,
+        });
+
+    } catch (err) {
+        console.error("❌ sendLeadReply error:", err);
+        return res.status(500).json({ error: "Failed to send reply" });
+    }
+};
 
 
 /*exports.getLeadConversation = async (req, res) => {

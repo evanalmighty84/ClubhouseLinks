@@ -55,6 +55,23 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
     const [autoEmailType, setAutoEmailType] = useState("");
     const [autoEmailTemplate, setAutoEmailTemplate] = useState(null);
     const [showPreviewModal, setShowPreviewModal] = useState(false);
+    const [message, setMessage] = useState("");
+    const [files, setFiles] = useState([]);
+
+    const handleFileChange = (e) => {
+        setFiles([...files, ...Array.from(e.target.files)]);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        setFiles([...files, ...Array.from(e.dataTransfer.files)]);
+    };
+
+    const handleRemoveFile = (index) => {
+        const updated = [...files];
+        updated.splice(index, 1);
+        setFiles(updated);
+    };
 
 
 
@@ -367,7 +384,7 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
     }
 
 // 📨 Send new reply from dashboard to lead
-    async function sendReply() {
+/*    async function sendReply() {
         if (!chatMessage.trim()) return;
         try {
             await axios.post(`${SMS_LEAD_BASE}/smsqueue/lead/send-reply`, {
@@ -382,9 +399,43 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
             console.error("Error sending reply:", err);
             alert("Failed to send message.");
         }
+    }*/
+
+    async function sendReply() {
+        if (!chatMessage.trim() && files.length === 0) return;
+
+        try {
+            const formData = new FormData();
+
+            formData.append("lead_id", selectedLead.id);
+            formData.append("message", chatMessage);
+            formData.append("user_id", 79);
+
+            // ✅ Attach files (if any)
+            files.forEach((file) => {
+                formData.append("media", file);
+            });
+
+            await axios.post(
+                `${SMS_LEAD_BASE}/smsqueue/lead/send-reply`,
+                formData,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                }
+            );
+
+            // reset UI
+            setChatMessage("");
+            setFiles([]);
+
+            await openConversation(selectedLead); // refresh messages
+        } catch (err) {
+            console.error("Error sending reply:", err);
+            alert("Failed to send message.");
+        }
     }
-
-
     return (
 
         <Container className="mt-5">
@@ -865,23 +916,116 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                         )}
                     </Modal.Body>
 
+                    import { useState } from "react";
+
+                    const [message, setMessage] = useState("");
+                    const [files, setFiles] = useState([]);
+
+                    const handleFileChange = (e) => {
+                    setFiles([...files, ...Array.from(e.target.files)]);
+                };
+
+                    const handleDrop = (e) => {
+                    e.preventDefault();
+                    setFiles([...files, ...Array.from(e.dataTransfer.files)]);
+                };
+
+                    const handleRemoveFile = (index) => {
+                    const updated = [...files];
+                    updated.splice(index, 1);
+                    setFiles(updated);
+                };
+
                     <Modal.Footer
                         as="form"
                         onSubmit={(e) => {
                             e.preventDefault();
                             sendReply();
                         }}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={handleDrop}
+                        style={{ flexDirection: "column", gap: "10px" }}
                     >
-                        <Form.Control
-                            type="text"
-                            placeholder="Type your reply..."
-                            value={chatMessage}
-                            onChange={(e) => setChatMessage(e.target.value)}
-                        />
+                        {/* 🟦 Drag + Upload Area */}
+                        <div
+                            style={{
+                                width: "100%",
+                                border: "2px dashed #ccc",
+                                borderRadius: "10px",
+                                padding: "10px",
+                                textAlign: "center",
+                                cursor: "pointer"
+                            }}
+                            onClick={() => document.getElementById("fileInput").click()}
+                        >
+                            📎 Drag & drop images or click to upload
+                            <input
+                                id="fileInput"
+                                type="file"
+                                multiple
+                                accept="image/*"
+                                hidden
+                                onChange={handleFileChange}
+                            />
+                        </div>
 
-                        <Button variant="primary" type="submit">
-                            Send
-                        </Button>
+                        {/* 🖼️ Preview Files */}
+                        {files.length > 0 && (
+                            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                                {files.map((file, index) => (
+                                    <div key={index} style={{ position: "relative" }}>
+                                        <img
+                                            src={URL.createObjectURL(file)}
+                                            alt="preview"
+                                            style={{
+                                                width: "80px",
+                                                height: "80px",
+                                                objectFit: "cover",
+                                                borderRadius: "8px"
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveFile(index)}
+                                            style={{
+                                                position: "absolute",
+                                                top: "-5px",
+                                                right: "-5px",
+                                                background: "red",
+                                                color: "white",
+                                                border: "none",
+                                                borderRadius: "50%",
+                                                width: "20px",
+                                                height: "20px",
+                                                cursor: "pointer"
+                                            }}
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* ✉️ Message Input */}
+                        <div style={{ display: "flex", width: "100%", gap: "10px" }}>
+                            <input
+                                type="text"
+                                value={message}
+                                onChange={(e) => setMessage(e.target.value)}
+                                placeholder="Type your message..."
+                                style={{
+                                    flex: 1,
+                                    padding: "10px",
+                                    borderRadius: "8px",
+                                    border: "1px solid #ccc"
+                                }}
+                            />
+
+                            <button type="submit" className="btn btn-primary">
+                                Send
+                            </button>
+                        </div>
                     </Modal.Footer>
                 </Modal>
             </Modal>

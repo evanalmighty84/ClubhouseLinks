@@ -1,6 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const smsController = require('../controllers/smsController');
+const multer = require("multer");
+
+const upload = multer({
+    storage: multer.memoryStorage(), // ✅ keeps files in memory (what you want)
+});
 
 // Existing
 router.post('/send', smsController.sendSMS);
@@ -34,7 +39,13 @@ router.post(
     smsController.twilioHandleIncomingSMS
 );
 
-router.post('/lead/send-reply', smsController.sendLeadReply);
+
+
+router.post(
+    '/lead/send-reply',
+    upload.array('media'), // 👈 MUST match frontend FormData key
+    smsController.sendLeadReply
+);
 router.get('/lead/conversation/:leadId', smsController.getLeadConversation);
 
 
