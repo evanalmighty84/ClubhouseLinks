@@ -916,25 +916,6 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                         )}
                     </Modal.Body>
 
-                    import { useState } from "react";
-
-                    const [message, setMessage] = useState("");
-                    const [files, setFiles] = useState([]);
-
-                    const handleFileChange = (e) => {
-                    setFiles([...files, ...Array.from(e.target.files)]);
-                };
-
-                    const handleDrop = (e) => {
-                    e.preventDefault();
-                    setFiles([...files, ...Array.from(e.dataTransfer.files)]);
-                };
-
-                    const handleRemoveFile = (index) => {
-                    const updated = [...files];
-                    updated.splice(index, 1);
-                    setFiles(updated);
-                };
 
                     <Modal.Footer
                         as="form"
