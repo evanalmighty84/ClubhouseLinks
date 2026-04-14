@@ -5,8 +5,13 @@ const nodemailer = require('nodemailer'); // if not already imported
 dotenv.config();
 const OpenAI = require("openai");
 const axios = require("axios");
-const FormData = require("form-data");
 const crypto = require("crypto");
+const FormData = require("form-data");
+
+
+
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 async function uploadToCloudinary(twilioUrl) {
     try {
@@ -22,7 +27,13 @@ async function uploadToCloudinary(twilioUrl) {
         });
 
         //-----------------------------------------------------
-        // 2️⃣ Create Cloudinary signature
+        // 2️⃣ Convert to base64 (🔥 THIS IS THE FIX)
+        //-----------------------------------------------------
+        const base64 = Buffer.from(res.data).toString("base64");
+        const dataUri = `data:image/jpeg;base64,${base64}`; // adjust type if needed
+
+        //-----------------------------------------------------
+        // 3️⃣ Create Cloudinary signature
         //-----------------------------------------------------
         const timestamp = Math.floor(Date.now() / 1000);
 
@@ -33,10 +44,10 @@ async function uploadToCloudinary(twilioUrl) {
             .digest("hex");
 
         //-----------------------------------------------------
-        // 3️⃣ Upload to Cloudinary
+        // 4️⃣ Upload to Cloudinary
         //-----------------------------------------------------
         const form = new FormData();
-        form.append("file", res.data);
+        form.append("file", dataUri); // ✅ MUST be base64 or stream
         form.append("api_key", process.env.CLOUDINARY_API_KEY);
         form.append("timestamp", timestamp);
         form.append("signature", signature);
@@ -56,11 +67,6 @@ async function uploadToCloudinary(twilioUrl) {
         throw err;
     }
 }
-
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-const ACTIVE_MESSAGING_SID = process.env.TWILIO_TEXAS_MESSAGING_SERVICE_SID;
 
 
 
