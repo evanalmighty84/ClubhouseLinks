@@ -1386,11 +1386,11 @@ exports.twilioHandleIncomingSMS = async (req, res) => {
 
             const recentLeads = await pool.query(
                 `
-                SELECT DISTINCT f.id, f.author, f.phone
-                FROM familytreenow f
-                JOIN lead_sms s ON s.lead_id = f.id
-                WHERE s.created_at > NOW() - INTERVAL '2 hours'
-                ORDER BY s.created_at DESC
+                    SELECT DISTINCT ON (f.id) f.id, f.author, f.phone, s.created_at
+                    FROM familytreenow f
+                        JOIN lead_sms s ON s.lead_id = f.id
+                    WHERE s.created_at > NOW() - INTERVAL '2 hours'
+                    ORDER BY f.id, s.created_at DESC
                 `
             );
 
