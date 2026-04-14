@@ -4,6 +4,30 @@ const pool = require('../db/db');
 const nodemailer = require('nodemailer'); // if not already imported
 dotenv.config();
 const OpenAI = require("openai");
+const axios = require("axios");
+const FormData = require("form-data");
+
+async function uploadToCloudinary(twilioUrl) {
+    const res = await axios.get(twilioUrl, {
+        responseType: "arraybuffer",
+        auth: {
+            username: process.env.TWILIO_ACCOUNT_SID,
+            password: process.env.TWILIO_AUTH_TOKEN
+        }
+    });
+
+    const form = new FormData();
+    form.append("file", res.data);
+    form.append("upload_preset", process.env.CLOUDINARY_UPLOAD_PRESET);
+
+    const upload = await axios.post(
+        `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload`,
+        form,
+        { headers: form.getHeaders() }
+    );
+
+    return upload.data.secure_url;
+}
 
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -1371,6 +1395,23 @@ exports.twilioHandleIncomingSMS = async (req, res) => {
             }
         }
 
+        //-----------------------------------------------------
+        // ☁️ Upload Twilio images → Cloudinary
+        //-----------------------------------------------------
+
+        let uploadedMediaUrls = [];
+
+        if (mediaUrls.length > 0) {
+            for (const url of mediaUrls) {
+                try {
+                    const cloudUrl = await uploadToCloudinary(url);
+                    uploadedMediaUrls.push(cloudUrl);
+                } catch (err) {
+                    console.error("❌ Cloudinary upload failed:", err.message);
+                }
+            }
+        }
+
         if (!fromNumber) {
             return res.status(400).send("Missing required data");
         }
@@ -1383,7 +1424,7 @@ exports.twilioHandleIncomingSMS = async (req, res) => {
             `SELECT * FROM sms_pending_choice
              WHERE professional_phone = $1
              ORDER BY created_at DESC
-             LIMIT 1`,
+                 LIMIT 1`,
             [fromNumber]
         );
 
@@ -1418,7 +1459,7 @@ exports.twilioHandleIncomingSMS = async (req, res) => {
                     body: incomingMessage || "📸 Image attached",
                     to: toPhone,
                     from: process.env.TWILIO_TEXAS_NUMBER,
-                    mediaUrl: mediaUrls.length ? mediaUrls : undefined
+                    mediaUrl: uploadedMediaUrls.length ? uploadedMediaUrls : undefined
                 });
 
                 await pool.query(
@@ -1430,7 +1471,7 @@ exports.twilioHandleIncomingSMS = async (req, res) => {
                         fromNumber,
                         selected.phone,
                         incomingMessage,
-                        mediaUrls
+                        uploadedMediaUrls
                     ]
                 );
 
@@ -1475,7 +1516,7 @@ exports.twilioHandleIncomingSMS = async (req, res) => {
                     fromNumber,
                     process.env.TWILIO_NUMBER,
                     incomingMessage,
-                    mediaUrls
+                    uploadedMediaUrls
                 ]
             );
 
@@ -1554,7 +1595,7 @@ ${emilyMessage ? `🧠 Emily said:\n"${emilyMessage}"\n\n` : ""}💬 Lead replie
 "${incomingMessage || "📸 Image attached"}"
 
 Lead: ${lead.author}`,
-                    mediaUrl: mediaUrls.length ? mediaUrls : undefined
+                    mediaUrl: uploadedMediaUrls.length ? uploadedMediaUrls : undefined
                 });
 
                 return res.send("<Response></Response>");
