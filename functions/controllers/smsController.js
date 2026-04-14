@@ -155,7 +155,7 @@ exports.incomingTwilioWebhook = async (req, res) => {
         // 3️⃣ Forward to Evan (your personal phone)
         await client.messages.create({
             to: "+12145489175", // your personal number
-            messagingServiceSid: ACTIVE_MESSAGING_SID,
+            from: process.env.TWILIO_TEXAS_NUMBER,
             body: `📲 ${label}\nFrom: ${from}\n\n${body}`
         });
 
@@ -585,7 +585,7 @@ exports.notifyUsersForLead = async (req, res) => {
                     const msg = await client.messages.create({
                         to,
                         body: text,
-                        messagingServiceSid: ACTIVE_MESSAGING_SID,
+                        from: process.env.TWILIO_TEXAS_NUMBER,
                     });
 
                     results.push({
@@ -676,7 +676,7 @@ exports.notifyUsersForLead = async (req, res) => {
                     const msg = await client.messages.create({
                         to,
                         body: text,
-                        messagingServiceSid: ACTIVE_MESSAGING_SID,
+                        from: process.env.TWILIO_TEXAS_NUMBER,
                     });
 
                     results.push({
@@ -780,7 +780,7 @@ Tone: casual, helpful, offer a quote if relevant.
         const sms = await client.messages.create({
             body: messageBody,
             to: toPhone,
-            messagingServiceSid: ACTIVE_MESSAGING_SID,
+            from: process.env.TWILIO_TEXAS_NUMBER,
             statusCallback: `${process.env.BASE_URL}/server/lead_function/api/smsqueue/status-callback`,
         });
 
@@ -822,7 +822,7 @@ exports.testTexasSmsSend = async (req, res) => {
 
         const msg = await client.messages.create({
             to,
-            messagingServiceSid: ACTIVE_MESSAGING_SID,
+            from: process.env.TWILIO_TEXAS_NUMBER,
             body: "This is a test SMS from the Texas Messaging Service 🚀"
         });
 
@@ -831,7 +831,7 @@ exports.testTexasSmsSend = async (req, res) => {
             sid: msg.sid,
             status: msg.status,
             to: msg.to,
-            messagingServiceSid: ACTIVE_MESSAGING_SID,
+            from: process.env.TWILIO_TEXAS_NUMBER,
             message: "Texas SMS sent successfully"
         });
 
@@ -860,7 +860,7 @@ exports.sendSMS = async (req, res) => {
         const result = await client.messages.create({
             body: message,
             to,
-            messagingServiceSid: ACTIVE_MESSAGING_SID,
+            from: process.env.TWILIO_TEXAS_NUMBER,
         });
 
         res.status(200).json({ message: 'SMS sent successfully!', sid: result.sid });
@@ -973,7 +973,7 @@ exports.sendLeadReply = async (req, res) => {
         const sms = await client.messages.create({
             body: message,
             to: toPhone,
-            messagingServiceSid: ACTIVE_MESSAGING_SID,
+            from: process.env.TWILIO_TEXAS_NUMBER,
             statusCallback: `${process.env.BASE_URL}/server/lead_function/api/smsqueue/status-callback`,
         });
 
@@ -1417,7 +1417,7 @@ exports.twilioHandleIncomingSMS = async (req, res) => {
                 await client.messages.create({
                     body: incomingMessage || "📸 Image attached",
                     to: toPhone,
-                    messagingServiceSid: ACTIVE_MESSAGING_SID,
+                    from: process.env.TWILIO_TEXAS_NUMBER,
                     mediaUrl: mediaUrls.length ? mediaUrls : undefined
                 });
 
@@ -1546,7 +1546,7 @@ exports.twilioHandleIncomingSMS = async (req, res) => {
 
                 await client.messages.create({
                     to: contractorPhone,
-                    messagingServiceSid: ACTIVE_MESSAGING_SID,
+                    from: process.env.TWILIO_TEXAS_NUMBER,
                     body:
                         `📩 Lead replied!
 
@@ -1587,7 +1587,7 @@ Lead: ${lead.author}`,
 
                 await client.messages.create({
                     to: contractorPhone,
-                    messagingServiceSid: ACTIVE_MESSAGING_SID,
+                    from: process.env.TWILIO_TEXAS_NUMBER,
                     body: message
                 });
 
