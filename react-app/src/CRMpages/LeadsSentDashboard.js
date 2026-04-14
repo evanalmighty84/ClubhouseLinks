@@ -411,26 +411,19 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
             formData.append("message", chatMessage);
             formData.append("user_id", 79);
 
-            // ✅ Attach files (if any)
             files.forEach((file) => {
                 formData.append("media", file);
             });
 
             await axios.post(
                 `${SMS_LEAD_BASE}/smsqueue/lead/send-reply`,
-                formData,
-                {
-                    headers: {
-                        "Content-Type": "multipart/form-data",
-                    },
-                }
+                formData
             );
 
-            // reset UI
             setChatMessage("");
             setFiles([]);
 
-            await openConversation(selectedLead); // refresh messages
+            await openConversation(selectedLead);
         } catch (err) {
             console.error("Error sending reply:", err);
             alert("Failed to send message.");
@@ -931,7 +924,9 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                         <div
                             style={{
                                 width: "100%",
-                                border: "2px dashed #ccc",
+                                border: "2px dashed #ff0080",
+                                background: "#fff",
+                                fontWeight: "600",
                                 borderRadius: "10px",
                                 padding: "10px",
                                 textAlign: "center",
@@ -992,7 +987,7 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                         <div style={{ display: "flex", width: "100%", gap: "10px" }}>
                             <input
                                 type="text"
-                                value={message}
+                                value={chatmessage}
                                 onChange={(e) => setMessage(e.target.value)}
                                 placeholder="Type your message..."
                                 style={{
