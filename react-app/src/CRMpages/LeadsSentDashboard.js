@@ -833,13 +833,42 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                                     }`}
                                     style={{ maxWidth: "75%" }}
                                 >
+                                    {/* ⏰ Timestamp */}
                                     <small
                                         className="d-block text-muted"
                                         style={{ fontSize: "0.7rem" }}
                                     >
                                         {new Date(msg.created_at).toLocaleTimeString()}
                                     </small>
-                                    <div>{msg.message_body}</div>
+
+                                    {/* 💬 Text */}
+                                    {msg.message_body && (
+                                        <div style={{ marginBottom: msg.media_urls?.length ? "6px" : "0" }}>
+                                            {msg.message_body}
+                                        </div>
+                                    )}
+
+                                    {/* 📸 Images */}
+                                    {msg.media_urls && msg.media_urls.length > 0 && (
+                                        <div className="d-flex flex-column gap-2">
+                                            {msg.media_urls.map((url, idx) => (
+                                                <img
+                                                    key={idx}
+                                                    src={url}
+                                                    alt="attachment"
+                                                    style={{
+                                                        maxWidth: "200px",
+                                                        borderRadius: "8px",
+                                                        cursor: "pointer",
+                                                        border: msg.direction === "outbound"
+                                                            ? "2px solid rgba(255,255,255,0.3)"
+                                                            : "2px solid #ddd"
+                                                    }}
+                                                    onClick={() => window.open(url, "_blank")}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             ))
                         )}

@@ -995,7 +995,7 @@ exports.sendLeadReply = async (req, res) => {
 
 
 
-exports.getLeadConversation = async (req, res) => {
+/*exports.getLeadConversation = async (req, res) => {
 
     try {
         const { leadId } = req.params;
@@ -1016,9 +1016,35 @@ exports.getLeadConversation = async (req, res) => {
         console.error("❌ getLeadConversation error:", err);
         res.status(500).json({ error: "Failed to fetch conversation" });
     }
+};*/
+
+exports.getLeadConversation = async (req, res) => {
+    try {
+        const { leadId } = req.params;
+        console.log("💬 FETCHING conversation for lead:", leadId);
+
+        const { rows } = await pool.query(
+            `SELECT 
+                id, 
+                from_number, 
+                to_number, 
+                message_body, 
+                media_urls,   -- 🔥 ADD THIS
+                direction, 
+                created_at
+             FROM lead_sms
+             WHERE lead_id = $1
+             ORDER BY created_at ASC`,
+            [leadId]
+        );
+
+        res.json(rows);
+
+    } catch (err) {
+        console.error("❌ getLeadConversation error:", err);
+        res.status(500).json({ error: "Failed to fetch conversation" });
+    }
 };
-
-
 
 exports.getNewMessages = async (req, res) => {
     try {
