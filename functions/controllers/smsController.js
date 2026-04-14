@@ -585,7 +585,7 @@ exports.notifyUsersForLead = async (req, res) => {
                     const msg = await client.messages.create({
                         to,
                         body: text,
-                        messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
+                        messagingServiceSid: process.env.TWILIO_TEXAS_MESSAGING_SERVICE_SID,
                     });
 
                     results.push({
@@ -676,7 +676,7 @@ exports.notifyUsersForLead = async (req, res) => {
                     const msg = await client.messages.create({
                         to,
                         body: text,
-                        messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
+                        messagingServiceSid: process.env.TWILIO_TEXAS_MESSAGING_SERVICE_SID,
                     });
 
                     results.push({
@@ -860,7 +860,7 @@ exports.sendSMS = async (req, res) => {
         const result = await client.messages.create({
             body: message,
             to,
-            messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
+            messagingServiceSid: process.env.TWILIO_TEXAS_MESSAGING_SERVICE_SID,
         });
 
         res.status(200).json({ message: 'SMS sent successfully!', sid: result.sid });
@@ -973,7 +973,7 @@ exports.sendLeadReply = async (req, res) => {
         const sms = await client.messages.create({
             body: message,
             to: toPhone,
-            messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
+            messagingServiceSid: process.env.TWILIO_TEXAS_MESSAGING_SERVICE_SID,
             statusCallback: `${process.env.BASE_URL}/server/lead_function/api/smsqueue/status-callback`,
         });
 
