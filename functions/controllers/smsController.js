@@ -6,27 +6,55 @@ dotenv.config();
 const OpenAI = require("openai");
 const axios = require("axios");
 const FormData = require("form-data");
+const crypto = require("crypto");
 
 async function uploadToCloudinary(twilioUrl) {
-    const res = await axios.get(twilioUrl, {
-        responseType: "arraybuffer",
-        auth: {
-            username: process.env.TWILIO_ACCOUNT_SID,
-            password: process.env.TWILIO_AUTH_TOKEN
-        }
-    });
+    try {
+        //-----------------------------------------------------
+        // 1️⃣ Download image from Twilio (with auth)
+        //-----------------------------------------------------
+        const res = await axios.get(twilioUrl, {
+            responseType: "arraybuffer",
+            auth: {
+                username: process.env.TWILIO_ACCOUNT_SID,
+                password: process.env.TWILIO_AUTH_TOKEN
+            }
+        });
 
-    const form = new FormData();
-    form.append("file", res.data);
-    form.append("upload_preset", process.env.CLOUDINARY_UPLOAD_PRESET);
+        //-----------------------------------------------------
+        // 2️⃣ Create Cloudinary signature
+        //-----------------------------------------------------
+        const timestamp = Math.floor(Date.now() / 1000);
 
-    const upload = await axios.post(
-        `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload`,
-        form,
-        { headers: form.getHeaders() }
-    );
+        const signatureString = `timestamp=${timestamp}${process.env.CLOUDINARY_API_SECRET}`;
+        const signature = crypto
+            .createHash("sha1")
+            .update(signatureString)
+            .digest("hex");
 
-    return upload.data.secure_url;
+        //-----------------------------------------------------
+        // 3️⃣ Upload to Cloudinary
+        //-----------------------------------------------------
+        const form = new FormData();
+        form.append("file", res.data);
+        form.append("api_key", process.env.CLOUDINARY_API_KEY);
+        form.append("timestamp", timestamp);
+        form.append("signature", signature);
+
+        const uploadRes = await axios.post(
+            `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload`,
+            form,
+            { headers: form.getHeaders() }
+        );
+
+        console.log("✅ Uploaded to Cloudinary:", uploadRes.data.secure_url);
+
+        return uploadRes.data.secure_url;
+
+    } catch (err) {
+        console.error("❌ Cloudinary upload failed:", err.response?.data || err.message);
+        throw err;
+    }
 }
 
 
