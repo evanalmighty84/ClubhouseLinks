@@ -86,7 +86,7 @@ const ACTIVE_MESSAGING_SID = process.env.TWILIO_TEXAS_MESSAGING_SERVICE_SID;
  *  - record in lead_alerts_sent to avoid duplicates
  */
 // controller/notifyUsersForLead.js
-const crypto = require('crypto');
+
 // assume you already have: const pool = require('./../../../db/db');
 
 
