@@ -823,54 +823,45 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                         ) : conversation.length === 0 ? (
                             <p className="text-muted text-center">No messages yet.</p>
                         ) : (
-                            conversation.map((msg) => (
-                                <div
-                                    key={msg.id}
-                                    className={`p-2 my-2 rounded ${
-                                        msg.direction === "outbound"
-                                            ? "bg-primary text-white ms-auto"
-                                            : "bg-light me-auto"
-                                    }`}
-                                    style={{ maxWidth: "75%" }}
-                                >
-                                    {/* ⏰ Timestamp */}
-                                    <small
-                                        className="d-block text-muted"
-                                        style={{ fontSize: "0.7rem" }}
+                            conversation.map((msg) => {
+                                console.log("msg:", msg); // ✅ works
+
+                                return (
+                                    <div
+                                        key={msg.id}
+                                        className={`p-2 my-2 rounded ${
+                                            msg.direction === "outbound"
+                                                ? "bg-primary text-white ms-auto"
+                                                : "bg-light me-auto"
+                                        }`}
+                                        style={{ maxWidth: "75%" }}
                                     >
-                                        {new Date(msg.created_at).toLocaleTimeString()}
-                                    </small>
+                                        {/* ⏰ Timestamp */}
+                                        <small
+                                            className="d-block text-muted"
+                                            style={{ fontSize: "0.7rem" }}
+                                        >
+                                            {new Date(msg.created_at).toLocaleTimeString()}
+                                        </small>
 
-                                    {/* 💬 Text */}
-                                    {msg.message_body && (
-                                        <div style={{ marginBottom: msg.media_urls?.length ? "6px" : "0" }}>
-                                            {msg.message_body}
-                                        </div>
-                                    )}
+                                        {/* 💬 Text */}
+                                        {msg.message_body && (
+                                            <div style={{ marginBottom: msg.media_urls?.length ? "6px" : "0" }}>
+                                                {msg.message_body}
+                                            </div>
+                                        )}
 
-                                    {/* 📸 Images */}
-                                    {msg.media_urls && msg.media_urls.length > 0 && (
-                                        <div className="d-flex flex-column gap-2">
-                                            {msg.media_urls.map((url, idx) => (
-                                                <img
-                                                    key={idx}
-                                                    src={url}
-                                                    alt="attachment"
-                                                    style={{
-                                                        maxWidth: "200px",
-                                                        borderRadius: "8px",
-                                                        cursor: "pointer",
-                                                        border: msg.direction === "outbound"
-                                                            ? "2px solid rgba(255,255,255,0.3)"
-                                                            : "2px solid #ddd"
-                                                    }}
-                                                    onClick={() => window.open(url, "_blank")}
-                                                />
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            ))
+                                        {/* 📸 Images */}
+                                        {msg.media_urls && msg.media_urls.length > 0 && (
+                                            <div>
+                                                {msg.media_urls.map((url, idx) => (
+                                                    <img key={idx} src={url} style={{ maxWidth: "200px" }} />
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })
                         )}
                     </Modal.Body>
 
