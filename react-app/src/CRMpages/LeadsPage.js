@@ -1,7 +1,7 @@
 import React from 'react';
 import RFPBids from "../CRMcomponents/RFPBids";
 import NextDoorLeads from "../CRMcomponents/NextDoorLeads";
-import HotNextDoorLeads from "../CRMcomponents/HotNextDoorLeads";
+import SentLeads from "../CRMcomponents/HotNextDoorLeads2.0";
 import LeadsSentDashboard from "./LeadsSentDashboard";
 
 const LeadsPage = () => {
@@ -11,7 +11,7 @@ const LeadsPage = () => {
     return (
         <>
             <LeadsSentDashboard />
-            <HotNextDoorLeads />
+            <SentLeads />
 
             {/* Only show RFPBids if user.id === 8 */}
             {isAdmin8 && <RFPBids />}

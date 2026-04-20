@@ -987,8 +987,8 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                         <div style={{ display: "flex", width: "100%", gap: "10px" }}>
                             <input
                                 type="text"
-                                value={chatmessage}
-                                onChange={(e) => setMessage(e.target.value)}
+                                value={chatMessage}
+                                onChange={(e) => setChatMessage(e.target.value)}
                                 placeholder="Type your message..."
                                 style={{
                                     flex: 1,
@@ -997,6 +997,7 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                                     border: "1px solid #ccc"
                                 }}
                             />
+
 
                             <button type="submit" className="btn btn-primary">
                                 Send
