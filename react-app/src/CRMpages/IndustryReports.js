@@ -1,14 +1,19 @@
 import { useEffect, useState, useMemo } from "react";
 import axios from "axios";
-import { Form, Row, Col, Card } from "react-bootstrap";
+import { Form, Row, Col, Card, Table, Spinner } from "react-bootstrap";
+import moment from "moment";
 
-/**
- * API base
- */
 const API_BASE =
     process.env.NODE_ENV === "production"
         ? "https://upbeat-spontaneity-production.up.railway.app/server/lead_function/api"
         : "http://localhost:5000/server/lead_function/api";
+
+const ALLOWED_INDUSTRIES = new Set([
+    "plumber","electrician","hvac","pool","handyman","lawn_care","painter","roofer",
+    "pest_control","general_contractor","junk_removal","house_cleaner","pet_sitter",
+    "realtor","mover","interior_designer","christmas_lights","lighting","security",
+    "windows","power_washing","fencing","lawyer"
+]);
 
 export default function IndustryReports({ userId }) {
     const [loading, setLoading] = useState(false);
@@ -18,7 +23,7 @@ export default function IndustryReports({ userId }) {
     const [possibleLeads, setPossibleLeads] = useState([]);
 
     const [selectedCity, setSelectedCity] = useState("All");
-    const [selectedIndustry, setSelectedIndustry] = useState("All");
+    const [activeIndustry, setActiveIndustry] = useState(null);
 
     /**
      * 🚀 FETCH DATA
@@ -31,8 +36,7 @@ export default function IndustryReports({ userId }) {
             setError(null);
 
             try {
-                // TEMP base industries (still needed for API)
-                const baseIndustries = ["plumber", "electrician", "hvac"];
+                const baseIndustries = Array.from(ALLOWED_INDUSTRIES);
 
                 const requests = baseIndustries.map((industry) =>
                     axios.get(`${API_BASE}/reports/leads-sent`, {
@@ -71,7 +75,7 @@ export default function IndustryReports({ userId }) {
     }, [userId]);
 
     /**
-     * 🔥 DYNAMIC INDUSTRIES (HOOK — MUST BE TOP LEVEL)
+     * 🔥 INDUSTRIES
      */
     const INDUSTRIES = useMemo(() => {
         const fromPossible = possibleLeads
@@ -79,15 +83,18 @@ export default function IndustryReports({ userId }) {
             .filter(Boolean)
             .flatMap((t) =>
                 t.split(",").map((x) => x.trim().toLowerCase())
-            );
+            )
+            .filter((i) => ALLOWED_INDUSTRIES.has(i));
 
-        const fromReports = Object.keys(industryReports);
+        const fromReports = Object.keys(industryReports)
+            .map((i) => i.toLowerCase())
+            .filter((i) => ALLOWED_INDUSTRIES.has(i));
 
         return Array.from(new Set([...fromPossible, ...fromReports]));
     }, [possibleLeads, industryReports]);
 
     /**
-     * 🏙️ CITIES (HOOK — MUST BE TOP LEVEL)
+     * 🏙️ CITIES
      */
     const cities = useMemo(() => {
         return [
@@ -106,11 +113,6 @@ export default function IndustryReports({ userId }) {
     }, [possibleLeads, industryReports]);
 
     /**
-     * ⛔ IMPORTANT: AFTER hooks
-     */
-    if (!userId) return null;
-
-    /**
      * 📊 COUNTS
      */
     const sentCounts = {};
@@ -123,194 +125,178 @@ export default function IndustryReports({ userId }) {
         const type = lead.lead_type?.toLowerCase();
         if (!type) return;
 
-        INDUSTRIES.forEach((industry) => {
-            if (type.includes(industry)) {
-                possibleCounts[industry] =
-                    (possibleCounts[industry] || 0) + 1;
+        const categories = type.split(",").map(x => x.trim());
+
+        categories.forEach((cat) => {
+            if (ALLOWED_INDUSTRIES.has(cat)) {
+                possibleCounts[cat] = (possibleCounts[cat] || 0) + 1;
             }
         });
     });
 
     /**
-     * 🔍 FILTER FUNCTION
+     * 🔥 SELECTED LEADS
      */
-    const filter = (data, industryKey = null) =>
-        data.filter((item) => {
-            const cityOk =
-                selectedCity === "All" || item.city === selectedCity;
+    const selectedLeads = useMemo(() => {
+        if (!activeIndustry) return [];
 
-            const industryOk =
-                selectedIndustry === "All" ||
-                industryKey === selectedIndustry ||
-                item.lead_type
-                    ?.toLowerCase()
-                    .includes(selectedIndustry);
+        const normalizedKey = activeIndustry.toLowerCase();
 
-            return cityOk && industryOk;
+        const sent =
+            Object.entries(industryReports).find(
+                ([key]) => key.toLowerCase() === normalizedKey
+            )?.[1] || [];
+
+        const possible = possibleLeads.filter((l) => {
+            const cats =
+                l.lead_type?.toLowerCase().split(",").map(x => x.trim()) || [];
+
+            return cats.includes(normalizedKey);
         });
 
-    return (
-        <Card className="p-4 my-4" style={{ border: "none" }}>
-            {/* 🔥 HEADER */}
-            <div
-                style={{
-                    width: "100%",
-                    padding: "25px 0",
-                    background:
-                        "linear-gradient(to right, #ff0080, orange, steelblue)",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    marginBottom: "20px",
-                    borderRadius: "6px",
-                }}
-            >
-                <h2
-                    style={{
-                        fontWeight: 900,
-                        color: "white",
-                        margin: 0,
-                    }}
-                >
-                    Industry Reports
-                </h2>
-            </div>
+        return [...sent, ...possible];
+    }, [activeIndustry, industryReports, possibleLeads]);
 
-            {/* 🔽 FILTERS */}
-            <Row className="mb-3">
-                <Col md={4}>
-                    <Form.Group>
-                        <Form.Label>
-                            <strong>City</strong>
-                        </Form.Label>
+    /**
+     * 🧠 FILTER + SORT
+     */
+    const filteredLeads = useMemo(() => {
+        return selectedLeads
+            .filter((l) => {
+                const cityOk =
+                    selectedCity === "All" || l.city === selectedCity;
+                return cityOk;
+            })
+            .sort((a, b) => {
+                const aDate = a.post_date ? new Date(a.post_date) : 0;
+                const bDate = b.post_date ? new Date(b.post_date) : 0;
+                return bDate - aDate; // 🔥 newest first
+            });
+    }, [selectedLeads, selectedCity]);
+
+    /**
+     * 🧱 TABLE
+     */
+    const renderLeadTable = (data) => {
+        if (!data.length) return <p className="text-center">No leads found.</p>;
+
+        return (
+            <Table striped bordered hover responsive>
+                <thead>
+                <tr>
+                    <th>Author</th>
+                    <th>City</th>
+                    <th>Type</th>
+                    <th>Phone</th>
+                    <th>Description</th>
+                    <th>Posted</th>
+                </tr>
+                </thead>
+                <tbody>
+                {data.map((l, idx) => (
+                    <tr key={idx}>
+                        <td>{l.author}</td>
+                        <td>{l.city}</td>
+                        <td>{l.lead_type}</td>
+                        <td>{l.phone || "-"}</td>
+                        <td>{l.description}</td>
+                        <td>
+                            {l.post_date
+                                ? moment(l.post_date).format("M/D/YYYY")
+                                : "-"}
+                        </td>
+                    </tr>
+                ))}
+                </tbody>
+            </Table>
+        );
+    };
+
+    /**
+     * 🔥 LOADING / ERROR
+     */
+    if (loading) {
+        return <Spinner className="mt-5 d-block mx-auto" />;
+    }
+
+    if (error) {
+        return <div className="text-danger text-center mt-5">{error}</div>;
+    }
+
+    /**
+     * 🚀 RENDER
+     */
+    return (
+        <>
+            <Card className="p-4 my-4" style={{ border: "none" }}>
+                <h2>Industry Reports</h2>
+
+                <Row className="mb-3">
+                    <Col md={4}>
                         <Form.Control
                             as="select"
                             value={selectedCity}
-                            onChange={(e) =>
-                                setSelectedCity(e.target.value)
-                            }
+                            onChange={(e) => setSelectedCity(e.target.value)}
                         >
                             {cities.map((c, i) => (
                                 <option key={i}>{c}</option>
                             ))}
                         </Form.Control>
-                    </Form.Group>
-                </Col>
+                    </Col>
 
-                <Col md={4}>
-                    <Form.Group>
-                        <Form.Label>
-                            <strong>Industry</strong>
-                        </Form.Label>
+                    <Col md={4}>
                         <Form.Control
                             as="select"
-                            value={selectedIndustry}
+                            value={activeIndustry || "All"}
                             onChange={(e) =>
-                                setSelectedIndustry(e.target.value)
+                                setActiveIndustry(
+                                    e.target.value === "All" ? null : e.target.value
+                                )
                             }
                         >
-                            <option>All</option>
-                            {INDUSTRIES.map((i, idx) => (
-                                <option key={idx}>{i}</option>
+                            <option value="All">Select Industry</option>
+                            {INDUSTRIES.map((i) => (
+                                <option key={i} value={i}>
+                                    {i.toUpperCase()}
+                                </option>
                             ))}
                         </Form.Control>
-                    </Form.Group>
-                </Col>
-            </Row>
+                    </Col>
+                </Row>
 
-            {/* 📊 SUMMARY */}
-            <div
-                style={{
-                    width: "100%",
-                    padding: "20px 0",
-                    background: "linear-gradient(to right, steelblue, #ff0080)",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    marginTop: "20px",
-                    marginBottom: "15px",
-                    borderRadius: "6px"
-                }}
-            >
-                <h3
-                    style={{
-                        fontWeight: 900,
-                        color: "white",
-                        margin: 0,
-                        textShadow: "0px 2px 4px rgba(0,0,0,0.3)"
-                    }}
-                >
-                    Opportunity Summary
-                </h3>
-            </div>
-            <table border="1" width="100%" cellPadding="8">
-                <thead style={{ background: "#f2f2f2" }}>
-                <tr>
-                    <th>Industry</th>
-                    <th>Sent</th>
-                    <th>Possible</th>
-                </tr>
-                </thead>
-                <tbody>
-                {INDUSTRIES.map((i) => (
-                    <tr key={i}>
-                        <td>
-                            <strong>{i.toUpperCase()}</strong>
-                        </td>
-                        <td>{sentCounts[i] || 0}</td>
-                        <td>{possibleCounts[i] || 0}</td>
+                <table border="1" width="100%">
+                    <thead>
+                    <tr>
+                        <th>Industry</th>
+                        <th>Sent</th>
+                        <th>Possible</th>
                     </tr>
-                ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                    {INDUSTRIES.map((i) => (
+                        <tr
+                            key={i}
+                            style={{
+                                cursor: "pointer",
+                                background: activeIndustry === i ? "#eef5ff" : "white"
+                            }}
+                            onClick={() => setActiveIndustry(i)}
+                        >
+                            <td><strong>{i.toUpperCase()}</strong></td>
+                            <td>{sentCounts[i] || 0}</td>
+                            <td>{possibleCounts[i] || 0}</td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+            </Card>
 
-            {loading && <p>Loading...</p>}
-            {error && <p style={{ color: "red" }}>{error}</p>}
-
-            {/* 🔥 LEADS SENT */}
-            {Object.entries(industryReports).map(
-                ([industry, leads]) => {
-                    const filtered = filter(leads, industry);
-
-                    return (
-                        <div key={industry} style={{ marginTop: "2rem" }}>
-                            <h4>
-                                {industry.toUpperCase()} — Leads Sent
-                            </h4>
-
-                            {filtered.length === 0 ? (
-                                <p>No leads</p>
-                            ) : (
-                                <table border="1" cellPadding="6">
-                                    <tbody>
-                                    {filtered.map((l) => (
-                                        <tr key={l.id}>
-                                            <td>{l.city}</td>
-                                            <td>{l.phone}</td>
-                                        </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            )}
-                        </div>
-                    );
-                }
+            {activeIndustry && (
+                <Card className="p-4 mt-3">
+                    <h4>{activeIndustry.toUpperCase()} Leads</h4>
+                    {renderLeadTable(filteredLeads)}
+                </Card>
             )}
-
-            {/* 🔥 POSSIBLE LEADS */}
-            <div style={{ marginTop: "2rem" }}>
-                <h4>Possible Leads</h4>
-
-                {filter(possibleLeads).length === 0 ? (
-                    <p>No leads</p>
-                ) : (
-                    filter(possibleLeads).map((l) => (
-                        <div key={l.id}>
-                            {l.city} — {l.lead_type}
-                        </div>
-                    ))
-                )}
-            </div>
-        </Card>
+        </>
     );
 }
