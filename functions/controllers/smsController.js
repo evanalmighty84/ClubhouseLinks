@@ -545,7 +545,8 @@ exports.notifyUsersForLead = async (req, res) => {
         physical_address: physicalAddrOv,
         timestamp: messageSentAtOv,
         company_name,
-        professionalnumbertocall
+        professionalnumbertocall,
+        networkingsource
     } = req.body || {};
 
     const hasPhone = phone || mobile_phone;
