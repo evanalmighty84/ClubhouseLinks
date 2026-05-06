@@ -605,7 +605,11 @@ exports.notifyUsersForLead = async (req, res) => {
         /**********************************************
          * 🚨 PROSPECT BYPASS (STRICT — NO FALLBACK)
          **********************************************/
-        if (lead.lead_type?.toLowerCase() === "prospect") {
+        if ((lead.lead_type || "").trim().toLowerCase() === "prospect") {
+
+            console.log("🔍 RAW lead_type:", JSON.stringify(lead.lead_type));
+            console.log("🔍 company_name:", lead.company_name);
+            console.log("🔍 professionalnumbertocall:", lead.professionalnumbertocall);
 
             if (!lead.professionalnumbertocall || !lead.professionalnumbertocall.length) {
                 return res.status(200).json({
