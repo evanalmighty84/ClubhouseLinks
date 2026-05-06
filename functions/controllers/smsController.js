@@ -589,6 +589,7 @@ exports.notifyUsersForLead = async (req, res) => {
             // ✅ IMPORTANT FOR PROSPECTS
             company_name: company_name || null,
             professionalnumbertocall: professionalnumbertocall || null,
+            networkingsource: networkingsource || null,
         };
 
         const city = canonText(lead.city);
@@ -630,8 +631,9 @@ exports.notifyUsersForLead = async (req, res) => {
             }
 
             const text = [
-                `Hi this is Evan Ligon.`,
-                `I got your number from ${lead.company_name || "a networking source"}.`,
+                `Hi this is Evan Ligon from ${lead.networkingsource || "a networking source"}.`,
+                ``,
+                `Here is a lead for ${lead.company_name || "your company"}.`,
                 ``,
                 lead.description ? truncate(lead.description, 250) : "",
                 ``,
