@@ -689,24 +689,88 @@ exports.notifyUsersForLead = async (req, res) => {
         }
 
         const usersSql = `
-            SELECT id, name, phone_number, company_name, industry, subscribed_areas
+            SELECT DISTINCT ON (id)
+
+                id,
+                name,
+                phone_number,
+                company_name,
+                industry,
+                subscribed_areas,
+                state
+
             FROM users
+
             WHERE phone_number IS NOT NULL
+
+              AND LOWER(state) = LOWER($3)
+
               AND EXISTS (
                 SELECT 1
                 FROM unnest(coalesce(industry, ARRAY[]::text[])) i
-                WHERE lower(i) = ANY($1)
-              )
+                WHERE LOWER(i) = ANY($1)
+                )
+
               AND EXISTS (
                 SELECT 1
                 FROM unnest(coalesce(subscribed_areas, ARRAY[]::text[])) a
-                WHERE lower(a) = lower($2)
-              )
+
+                WHERE
+                LOWER($2) LIKE '%' || LOWER(TRIM(a)) || '%'
+               OR LOWER(TRIM(a)) LIKE '%' || LOWER($2) || '%'
+                )
+
+            ORDER BY id
         `;
 
-        const { rows: users } = await pool.query(usersSql, [leadTypes, city]);
+        const fallbackSql = `
+    SELECT DISTINCT ON (id)
 
-        if (!users.length) {
+        id,
+        name,
+        phone_number,
+        company_name,
+        industry,
+        subscribed_areas,
+        state
+
+    FROM users
+
+    WHERE phone_number IS NOT NULL
+
+      AND LOWER(state) = LOWER($2)
+
+      AND EXISTS (
+        SELECT 1
+        FROM unnest(coalesce(industry, ARRAY[]::text[])) i
+        WHERE LOWER(i) = ANY($1)
+      )
+
+    ORDER BY id
+`;
+
+        const { rows: users } = await pool.query(usersSql, [
+            leadTypes,
+            city,
+            lead.state
+        ]);
+
+
+        let matchedUsers = users;
+
+        if (!matchedUsers.length) {
+
+            console.log("⚠️ No city matches — falling back to statewide industry match");
+
+            const fallback = await pool.query(fallbackSql, [
+                leadTypes,
+                lead.state
+            ]);
+
+            matchedUsers = fallback.rows;
+        }
+
+        if (!matchedUsers.length) {
             return res.status(200).json({
                 message: "No matching users for this lead.",
                 matchedUsers: 0,
@@ -714,9 +778,13 @@ exports.notifyUsersForLead = async (req, res) => {
             });
         }
 
+
+
+
+
         const results = [];
 
-        for (const u of users) {
+        for (const u of matchedUsers) {
             const to = normalizeToE164(u.phone_number);
             if (!to) continue;
 
@@ -764,7 +832,7 @@ exports.notifyUsersForLead = async (req, res) => {
 
         return res.status(200).json({
             message: "Alert processing complete",
-            matchedUsers: users.length,
+            matchedUsers: matchedUsers.length,
             results,
         });
 
