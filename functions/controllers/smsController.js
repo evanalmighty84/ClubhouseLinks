@@ -356,6 +356,28 @@ exports.notifyUsersForLead = async (req, res) => {
                         body: text,
                         from: process.env.TWILIO_TEXAS_NUMBER,
                     });
+                    await pool.query(
+                        `
+    INSERT INTO lead_alerts_sent (
+        lead_id,
+        company_name,
+        lead_city,
+        lead_phone,
+        delivery_status,
+        twilio_sid,
+        sent_at
+    )
+    VALUES ($1,$2,$3,$4,$5,$6,NOW())
+    `,
+                        [
+                            lead.id,
+                            lead.company_name,
+                            lead.city,
+                            to,
+                            'sent',
+                            msg.sid
+                        ]
+                    );
 
                     results.push({
                         company: lead.company_name,
@@ -365,6 +387,26 @@ exports.notifyUsersForLead = async (req, res) => {
                     });
 
                 } catch (e) {
+                    await pool.query(
+                        `
+    INSERT INTO lead_alerts_sent (
+        lead_id,
+        company_name,
+        lead_city,
+        lead_phone,
+        delivery_status,
+        sent_at
+    )
+    VALUES ($1,$2,$3,$4,$5,NOW())
+    `,
+                        [
+                            lead.id,
+                            lead.company_name,
+                            lead.city,
+                            to,
+                            'failed'
+                        ]
+                    );
                     results.push({
                         company: lead.company_name,
                         to,
@@ -515,6 +557,30 @@ exports.notifyUsersForLead = async (req, res) => {
                         body: text,
                         from: process.env.TWILIO_TEXAS_NUMBER,
                     });
+                    await pool.query(
+                        `
+    INSERT INTO lead_alerts_sent (
+        lead_id,
+        user_id,
+        company_name,
+        lead_city,
+        lead_phone,
+        delivery_status,
+        twilio_sid,
+        sent_at
+    )
+    VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())
+    `,
+                        [
+                            lead.id,
+                            u.id,
+                            u.company_name,
+                            city,
+                            prettyPh,
+                            'sent',
+                            msg.sid
+                        ]
+                    );
 
                     results.push({
                         userId: u.id,
@@ -525,6 +591,28 @@ exports.notifyUsersForLead = async (req, res) => {
                     });
 
                 } catch (e) {
+                    await pool.query(
+                        `
+    INSERT INTO lead_alerts_sent (
+        lead_id,
+        user_id,
+        company_name,
+        lead_city,
+        lead_phone,
+        delivery_status,
+        sent_at
+    )
+    VALUES ($1,$2,$3,$4,$5,$6,NOW())
+    `,
+                        [
+                            lead.id,
+                            u.id,
+                            u.company_name,
+                            city,
+                            prettyPh,
+                            'failed'
+                        ]
+                    );
                     results.push({
                         userId: u.id,
                         sent: false,
