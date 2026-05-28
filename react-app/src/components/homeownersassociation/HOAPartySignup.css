@@ -1,0 +1,291 @@
+.hoa-page {
+    min-height: 100vh;
+    padding: 42px 18px;
+    background:
+            radial-gradient(circle at top left, rgba(0, 245, 255, 0.18), transparent 30%),
+            radial-gradient(circle at bottom right, rgba(255, 0, 200, 0.16), transparent 34%),
+            linear-gradient(145deg, #03030a, #09091f, #050510);
+
+    color: #f4fbff;
+}
+
+/* HERO */
+
+.hoa-hero {
+    max-width: 1180px;
+    margin: 0 auto 28px;
+    position: relative;
+    border-radius: 28px;
+    overflow: hidden;
+
+    border: 1px solid rgba(0, 245, 255, 0.42);
+
+    box-shadow:
+            0 0 45px rgba(0, 245, 255, 0.2),
+            0 0 80px rgba(255, 43, 214, 0.14);
+}
+
+.hoa-hero-img {
+    width: 100%;
+    height: 360px;
+    object-fit: cover;
+    display: block;
+    opacity: 0.78;
+}
+
+.hoa-hero-overlay {
+    position: absolute;
+    inset: 0;
+
+    padding: 34px;
+
+    background: linear-gradient(
+            90deg,
+            rgba(3, 3, 10, 0.92),
+            rgba(3, 3, 10, 0.5),
+            rgba(3, 3, 10, 0.2)
+    );
+}
+
+.hoa-kicker,
+.hoa-card-kicker {
+    color: #00f5ff;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: 900;
+}
+
+.hoa-hero h1,
+.hoa-form-card h2 {
+    font-weight: 950;
+    line-height: 0.96;
+
+    background: linear-gradient(
+            90deg,
+            #00f5ff,
+            #61a7ff,
+            #ff2bd6
+    );
+
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hoa-hero h1 {
+    max-width: 560px;
+    font-size: clamp(2.4rem, 6vw, 5.2rem);
+}
+
+.hoa-event-details {
+    max-width: 520px;
+
+    margin-top: 20px;
+    padding: 18px;
+
+    border-radius: 20px;
+
+    background: rgba(5, 5, 16, 0.72);
+
+    border: 1px solid rgba(0, 245, 255, 0.24);
+
+    backdrop-filter: blur(10px);
+}
+
+.hoa-event-details p {
+    margin-bottom: 8px;
+}
+
+.hoa-rain-note {
+    margin-top: 16px;
+
+    color: #ffde59;
+    font-weight: 900;
+}
+
+/* GRID */
+
+.hoa-signup-grid {
+    max-width: 1180px;
+
+    margin: 0 auto;
+
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+
+    gap: 24px;
+
+    align-items: stretch;
+}
+
+/* CARDS */
+
+.hoa-form-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    min-height: 640px;
+
+    padding: 28px;
+
+    border-radius: 28px;
+
+    background:
+            radial-gradient(circle at top left, rgba(0, 245, 255, 0.12), transparent 34%),
+            rgba(5, 5, 16, 0.94);
+
+    border: 1px solid rgba(0, 245, 255, 0.34);
+
+    box-shadow:
+            0 0 30px rgba(0, 245, 255, 0.14),
+            0 0 50px rgba(0, 245, 255, 0.08);
+}
+
+.provider-card {
+    border-color: rgba(255, 43, 214, 0.42);
+
+    box-shadow:
+            0 0 30px rgba(255, 43, 214, 0.14),
+            0 0 50px rgba(255, 43, 214, 0.08);
+}
+
+.hoa-form-card h2 {
+    font-size: clamp(2rem, 4vw, 3.5rem);
+
+    margin-bottom: 24px;
+}
+
+/* FORM */
+
+.hoa-form-card label {
+    display: block;
+
+    margin-top: 12px;
+    margin-bottom: 6px;
+
+    color: #dffcff;
+
+    font-weight: 800;
+}
+
+.hoa-form-card input,
+.hoa-form-card textarea,
+.hoa-form-card select {
+    width: 100%;
+
+    background: rgba(255, 255, 255, 0.06);
+
+    border: 1px solid rgba(0, 245, 255, 0.32);
+
+    color: #fff;
+
+    border-radius: 14px;
+
+    padding: 12px 14px;
+
+    outline: none;
+
+    transition: 0.2s ease;
+}
+
+.hoa-form-card input:focus,
+.hoa-form-card textarea:focus,
+.hoa-form-card select:focus {
+    border-color: #00f5ff;
+
+    box-shadow:
+            0 0 0 2px rgba(0, 245, 255, 0.14),
+            0 0 18px rgba(0, 245, 255, 0.22);
+}
+
+.hoa-form-card select option {
+    color: #111;
+}
+
+/* BUTTONS */
+
+.hoa-form-card button,
+.stripe-button {
+    width: 100%;
+
+    margin-top: 22px;
+
+    border: none;
+    border-radius: 999px;
+
+    padding: 14px 22px;
+
+    color: white;
+
+    font-weight: 950;
+
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+
+    background: linear-gradient(
+            90deg,
+            #00f5ff,
+            #8b5cff,
+            #ff2bd6
+    );
+
+    box-shadow:
+            0 0 22px rgba(0, 245, 255, 0.36),
+            0 0 30px rgba(255, 43, 214, 0.25);
+
+    transition: 0.25s ease;
+}
+
+.hoa-form-card button:hover,
+.stripe-button:hover {
+    transform: translateY(-2px);
+}
+
+.stripe-button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* STRIPE */
+
+.hoa-stripe-wrap {
+    margin-top: auto;
+    padding-top: 24px;
+}
+
+.hoa-stripe-wrap stripe-buy-button {
+    width: 100%;
+}
+
+/* MOBILE */
+
+@media (max-width: 900px) {
+    .hoa-hero-img {
+        height: 520px;
+    }
+
+    .hoa-signup-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hoa-form-card {
+        min-height: unset;
+    }
+}
+.hoa-stripe-wrap {
+    margin-top: auto;
+    padding-top: 24px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 80px;
+}
+
+stripe-buy-button {
+    display: block;
+    width: 100%;
+    min-height: 60px;
+}

@@ -6,14 +6,15 @@ import Nav from 'react-bootstrap/Nav';
 import Modal from 'react-bootstrap/Modal';
 import './Header.css';
 
-import leadIcon from "../LeadGeneration.png";
-import teamIcon from "../OurTeam.png";
-import stockEmoji from "../newestservice4.png";
-import eCommerceEmoji from "../ClientPortfolios (1).png";
-import onlineReviewsEmoji from "../ContactUs.png";
-import aiProjectsEmoji from "../ReportsSmartCrop.png";
-import samplePortfoliosEmoji from "../CRMSmartCrop.png";
-import appStoreEmoji from "../WebsiteDesignSmartCrop.png";
+import leadIcon from "../LeadGenerationAI.png";
+import hoaEmoji from"../HOA.png";
+import teamIcon from "../OurTeamAI.png";
+import stockEmoji from "../ServicesAI.png";
+import eCommerceEmoji from "../WebsitePortfoliosAI.png";
+import onlineReviewsEmoji from "../ContactUsAI.png";
+import aiProjectsEmoji from "../StatisticsAI.png";
+import samplePortfoliosEmoji from "../CRMAI.png";
+import appStoreEmoji from "../AppsAI.png";
 import emailGeneration from "../email-leads.png"
 import socialGeneration from "../social-lead-generation.png"
 import websiteGeneration from "../websiteleadgeneration (1).png"
@@ -76,28 +77,30 @@ const Header = () => {
                         <Nav className="navbar-nav">
 
                             {/* Lead Generation triggers modal */}
-                            <Nav.Link onClick={() => setShowLeadsModal(true)} className="navLinkHover">
+                      {/*      <Nav.Link onClick={() => setShowLeadsModal(true)} className="navLinkHover">
                                 <div className="navlinkText">
                                     <img src={leadIcon} alt="Lead Generation"/>
                                     <span>Lead Generation</span>
                                 </div>
-                            </Nav.Link>
+                            </Nav.Link>*/}
 
                             {/* Our Team triggers modal */}
-                            <Nav.Link onClick={() => setShowTeamModal(true)} className="navLinkHover">
+                 {/*           <Nav.Link onClick={() => setShowTeamModal(true)} className="navLinkHover">
                                 <div className="navlinkText">
                                     <img src={teamIcon} alt="Our Team"/>
                                     <span>Our Team</span>
                                 </div>
-                            </Nav.Link>
+                            </Nav.Link>*/}
 
 
                             {/* Other static links */}
-                            <NavItem to="/aiProjects" icon={stockEmoji} label="Services" />
-                            <NavItem to="/ClientPortfolios"        icon={eCommerceEmoji} label="Client Portfolios" />
+                            <NavItem to="/signIn"  icon={samplePortfoliosEmoji} label="CRM SignIn" />
+                            <NavItem to="/hoa" icon={hoaEmoji} label="HOA Parties" />
+                            <NavItem to="/aiProjects" icon={stockEmoji} label="Home Services" />
                             <NavItem to="/clubhouseMarketing"        icon={aiProjectsEmoji} label="Reports" />
+                            <NavItem to="/ClientPortfolios"        icon={eCommerceEmoji} label="Website Services" />
                             <NavItem to="/contactus"     icon={onlineReviewsEmoji} label="Contact Us" />
-                            <NavItem to="/signIn"  icon={samplePortfoliosEmoji} label="CRM" />
+                            <NavItem to="/leadershipTeam"     icon={teamIcon} label="Leadreship Team" />
                             <NavItem to="/appstore"          icon={appStoreEmoji}   label="Clubhouse Links Apps" />
 
                         </Nav>

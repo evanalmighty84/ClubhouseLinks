@@ -11,7 +11,7 @@ import RoofingImage      from '../services/images/roofing.jpg';
 import SolarElectricImage from '../services/images/SolarElectric.jpg';
 
 const ServicesData = [
-    {
+  /*  {
         title: 'Website Development and Applications',
         description: `
 Clubhouse Links is your best choice for web application and website development projects. We build fast, secure, and visually striking platforms tailored to your exact needs. From interactive React/SPAs to robust serverless backends, our solutions scale with your business. Every project starts with wireframes and style guides that reflect your brand’s personality.
@@ -46,7 +46,7 @@ We provide turnkey lead-generation through custom CRM integrations and API exten
 Implementation includes dashboard design for real-time visibility, automated workflows that route new leads to your sales team, and A/B testing to continuously refine messaging. Data-driven reports ensure you see exactly which channels deliver the best ROI.
     `,
         image: TreeStorm,
-    },
+    },*/
     {
         title: 'Pool Remodeling and Cleaning',
         description: `

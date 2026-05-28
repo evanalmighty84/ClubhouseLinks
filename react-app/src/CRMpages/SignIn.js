@@ -1,132 +1,130 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { Modal, Button, Form } from 'react-bootstrap';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { Modal, Button, Form } from "react-bootstrap";
+import crmImage from "../components/Untitled_design_7_o9dfvi_c_crop,w_1116,h_628,ar_16_9.png";
+import "./SignInCyberpunk.css";
 
 const SignIn = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [validationError, setValidationError] = useState('');
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [validationError, setValidationError] = useState("");
     const [showModal, setShowModal] = useState(true);
     const navigate = useNavigate();
 
     const handleSignIn = async (e) => {
         e.preventDefault();
-        setValidationError('');
+        setValidationError("");
 
         try {
             const response = await axios.post(
-                'https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/auth/signin/',
+                "https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/auth/signin/",
                 { email, password }
             );
 
             const { user, token } = response.data;
 
-            localStorage.setItem('user', JSON.stringify(user));
-            localStorage.setItem('token', token);
+            localStorage.setItem("user", JSON.stringify(user));
+            localStorage.setItem("token", token);
 
-            navigate('/dashboard');
+            navigate("/dashboard");
         } catch (error) {
-            console.error('Sign-in failed', error);
+            console.error("Sign-in failed", error);
 
             if (error.response?.data?.error) {
                 setValidationError(error.response.data.error);
             } else {
-                setValidationError('An unexpected error occurred. Please try again.');
+                setValidationError("An unexpected error occurred. Please try again.");
             }
         }
     };
 
     const handleSignUp = () => {
         setShowModal(false);
-        navigate('/signup');
+        navigate("/signup");
     };
 
-    // ✅ NEW
     const handlePrivacyPolicy = () => {
         setShowModal(false);
-        navigate('/privacy-policy');
+        navigate("/privacy-policy");
     };
 
     return (
-        <Modal show={showModal} onHide={() => setShowModal(false)} centered>
-            <Button
-                disabled
-                style={{ backgroundColor: 'steelblue', opacity: '1.0' }}
-                variant="primary"
-                className="w-100"
-            >
-                <h2 style={{ padding: '20px' }}>Clubhouse Links CRM</h2>
-            </Button>
+        <Modal
+            show={showModal}
+            onHide={() => setShowModal(false)}
+            centered
+            dialogClassName="cyber-signin-dialog"
+            contentClassName="cyber-signin-modal"
+        >
+            <Modal.Header closeButton className="cyber-signin-header">
+                <div className="cyber-brand-wrap">
+                    <img src={crmImage} alt="Clubhouse Links CRM" className="cyber-crm-img" />
 
-            <Modal.Header closeButton />
+                    <div>
+                        <p className="cyber-kicker">AI Lead Command Center</p>
+                        <h2>Clubhouse Links CRM</h2>
+                        <span>Secure operator access</span>
+                    </div>
+                </div>
+            </Modal.Header>
 
-            <Modal.Body>
+            <Modal.Body className="cyber-signin-body">
                 <Form onSubmit={handleSignIn}>
                     <Form.Group className="mb-3" controlId="formBasicEmail">
                         <Form.Label>Email</Form.Label>
                         <Form.Control
+                            className="cyber-input"
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="Enter email"
+                            placeholder="operator@email.com"
                             required
-                            isInvalid={validationError === 'User not found'}
+                            isInvalid={validationError === "User not found"}
                         />
                         <Form.Control.Feedback type="invalid">
-                            {validationError === 'User not found' && validationError}
+                            {validationError === "User not found" && validationError}
                         </Form.Control.Feedback>
                     </Form.Group>
 
                     <Form.Group className="mb-3" controlId="formBasicPassword">
                         <Form.Label>Password</Form.Label>
                         <Form.Control
+                            className="cyber-input"
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Enter password"
+                            placeholder="Enter access key"
                             required
-                            isInvalid={validationError === 'Invalid password'}
+                            isInvalid={validationError === "Invalid password"}
                         />
                         <Form.Control.Feedback type="invalid">
-                            {validationError === 'Invalid password' && validationError}
+                            {validationError === "Invalid password" && validationError}
                         </Form.Control.Feedback>
                     </Form.Group>
 
                     {validationError &&
-                        !['User not found', 'Invalid password'].includes(validationError) && (
-                            <div className="text-danger mb-3">{validationError}</div>
+                        !["User not found", "Invalid password"].includes(validationError) && (
+                            <div className="cyber-error">{validationError}</div>
                         )}
 
-                    <Button
-                        style={{ backgroundColor: 'steelblue' }}
-                        variant="primary"
-                        type="submit"
-                        className="w-100"
-                    >
+                    <Button type="submit" className="cyber-submit w-100">
                         Sign In
                     </Button>
                 </Form>
             </Modal.Body>
 
-            <Modal.Footer className="flex-column">
-                <div className="text-center w-100 mb-2">
-                    <span>Don't have an account yet? </span>
-                    <Button style={{ color: 'green' }} variant="link" onClick={handleSignUp}>
+            <Modal.Footer className="cyber-signin-footer">
+                <div>
+                    Don&apos;t have an account yet?
+                    <Button variant="link" onClick={handleSignUp} className="cyber-link">
                         Click here to sign up
                     </Button>
                 </div>
 
-                {/* ✅ NEW Privacy Policy link */}
-                <div className="text-center w-100">
-                    <Button
-                        variant="link"
-                        style={{ fontSize: '0.85rem', color: 'steelblue' }}
-                        onClick={handlePrivacyPolicy}
-                    >
-                        Privacy Policy
-                    </Button>
-                </div>
+                <Button variant="link" onClick={handlePrivacyPolicy} className="cyber-privacy">
+                    Privacy Policy
+                </Button>
             </Modal.Footer>
         </Modal>
     );

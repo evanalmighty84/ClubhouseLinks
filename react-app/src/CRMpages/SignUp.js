@@ -1,121 +1,142 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { Modal, Button, Form, Toast, ToastContainer } from 'react-bootstrap';
-import VideoOverlay from '../CRMpages/CRMutils/dashboardanimations';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { Modal, Button, Form } from "react-bootstrap";
+import VideoOverlay from "../components/WideMovieLogo.gif";
+import crmImage from "../components/Untitled_design_7_o9dfvi_c_crop,w_1116,h_628,ar_16_9.png";
+import "./SignUpCyberpunk.css";
 
 const SignUp = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [name, setName] = useState('');
-    const [showModal, setShowModal] = useState(false); // Modal visibility
-    const [validationError, setValidationError] = useState(''); // Validation error message
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [name, setName] = useState("");
+    const [showModal, setShowModal] = useState(false);
+    const [validationError, setValidationError] = useState("");
     const navigate = useNavigate();
 
-    // Handle sign-up
     const handleSignUp = async (e) => {
         e.preventDefault();
-        setValidationError(''); // Clear previous errors
+        setValidationError("");
 
         try {
-            const response = await axios.post('https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/auth/signup/', { email, password, name });
-            setShowModal(true); // Show modal for success
-        } catch (error) {
-            console.error('Sign-up failed', error.response);
+            await axios.post(
+                "https://crm-function-app-5d4de511071d.herokuapp.com/server/crm_function/api/auth/signup/",
+                { email, password, name }
+            );
 
-            // Check if the error is from the backend and has a specific message
-            if (error.response && error.response.data && error.response.data.error) {
+            setShowModal(true);
+        } catch (error) {
+            console.error("Sign-up failed", error.response);
+
+            if (error.response?.data?.error) {
                 setValidationError(error.response.data.error);
             } else {
-                setValidationError('An unexpected error occurred. Please try again.');
+                setValidationError("An unexpected error occurred. Please try again.");
             }
         }
     };
 
-    // Handle modal close and redirect to sign-in
     const handleModalClose = () => {
         setShowModal(false);
-        navigate('/signin'); // Redirect to sign-in page
+        navigate("/signin");
     };
 
     return (
-        <div>
-            {/* Sign-Up Form */}
+        <div className="cyber-signup-page">
+            <Form onSubmit={handleSignUp} className="cyber-signup-card">
+                <div className="cyber-signup-header">
+                    <img src={crmImage} alt="Clubhouse Links CRM" className="cyber-signup-img" />
 
-            <Form onSubmit={handleSignUp} className="p-4 rounded bg-white" style={{ margin: 'auto', maxWidth: '1000px', width: '100%', boxShadow: '0 0 20px indigo'}}>
-                <Button disabled={true} style={{ background: 'linear-gradient(to right, indigo, steelblue, #ff0080, black)', opacity:'1.0' }} variant="primary" type="submit" className="w-100">
-                    <h2 style={{padding:'20px'}}>Clubhouse Links CRM Sign Up</h2>
-                </Button>
+                    <div>
+                        <p className="cyber-kicker">New Operator Access</p>
+                        <h2>Clubhouse Links CRM Sign Up</h2>
+                        <span>Create your AI lead command profile</span>
+                    </div>
+                </div>
 
-                {/* Name Field */}
                 <Form.Group className="mb-3" controlId="formBasicName">
                     <Form.Label>Name</Form.Label>
                     <Form.Control
+                        className="cyber-input"
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Enter your name"
                         required
-                        isInvalid={validationError === 'Name is required'}
+                        isInvalid={validationError === "Name is required"}
                     />
                     <Form.Control.Feedback type="invalid">
-                        {validationError === 'Name is required' && validationError}
+                        {validationError === "Name is required" && validationError}
                     </Form.Control.Feedback>
                 </Form.Group>
 
-                {/* Email Field */}
                 <Form.Group className="mb-3" controlId="formBasicEmail">
                     <Form.Label>Email</Form.Label>
                     <Form.Control
+                        className="cyber-input"
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Enter email"
+                        placeholder="operator@email.com"
                         required
-                        isInvalid={validationError === 'User already exists'}
+                        isInvalid={validationError === "User already exists"}
                     />
                     <Form.Control.Feedback type="invalid">
-                        {validationError === 'User already exists' && validationError}
+                        {validationError === "User already exists" && validationError}
                     </Form.Control.Feedback>
                 </Form.Group>
 
-                {/* Password Field */}
                 <Form.Group className="mb-3" controlId="formBasicPassword">
                     <Form.Label>Password</Form.Label>
                     <Form.Control
+                        className="cyber-input"
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter password"
+                        placeholder="Create access key"
                         required
-                        isInvalid={validationError === 'Invalid password'}
+                        isInvalid={validationError === "Invalid password"}
                     />
                     <Form.Control.Feedback type="invalid">
-                        {validationError === 'Invalid password' && validationError}
+                        {validationError === "Invalid password" && validationError}
                     </Form.Control.Feedback>
                 </Form.Group>
 
-                {/* Sign-Up Button */}
-                <Button style={{ background: 'linear-gradient(to right bottom, #34eb92, #23ad6a' }} variant="primary" type="submit" className="w-100">
-                    Sign Up
+                {validationError &&
+                    !["Name is required", "User already exists", "Invalid password"].includes(
+                        validationError
+                    ) && <div className="cyber-error">{validationError}</div>}
+
+                <Button type="submit" className="cyber-submit w-100">
+                    Create Account
                 </Button>
             </Form>
 
-            {/* Modal Prompting Email Verification */}
-            <Modal show={showModal} onHide={handleModalClose} centered>
-                <Modal.Header closeButton>
+            <Modal
+                show={showModal}
+                onHide={handleModalClose}
+                centered
+                contentClassName="cyber-success-modal"
+            >
+                <Modal.Header closeButton className="cyber-success-header">
                     <Modal.Title>Email Verification</Modal.Title>
                 </Modal.Header>
-                <Modal.Body>
-                    <p>Sign-up successful! Please check your email inbox for a verification link to complete the process.</p>
+
+                <Modal.Body className="cyber-success-body">
+                    <p>
+                        Sign-up successful! Please check your email inbox for a verification
+                        link to complete the process.
+                    </p>
                 </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="success" onClick={handleModalClose}>
+
+                <Modal.Footer className="cyber-success-footer">
+                    <Button onClick={handleModalClose} className="cyber-submit">
                         Go to Sign In
                     </Button>
                 </Modal.Footer>
             </Modal>
-            <VideoOverlay />
+
+            <img src={VideoOverlay} alt="Clubhouse Links animation" className="cyber-signup-gif" />
         </div>
     );
 };

@@ -5,7 +5,8 @@ import axios from 'axios';
 import { Form, Button, Row, Col, Alert } from 'react-bootstrap';
 import './ContactUs.css';
 import profilePic from '../profilepicevan.png'; // Update path as needed
-import logo from '../../logo.png'; // Replace with your actual logo
+import logo from '../../components/Untitled_design_7_o9dfvi_c_crop,w_1116,h_628,ar_16_9.png'; // Replace with your actual logo
+
 
 
 //old <WebServices> component
@@ -71,7 +72,7 @@ const ContactUs = () => {
                                 }}
                                 data-aos="fade-down"
                             >
-                                Let's Talk
+                               Get Started
                             </h2>
                         )}
                     </div>

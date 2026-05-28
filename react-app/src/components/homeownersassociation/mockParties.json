@@ -1,0 +1,12 @@
+[
+  {
+    "id": 1,
+    "city": "Plano",
+    "state": "Texas",
+    "neighborhood": "Country Place",
+    "address": "3600 Country Place Dr, Plano, TX, United States, Texas",
+    "weekend": "June 13th and 14th",
+    "rainNote": "If Saturday is raining we will do Sunday.",
+    "time": "12:00 PM - 3:00 PM"
+  }
+]

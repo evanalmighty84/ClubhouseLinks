@@ -17,7 +17,7 @@ const ServicesData = [
         image: TreeCut,
     },
 
-    {
+/*    {
         title: 'Lead Services',
         description: `
       We provide turnkey lead-generation through custom CRM integrations and API extensions.
@@ -26,7 +26,7 @@ const ServicesData = [
       so you never miss an opportunity to grow.
     `,
         image: TreeStorm,
-    },
+    },*/
     {
         title: 'Graphic Design',
         description: `
@@ -37,7 +37,7 @@ const ServicesData = [
     `,
         image: TreeStump,
     },
-    {
+    /*{
         title: 'Design and Apparel',
         description: `
       At Clubhouse Links, we harness the power of A.I. to design custom apparel with unmatched
@@ -47,7 +47,7 @@ const ServicesData = [
       giving you a turnkey solution.
     `,
         image: TreeRemoval,
-    },
+    },*/
 ];
 
 export default ServicesData;

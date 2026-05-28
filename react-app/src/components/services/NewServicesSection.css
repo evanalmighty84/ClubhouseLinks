@@ -1,0 +1,326 @@
+.new-services-section {
+    position: relative;
+    overflow: hidden;
+    padding: 4rem 1rem 5rem;
+    margin-top: -1px;
+    background:
+            linear-gradient(
+                    -180deg,
+                    #02060d 0%,
+                    #07111f 24%,
+                    #071f37 52%,
+                    #04101d 82%,
+                    #02060d 100%
+            );
+    color: white;
+}
+
+.new-services-bg-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+            linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 55px 55px;
+    pointer-events: none;
+    opacity: 0.85;
+}
+
+.new-services-bg-glow {
+    position: absolute;
+    inset: 0;
+    background:
+            radial-gradient(circle at 38% 22%, rgba(0, 225, 255, 0.13), transparent 25%),
+            radial-gradient(circle at 76% 62%, rgba(255, 0, 168, 0.09), transparent 28%);
+    filter: blur(55px);
+    pointer-events: none;
+}
+
+.new-services-hero,
+.new-services-grid {
+    position: relative;
+    z-index: 2;
+}
+
+.new-services-hero {
+    text-align: center;
+    padding: 2rem 1rem 2.75rem;
+}
+
+.new-services-logo-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.new-services-logo {
+    display: block;
+    margin: 0 auto;
+    height: auto;
+    width: 20%;
+    max-width: 500px;
+    min-width: 150px;
+}
+
+.new-services-title {
+    margin-top: 0.75rem;
+    font-family: cursive;
+    font-size: clamp(1.7rem, 3vw, 2.4rem);
+    font-weight: bold;
+    background-image: linear-gradient(90deg, #00e1ff, #ffffff, #ff00a8);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    text-shadow:
+            0 0 18px rgba(0, 225, 255, 0.18),
+            0 0 24px rgba(255, 0, 168, 0.16);
+}
+
+/* Wider, more horizontal card layout */
+.new-services-grid {
+    max-width: 1450px;
+    margin: 0 auto;
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.new-service-card-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.new-service-card {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 22px;
+    background:
+            radial-gradient(circle at 25% 20%, rgba(0, 225, 255, 0.10), transparent 34%),
+            radial-gradient(circle at 78% 78%, rgba(255, 0, 168, 0.12), transparent 36%),
+            rgba(5, 12, 24, 0.88);
+    border: 1px solid rgba(0, 225, 255, 0.14);
+    box-shadow:
+            0 18px 40px rgba(0, 0, 0, 0.48),
+            0 0 24px rgba(0, 225, 255, 0.08);
+    transition:
+            transform 0.28s ease,
+            box-shadow 0.28s ease,
+            border-color 0.28s ease;
+}
+
+.new-service-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(255, 0, 168, 0.34);
+    box-shadow:
+            0 24px 48px rgba(0, 0, 0, 0.58),
+            0 0 26px rgba(0, 225, 255, 0.18),
+            0 0 36px rgba(255, 0, 168, 0.14);
+}
+
+.new-service-card::after {
+    content: "";
+    position: absolute;
+    left: 22px;
+    right: 22px;
+    bottom: 0;
+    height: 3px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #00e1ff, #7a7cff, #ff00a8);
+    box-shadow:
+            0 0 10px rgba(0, 225, 255, 0.75),
+            0 0 18px rgba(255, 0, 168, 0.45);
+    opacity: 0.85;
+}
+
+/* Taller, wider image area like Website Services */
+.new-service-image-wrap {
+    width: 100%;
+    height: 250px;
+    background: rgba(0, 0, 0, 0.42);
+    overflow: hidden;
+}
+
+.new-service-image {
+    width: 100%;
+    height: 170%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.35s ease, filter 0.35s ease;
+}
+
+.new-service-card:hover .new-service-image {
+    transform: scale(1.05);
+    filter: brightness(1.08) contrast(1.05);
+}
+
+.new-service-content {
+    padding: 2rem 2.25rem 2.4rem;
+    text-align: center;
+}
+
+.new-service-content h3 {
+    margin: 0 0 1rem;
+    font-size: clamp(1.35rem, 2vw, 1.85rem);
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.new-service-content p {
+    max-width: 720px;
+    margin: 0 auto;
+    color: rgba(255, 255, 255, 0.72);
+    line-height: 1.65;
+    font-size: clamp(1rem, 1.25vw, 1.15rem);
+}
+
+.new-service-cta {
+    display: inline-flex;
+    margin-top: 1rem;
+    padding: 0.55rem 0.95rem;
+    border-radius: 999px;
+    color: #00e1ff;
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: rgba(0, 225, 255, 0.08);
+    border: 1px solid rgba(0, 225, 255, 0.18);
+}
+
+/* =========================================================
+   HOME SERVICES IMAGE FIX
+   Makes service images show more of the full picture
+========================================================= */
+/* =========================================================
+   HOME SERVICES SMOOTH IMAGE DISPLAY
+   Full image visible with blurred background fill
+========================================================= */
+
+.landing-services-page .new-service-image-wrap {
+    position: relative;
+    height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #02060d;
+}
+
+/* blurred copy of the same image fills the empty side space */
+.landing-services-page .new-service-image-wrap::before {
+    content: "";
+    position: absolute;
+    inset: -28px;
+    background-image: var(--service-image);
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    filter: blur(24px) brightness(0.52) saturate(1.25);
+    transform: scale(1.14);
+    opacity: 0.95;
+    z-index: 1;
+}
+
+/* dark/glow overlay to blend it into the card */
+.landing-services-page .new-service-image-wrap::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+            radial-gradient(circle at center, rgba(0, 225, 255, 0.08), transparent 58%),
+            linear-gradient(180deg, rgba(2, 6, 13, 0.03), rgba(2, 6, 13, 0.22));
+    z-index: 2;
+}
+
+/* actual full image on top */
+.landing-services-page .new-service-image {
+    position: relative;
+    z-index: 3;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center center;
+    display: block;
+    background: transparent;
+    filter: contrast(1.03) brightness(1.02);
+}
+/* Logo pulses for first 10 seconds */
+.new-services-logo.new-services-logo-pulse-10s {
+    animation: newServicesLogoPulse10s 1.25s ease-in-out infinite !important;
+    transform-origin: center center;
+    will-change: transform, filter;
+}
+
+@keyframes newServicesLogoPulse10s {
+    0% {
+        transform: scale(1);
+        filter:
+                drop-shadow(0 0 0 rgba(0, 225, 255, 0))
+                drop-shadow(0 0 0 rgba(255, 0, 168, 0));
+    }
+
+    50% {
+        transform: scale(1.07);
+        filter:
+                drop-shadow(0 0 14px rgba(0, 225, 255, 0.55))
+                drop-shadow(0 0 26px rgba(255, 0, 168, 0.38));
+    }
+
+    100% {
+        transform: scale(1);
+        filter:
+                drop-shadow(0 0 0 rgba(0, 225, 255, 0))
+                drop-shadow(0 0 0 rgba(255, 0, 168, 0));
+    }
+}
+/* Tablet: one wide card per row */
+@media (max-width: 1000px) {
+    .new-services-grid {
+        grid-template-columns: 1fr;
+        max-width: 760px;
+    }
+
+    .new-service-image-wrap {
+        height: 240px;
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .new-services-section {
+        padding: 1rem 1rem 4rem;
+    }
+
+    .new-services-logo {
+        width: 42%;
+        max-width: 190px;
+        min-width: 150px;
+    }
+
+    .new-services-title {
+        font-size: 1.8rem;
+    }
+
+    .new-services-grid {
+        gap: 1.5rem;
+    }
+
+    .new-service-image-wrap {
+        height: 190px;
+    }
+
+    .new-service-content {
+        padding: 1.5rem;
+    }
+
+    .new-service-content h3 {
+        font-size: 1.35rem;
+    }
+
+    .new-service-content p {
+        font-size: 1rem;
+    }
+}
+

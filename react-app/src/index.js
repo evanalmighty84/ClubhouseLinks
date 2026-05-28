@@ -67,6 +67,7 @@ import LeadsPage from "./CRMpages/LeadsPage"
 import "./index.css";
 import PoolServiceHomepage from "./PoolService/PoolServiceHomePage";
 import ContactUs from "./components/landing-pages/ContactSection";
+import HOAPartySignup from "./components/homeownersassociation/HOAPartySignup";
 import EmailLeadsSection from "./components/landing-pages/EmailLeadsSection";
 import PlumbingSection from "./components/landing-pages/PlumbingSection";
 import PrivacyPolicy from "./CRMpages/PrivacyPolicy";
@@ -171,6 +172,7 @@ class App extends Component {
                             <Route path="/DavidDixon" element={<SendGoogleReviewForm4 />} />
                             <Route path="/sms-optin-consent" element={<SMSConsentPage />} />
                             <Route path="/contactUs" element={<ContactUs />} />
+                            <Route path="/hoa" element={<HOAPartySignup />} />
                             <Route path="/blogs" element={<BlogsPage />} />
                             <Route path="/aiProjects" element={<AI />} />
                             <Route path="/Bids" element={<BiddingSection />} />

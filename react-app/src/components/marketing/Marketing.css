@@ -1,5 +1,391 @@
-.gradient-icon {
-    background: linear-gradient(to right, black, steelblue,  #ff0080, black );
+.reports-map-shell {
+    position: relative;
+    min-height: 100vh;
+    overflow: hidden;
+    padding: 0 1rem 5rem;
+    background:
+            radial-gradient(circle at top, rgba(30, 144, 255, 0.14), transparent 28%),
+            radial-gradient(circle at bottom right, rgba(0, 255, 200, 0.08), transparent 22%),
+            linear-gradient(180deg, #07111f 0%, #02060d 100%);
+    color: white;
+}
+
+.reports-map-grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image:
+            linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 55px 55px;
+    pointer-events: none;
+    opacity: 0.85;
+}
+
+.reports-map-glow {
+    position: absolute;
+    inset: 0;
+    background:
+            radial-gradient(circle at 48% 66%, rgba(0, 200, 255, 0.22), transparent 18%),
+            radial-gradient(circle at 67% 70%, rgba(0, 255, 170, 0.16), transparent 16%),
+            radial-gradient(circle at 78% 48%, rgba(0, 140, 255, 0.14), transparent 14%),
+            radial-gradient(circle at 75% 55%, rgba(0, 255, 255, 0.12), transparent 12%);
+    filter: blur(60px);
+    pointer-events: none;
+}
+
+.reports-map-stage {
+    position: absolute;
+    top: 1%;
+    left: 58%;
+    width: min(1280px, 100vw);
+    height: 440px;
+    transform: translateX(-50%);
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0.9;
+}
+
+.reports-map-stage-inner {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.reports-map-outline {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.26;
+}
+
+.reports-map-outline svg {
+    width: 72%;
+    max-width: 1200px;
+    height: auto;
+}
+
+.reports-map-outline path {
+    fill: rgba(255, 255, 255, 0.03);
+    stroke: rgba(0, 255, 255, 0.22);
+    stroke-width: 3;
+    filter: drop-shadow(0 0 16px rgba(0, 255, 255, 0.22));
+}
+
+.reports-hotspot {
+    position: absolute;
+    z-index: 4;
+    transform-origin: center center;
+}
+
+.reports-hotspot-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: #00e1ff;
+    display: block;
+    position: relative;
+    z-index: 2;
+    box-shadow:
+            0 0 10px #00e1ff,
+            0 0 20px #00e1ff,
+            0 0 40px rgba(0, 225, 255, 0.85);
+}
+
+.reports-hotspot-pulse {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    border: 2px solid rgba(0, 225, 255, 0.7);
+    animation: reportsHotspotPulse 2.8s infinite;
+}
+
+.reports-hotspot-label {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    white-space: nowrap;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.78);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+@keyframes reportsHotspotPulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.9;
+    }
+
+    100% {
+        transform: scale(6);
+        opacity: 0;
+    }
+}
+
+.reports-map-content {
+    position: relative;
+    z-index: 8;
+    max-width: 1220px;
+    margin: 0 auto;
+    padding-top: 4rem;
+}
+
+.reports-filter-panel {
+    position: absolute;
+    top: 7.25rem;
+    left: 2rem;
+    z-index: 30;
+
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.85rem;
+
+    margin: 0;
+    padding: 0;
+}
+
+.reports-filter {
+    width: 100%;
+    height: 64px;
+    min-width: 0;
+
+    padding: 0 1.1rem;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 225, 255, 0.35);
+
+    background:
+            linear-gradient(180deg, rgba(7, 17, 31, 0.96), rgba(2, 6, 13, 0.96)) !important;
+
+    color: white !important;
+    font-size: 1.05rem;
+    font-weight: 500;
+
+    box-shadow:
+            0 0 16px rgba(0, 225, 255, 0.14),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+
+    backdrop-filter: blur(12px);
+}
+
+.reports-filter option {
+    background: #07111f;
+    color: white;
+}
+
+.reports-filter:hover {
+    border-color: rgba(255, 0, 168, 0.45);
+    box-shadow:
+            0 0 18px rgba(0, 225, 255, 0.2),
+            0 0 22px rgba(255, 0, 168, 0.14),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.reports-hero {
+    position: relative;
+    z-index: 10;
+    max-width: 850px;
+    margin: 0 auto 3rem;
+    padding-top: 1.5rem;
+    text-align: center;
+}
+
+.reports-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px;
+    margin-bottom: 1rem;
+    border-radius: 999px;
+    color: #00e1ff;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    backdrop-filter: blur(12px);
+}
+
+.reports-hero h1 {
+    margin: 0;
+    font-family: cursive;
+    font-size: clamp(2.2rem, 4vw, 4rem);
+    font-weight: 800;
+    background-image: linear-gradient(90deg, #00e1ff, #ffffff, #ff00a8);
     -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
     -webkit-text-fill-color: transparent;
+    text-shadow:
+            0 0 18px rgba(0, 225, 255, 0.18),
+            0 0 24px rgba(255, 0, 168, 0.16);
+}
+
+.reports-hero p {
+    margin: 1rem auto 0;
+    max-width: 680px;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 1.1rem;
+    line-height: 1.7;
+}
+
+.reports-status-pill {
+    display: inline-flex;
+    margin-top: 1rem;
+    padding: 0.65rem 1rem;
+    border-radius: 999px;
+    color: #00e1ff;
+    background: rgba(0, 225, 255, 0.08);
+    border: 1px solid rgba(0, 225, 255, 0.16);
+}
+
+.reports-status-error {
+    color: #ff9ecf;
+    background: rgba(255, 0, 168, 0.08);
+    border-color: rgba(255, 0, 168, 0.2);
+}
+
+.reports-counter-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.reports-counter-card,
+.reports-data-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 24px;
+    background:
+            radial-gradient(circle at 18% 14%, rgba(0, 225, 255, 0.12), transparent 30%),
+            radial-gradient(circle at 82% 86%, rgba(255, 0, 168, 0.14), transparent 34%),
+            linear-gradient(180deg, rgba(5, 12, 24, 0.96) 0%, rgba(2, 8, 18, 0.98) 100%);
+    border: 1px solid rgba(0, 225, 255, 0.18);
+    box-shadow:
+            0 20px 45px rgba(0, 0, 0, 0.5),
+            0 0 26px rgba(0, 225, 255, 0.08),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.reports-counter-card {
+    padding: 1.5rem;
+}
+
+.reports-counter-label {
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 0.95rem;
+    margin-bottom: 0.7rem;
+}
+
+.reports-counter-value {
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 800;
+    line-height: 1;
+    color: #00e1ff;
+}
+
+.reports-counter-state {
+    background-image: linear-gradient(90deg, #00e1ff, #ffffff, #ff00a8);
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+.reports-card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem;
+}
+
+.reports-data-card {
+    padding: 1.5rem;
+}
+
+.reports-data-card-wide {
+    grid-column: 1 / -1;
+}
+
+.reports-data-card::after,
+.reports-counter-card::after {
+    content: "";
+    position: absolute;
+    left: 24px;
+    right: 24px;
+    bottom: 0;
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #00e1ff, #7a7cff, #ff00a8);
+    box-shadow:
+            0 0 12px rgba(0, 225, 255, 0.8),
+            0 0 20px rgba(122, 124, 255, 0.45),
+            0 0 26px rgba(255, 0, 168, 0.5);
+    opacity: 0.95;
+}
+
+.reports-card-title {
+    color: white;
+    font-size: 1.25rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+}
+
+.reports-card-body {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.reports-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.76);
+}
+
+.reports-row strong {
+    color: #00e1ff;
+}
+
+.reports-empty-text {
+    color: rgba(255, 255, 255, 0.62);
+    margin: 0;
+}
+
+@media (max-width: 1000px) {
+    .reports-counter-grid,
+    .reports-card-grid {
+        grid-template-columns: 1fr;
+        max-width: 780px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .reports-filter-panel {
+        position: relative;
+        top: auto;
+        left: auto;
+        width: 100%;
+        max-width: 320px;
+        margin: 0 auto 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .reports-map-shell {
+        padding: 0 1rem 4rem;
+    }
+
+    .reports-map-outline svg {
+        width: 115%;
+    }
+
+    .reports-hero h1 {
+        font-size: 2.2rem;
+    }
 }

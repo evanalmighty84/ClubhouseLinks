@@ -11,8 +11,8 @@ import './NonUserDashboard.css';
 import ServicesSection from "../components/services/ServicesSection";
 import servicesData from "../components/landing-pages/WebsiteLeadData";
 import Unlimited from "../components/WideMovieLogo.gif";
-import Logo from "../components/Untitled_design_7_o9dfvi_c_crop,w_1116,h_628,ar_16_9.png";
-
+import Logo from "../components/CRMAI.png";
+import LeadStormHero from "../CRMpages/LeadStormHero";
 // ✅ Reusable CRM Description Block
 const CrmDescription = () => (
 
@@ -66,13 +66,14 @@ const CrmSignin = () => {
 
     return (
         <>
-            <ServicesSection
+            <LeadStormHero />
+        {/*    <ServicesSection
                 services={[]}
                 heroGif={Unlimited}
                 heroLogo={Logo}
                 fullScreen={false}
                 heroSwapDelay={24000}
-            />
+            />*/}
 
             {/* 🔹 #1: Above the Card */}
             <CrmDescription />
@@ -81,7 +82,7 @@ const CrmSignin = () => {
                 <SignUp />
                 <SignIn />
 
-                <div style={{ marginTop: '2rem', padding: '1rem 2rem', backgroundColor: '#f8f9fa', borderRadius: '10px' }}>
+{/*                <div style={{ marginTop: '2rem', padding: '1rem 2rem', backgroundColor: '#f8f9fa', borderRadius: '10px' }}>
                     <h2 style={{ fontWeight: 'bold', marginBottom: '1rem', color: '#333', textAlign: 'center' }}>
                         Everything You Need to Stay in Control
                     </h2>
@@ -116,7 +117,7 @@ const CrmSignin = () => {
                         help you organize — it helps you convert. Your customers get timely follow-ups, clean communication, and a professional experience from
                         start to finish. Because great service starts with great systems — and we’ve got both.
                     </p>
-                </div>
+                </div>*/}
             </Card>
         </>
     );

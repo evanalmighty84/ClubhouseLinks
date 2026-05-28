@@ -1,0 +1,624 @@
+.home-services-map-shell {
+    position: relative;
+    min-height: 100vh;
+    overflow: hidden;
+    padding: 0 1rem 5rem;
+    background:
+            radial-gradient(circle at top, rgba(30, 144, 255, 0.14), transparent 28%),
+            radial-gradient(circle at bottom right, rgba(0, 255, 200, 0.08), transparent 22%),
+            linear-gradient(180deg, #07111f 0%, #02060d 100%);
+    color: white;
+}
+
+.home-services-map-grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image:
+            linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 55px 55px;
+    pointer-events: none;
+    opacity: 0.85;
+}
+
+.home-services-map-glow {
+    position: absolute;
+    inset: 0;
+    background:
+            radial-gradient(circle at 48% 66%, rgba(0, 200, 255, 0.22), transparent 18%),
+            radial-gradient(circle at 67% 70%, rgba(0, 255, 170, 0.16), transparent 16%),
+            radial-gradient(circle at 78% 48%, rgba(0, 140, 255, 0.14), transparent 14%),
+            radial-gradient(circle at 75% 55%, rgba(0, 255, 255, 0.12), transparent 12%);
+    filter: blur(60px);
+    pointer-events: none;
+}
+.home-services-map-stage-inner {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+
+    .home-services-map-stage {
+        position: absolute;
+        top: 1%;
+        left: 58%;
+        width: min(1280px, 100vw);
+        height: 440px;
+        transform: translateX(-50%);
+        z-index: 2;
+        pointer-events: none;
+        opacity: 0.9;
+    }
+
+.home-services-map-outline {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.26;
+}
+
+.home-services-map-outline svg {
+    width: 100%;
+    height: 100%;
+}
+
+.home-services-map-outline path {
+    fill: rgba(255, 255, 255, 0.03);
+    stroke: rgba(0, 255, 255, 0.24);
+    stroke-width: 3;
+    filter: drop-shadow(0 0 16px rgba(0, 255, 255, 0.22));
+}
+
+.service-hotspot {
+    position: absolute;
+    z-index: 4;
+    transform-origin: center center;
+}
+
+.service-hotspot-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: #00e1ff;
+    display: block;
+    position: relative;
+    z-index: 2;
+    box-shadow:
+            0 0 10px #00e1ff,
+            0 0 20px #00e1ff,
+            0 0 40px rgba(0, 225, 255, 0.85);
+}
+
+.service-hotspot-pulse {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    border: 2px solid rgba(0, 225, 255, 0.7);
+    animation: serviceHotspotPulse 2.8s infinite;
+}
+
+.service-hotspot-label {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    white-space: nowrap;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.78);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.home-services-map-outline svg {
+    width: 72%;
+    max-width: 1200px;
+    height: auto;
+}
+
+.home-services-map-outline path {
+    fill: rgba(255, 255, 255, 0.03);
+    stroke: rgba(0, 255, 255, 0.22);
+    stroke-width: 3;
+    filter: drop-shadow(0 0 16px rgba(0, 255, 255, 0.22));
+}
+
+/* map dots */
+
+
+@keyframes serviceHotspotPulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.9;
+    }
+
+    100% {
+        transform: scale(6);
+        opacity: 0;
+    }
+}
+
+/* content */
+/* =========================================================
+   HOME SERVICES FILTER PANEL
+   Stacked left-side filter controls
+========================================================= */
+
+.home-services-map-content {
+    position: relative;
+    z-index: 8;
+}
+
+/* left stacked filter panel */
+.home-services-filter-panel {
+    position: absolute;
+    top: 7.25rem;
+    left: 2rem;
+    z-index: 30;
+
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.85rem;
+
+    margin: 0;
+    padding: 0;
+}
+
+/* make button/selects match */
+.home-services-location-button,
+.home-services-filter {
+    width: 100%;
+    height: 64px;
+    min-width: 0;
+
+    padding: 0 1.1rem;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 225, 255, 0.35);
+
+    background:
+            linear-gradient(180deg, rgba(7, 17, 31, 0.96), rgba(2, 6, 13, 0.96)) !important;
+
+    color: white !important;
+    font-size: 1.05rem;
+    font-weight: 500;
+
+    box-shadow:
+            0 0 16px rgba(0, 225, 255, 0.14),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+
+    backdrop-filter: blur(12px);
+}
+
+/* button-specific cleanup */
+.home-services-location-button {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    cursor: pointer;
+    text-align: left;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+/* select cleanup */
+.home-services-filter {
+    appearance: auto;
+    -webkit-appearance: auto;
+}
+
+.home-services-filter option {
+    background: #07111f;
+    color: white;
+}
+
+.home-services-filter:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* hover polish */
+.home-services-location-button:hover,
+.home-services-filter:hover {
+    border-color: rgba(255, 0, 168, 0.45);
+    box-shadow:
+            0 0 18px rgba(0, 225, 255, 0.2),
+            0 0 22px rgba(255, 0, 168, 0.14),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* status message stays under stacked filters */
+.home-services-location-status {
+    width: 100%;
+    color: rgba(255, 255, 255, 0.66);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    text-align: left;
+    padding: 0 0.2rem;
+}
+
+/* optional: keeps the hero centered visually while filters sit left */
+.home-services-hero {
+    position: relative;
+    z-index: 10;
+    max-width: 850px;
+    margin: 0 auto 3.5rem;
+    padding-top: 1.5rem;
+    text-align: center;
+}
+
+.home-services-filter-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1rem;
+}
+
+.home-services-filter {
+    min-width: 190px;
+    padding: 0.65rem 1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 225, 255, 0.22);
+    background: rgba(5, 12, 24, 0.88);
+    color: white;
+    font-size: 1rem;
+    box-shadow:
+            0 0 14px rgba(0, 225, 255, 0.12),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.home-services-filter option {
+    background: #07111f;
+    color: white;
+}
+
+.home-services-hero {
+    text-align: center;
+    max-width: 850px;
+    margin: 0 auto 3rem;
+}
+
+.home-services-logo {
+    display: block;
+    margin: 0 auto 1rem;
+    width: 20%;
+    max-width: 260px;
+    min-width: 140px;
+    height: auto;
+    filter:
+            drop-shadow(0 0 12px rgba(0, 225, 255, 0.22))
+            drop-shadow(0 0 20px rgba(255, 0, 168, 0.14));
+}
+
+.home-services-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px;
+    margin-bottom: 1rem;
+    border-radius: 999px;
+    color: #00e1ff;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    backdrop-filter: blur(12px);
+}
+
+.home-services-hero h1 {
+    margin: 0;
+    font-family: cursive;
+    font-size: clamp(2.2rem, 4vw, 4rem);
+    font-weight: 800;
+    background-image: linear-gradient(90deg, #00e1ff, #ffffff, #ff00a8);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    text-shadow:
+            0 0 18px rgba(0, 225, 255, 0.18),
+            0 0 24px rgba(255, 0, 168, 0.16);
+}
+
+.home-services-hero p {
+    margin: 1rem auto 0;
+    max-width: 680px;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 1.1rem;
+    line-height: 1.7;
+}
+
+/* service cards */
+.home-services-card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem;
+}
+
+.home-service-card-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.home-service-card {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 24px;
+    background:
+            radial-gradient(circle at 18% 14%, rgba(0, 225, 255, 0.12), transparent 30%),
+            radial-gradient(circle at 82% 86%, rgba(255, 0, 168, 0.14), transparent 34%),
+            linear-gradient(180deg, rgba(5, 12, 24, 0.96) 0%, rgba(2, 8, 18, 0.98) 100%);
+    border: 1px solid rgba(0, 225, 255, 0.18);
+    box-shadow:
+            0 20px 45px rgba(0, 0, 0, 0.5),
+            0 0 26px rgba(0, 225, 255, 0.08),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+    transition:
+            transform 0.32s ease,
+            box-shadow 0.32s ease,
+            border-color 0.32s ease;
+}
+
+.home-service-card:hover {
+    transform: translateY(-8px);
+    border-color: rgba(255, 0, 168, 0.36);
+    box-shadow:
+            0 26px 54px rgba(0, 0, 0, 0.58),
+            0 0 30px rgba(0, 225, 255, 0.18),
+            0 0 40px rgba(255, 0, 168, 0.14);
+}
+
+.home-service-card::after {
+    content: "";
+    position: absolute;
+    left: 24px;
+    right: 24px;
+    bottom: 0;
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #00e1ff, #7a7cff, #ff00a8);
+    box-shadow:
+            0 0 12px rgba(0, 225, 255, 0.8),
+            0 0 20px rgba(122, 124, 255, 0.45),
+            0 0 26px rgba(255, 0, 168, 0.5);
+    opacity: 0.95;
+}
+
+/* =========================================================
+   SERVICE IMAGE FRAME
+   Pattern background + true rounded image corners
+========================================================= */
+
+.home-service-image-wrap {
+    position: relative;
+    height: 320px;
+    padding: 22px 46px;
+    box-sizing: border-box;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+    border-radius: 24px 24px 0 0;
+
+    background:
+            radial-gradient(circle at 25% 30%, rgba(0, 225, 255, 0.22), transparent 28%),
+            radial-gradient(circle at 78% 72%, rgba(255, 255, 255, 0.10), transparent 24%),
+            linear-gradient(135deg, #031120 0%, #061b32 46%, #02060d 100%);
+}
+
+/* blue/white patterned side fill */
+.home-service-image-wrap::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+
+    background-image:
+            linear-gradient(rgba(255, 255, 255, 0.075) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.075) 1px, transparent 1px),
+            repeating-linear-gradient(
+                    135deg,
+                    rgba(0, 225, 255, 0.16) 0px,
+                    rgba(0, 225, 255, 0.16) 2px,
+                    transparent 2px,
+                    transparent 14px
+            );
+
+    background-size:
+            34px 34px,
+            34px 34px,
+            28px 28px;
+
+    opacity: 0.52;
+}
+
+/* soft glow over pattern */
+.home-service-image-wrap::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+
+    background:
+            linear-gradient(
+                    90deg,
+                    rgba(0, 225, 255, 0.18) 0%,
+                    rgba(2, 6, 13, 0.02) 18%,
+                    rgba(2, 6, 13, 0.02) 82%,
+                    rgba(255, 255, 255, 0.12) 100%
+            ),
+            radial-gradient(circle at center, rgba(255, 255, 255, 0.08), transparent 52%),
+            linear-gradient(180deg, rgba(2, 6, 13, 0), rgba(2, 6, 13, 0.25));
+}
+
+/* IMPORTANT:
+   max-width/max-height + auto size makes the visible image itself round */
+.home-service-image {
+    position: relative;
+    z-index: 3;
+
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+
+    object-fit: contain;
+    object-position: center center;
+
+    display: block;
+    border-radius: 18px;
+    overflow: hidden;
+
+    background: transparent;
+
+    box-shadow:
+            0 14px 34px rgba(0, 0, 0, 0.35),
+            0 0 18px rgba(0, 225, 255, 0.12);
+
+    filter: contrast(1.03) brightness(1.02);
+    transform-origin: center center;
+    animation: homeServiceImageDrift 14s ease-in-out infinite alternate;
+    will-change: transform, filter;
+}
+
+.home-service-card:hover .home-service-image {
+    animation-play-state: paused;
+    transform: scale(1.035) translateY(-4px);
+    filter: contrast(1.08) brightness(1.08) saturate(1.05);
+}
+
+.home-service-card-body {
+    padding: 2rem 2.25rem 2.4rem;
+    text-align: center;
+}
+
+.home-service-category {
+    display: inline-flex;
+    margin-bottom: 1rem;
+    padding: 0.45rem 0.75rem;
+    border-radius: 999px;
+    color: #00e1ff;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: rgba(0, 225, 255, 0.08);
+    border: 1px solid rgba(0, 225, 255, 0.16);
+}
+
+.home-service-card-body h3 {
+    margin: 0 0 1rem;
+    font-size: clamp(1.35rem, 2vw, 1.85rem);
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.home-service-card-body p {
+    max-width: 720px;
+    margin: 0 auto;
+    color: rgba(255, 255, 255, 0.74);
+    line-height: 1.65;
+    font-size: clamp(1rem, 1.25vw, 1.15rem);
+}
+
+.home-service-cta {
+    display: inline-flex;
+    margin-top: 1rem;
+    padding: 0.55rem 0.95rem;
+    border-radius: 999px;
+    color: #00e1ff;
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: rgba(0, 225, 255, 0.08);
+    border: 1px solid rgba(0, 225, 255, 0.18);
+}
+
+@keyframes homeServiceImageDrift {
+    0% {
+        transform: scale(1) translate3d(-6px, 0, 0);
+    }
+
+    50% {
+        transform: scale(1.025) translate3d(6px, -4px, 0);
+    }
+
+    100% {
+        transform: scale(1.04) translate3d(-2px, 4px, 0);
+    }
+}
+
+@keyframes homeServiceImageLightSweep {
+    0% {
+        background-position: -130% 0, center, center;
+        opacity: 0.28;
+    }
+
+    45% {
+        opacity: 0.45;
+    }
+
+    100% {
+        background-position: 130% 0, center, center;
+        opacity: 0.28;
+    }
+}
+
+/* responsive */
+@media (max-width: 1000px) {
+    .home-services-card-grid {
+        grid-template-columns: 1fr;
+        max-width: 780px;
+        margin: 0 auto;
+    }
+
+    .home-service-image-wrap {
+        height: 280px;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .home-service-image {
+        border-radius: 10px;
+    }
+    .home-services-map-shell {
+        padding: 0 1rem 4rem;
+    }
+
+    .home-services-filter-row {
+        justify-content: center;
+    }
+
+    .home-services-filter {
+        width: 100%;
+        max-width: 280px;
+    }
+
+    .home-services-logo {
+        width: 42%;
+        max-width: 190px;
+    }
+
+    .home-services-hero h1 {
+        font-size: 2.2rem;
+    }
+
+    .home-service-image-wrap {
+        height: 220px;
+        padding: 14px 20px;
+    }
+
+    .home-service-card-body {
+        padding: 1.5rem;
+    }
+
+    .home-services-map-outline svg {
+        width: 115%;
+    }
+}

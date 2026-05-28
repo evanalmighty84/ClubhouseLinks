@@ -11,7 +11,7 @@ const ServicesSection = ({
                            heroGif,
                            heroLogo,
                            fullScreen = false,
-                           heroSwapDelay = 24000,
+                           heroSwapDelay = 10,
                          }) => {
   const gradient = 'linear-gradient(to bottom, black, steelblue, black)';
   const bodyRefs = useRef([]);
@@ -57,7 +57,7 @@ const ServicesSection = ({
   }, [heroSwapDelay]);
 
   return (
-      <section id="services" style={{ backgroundColor: '#fff', paddingTop: '20px' }}>
+      <section id="services" style={{ backgroundColor: 'transparent', paddingTop: '20px' }}>
         <div className="container">
           {/* Hero */}
           <div className="row justify-content-center mb-4">
@@ -94,7 +94,7 @@ const ServicesSection = ({
                       data-aos="fade-down"
                       data-aos-delay="200"
                   >
-                    Unlimited Design and Implementation
+                   The most powerfule CRM on the market
                   </h2>
               )}
             </div>

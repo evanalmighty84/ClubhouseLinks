@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import AOS from 'aos';
+import 'aos/dist/aos.css';
 import Portfolio1 from '../clientportfolio1.jpeg';
 import Portfolio2 from '../clientportfolio2.jpeg';
 import Portfolio3 from '../clientportfolio3.jpeg';
@@ -7,7 +9,10 @@ import Portfolio5 from '../clientportfolio5.jpeg';
 import Portfolio6 from '../clientportfolio6.jpeg';
 import Portfolio7 from '../clientportfolio7.jpeg';
 import Portfolio8 from '../clientportfolio8.jpeg';
+import logo from '../../components/Untitled_design_7_o9dfvi_c_crop,w_1116,h_628,ar_16_9.png'; // Replace with your actual logo
 import './ClientPortfolios.css';
+import NewServicesSection from '../../components/services/NewServicesSection';
+import servicesData from '../../components/landing-pages/ServicesData'
 
 const allPortfolios = [
     {
@@ -61,41 +66,94 @@ const allPortfolios = [
 ];
 
 const ClientPortfolios = () => {
+
     const [filter, setFilter] = useState('All');
 
     const filtered = filter === 'All'
         ? allPortfolios
         : allPortfolios.filter(p => p.category === filter);
 
+    const heroRef = useRef(null);
+    const [showLogo] = useState(true);
+
+    useEffect(() => {
+        AOS.init({ duration: 800, once: true, offset: 120 });
+    }, []);
+    const [pulseLogo, setPulseLogo] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setPulseLogo(false);
+        }, 10000);
+
+        return () => clearTimeout(timer);
+    }, []);
+
     const uniqueCategories = ['All', ...Array.from(new Set(allPortfolios.map(p => p.category)))];
 
-    return (
-        <section className="portfolio-section">
-            <div className="portfolio-header">
-                <h2>Client Portfolios</h2>
-                <select
-                    className="portfolio-filter"
-                    value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
-                >
-                    {uniqueCategories.map((cat, idx) => (
-                        <option key={idx} value={cat}>{cat}</option>
-                    ))}
-                </select>
-            </div>
 
-            <div className="portfolio-grid">
-                {filtered.map((p, i) => (
-                    <div className="portfolio-card" key={i}>
-                        <img src={p.image} alt={p.title} className="portfolio-img" />
-                        <div className="portfolio-overlay">
-                            <h5 style={{color:'white'}}>{p.title}</h5>
-                            <p style={{color:'white'}}>{p.description}</p>
+    return (
+        <main className="portfolio-page-bg">
+            <section className="portfolio-hero-section">
+                <div className="portfolio-header">
+
+
+                    <select
+                        className="portfolio-filter"
+                        value={filter}
+                        onChange={(e) => setFilter(e.target.value)}
+                    >
+                        {uniqueCategories.map((cat, idx) => (
+                            <option key={idx} value={cat}>
+                                {cat}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div className="container">
+                    <div className="row justify-content-center">
+                        <div ref={heroRef} className="col-12 text-center">
+                            <div className="hero-logo-orbit">
+                                <img
+                                    src={logo}
+                                    alt="Clubhouse Links Logo"
+                                    className={`portfolio-hero-logo ${pulseLogo ? 'logo-pulse-10s' : ''}`}
+                                />
+                            </div>
+
+                            {showLogo && (
+                                <h2 className="portfolio-hero-title" data-aos="fade-down">
+                                    Website Portfolios
+                                </h2>
+                            )}
                         </div>
                     </div>
-                ))}
-            </div>
-        </section>
+                </div>
+            </section>
+
+            <section className="portfolio-section">
+
+
+                <div className="portfolio-grid">
+                    {filtered.map((p, i) => (
+                        <div className="portfolio-card" key={i}>
+                            <img src={p.image} alt={p.title} className="portfolio-img" />
+                            <div className="portfolio-overlay">
+                                <h5 style={{ color: 'white' }}>{p.title}</h5>
+                                <p style={{ color: 'white' }}>{p.description}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </section>
+            <div className="clubhouse-gradient-divider" />
+
+            <NewServicesSection
+                services={servicesData}
+                logo={logo}
+                title="Website Services"
+            />
+        </main>
     );
 };
 
