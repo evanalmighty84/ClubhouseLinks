@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/static/css/main.5e6c3d5a.css",
-    "main.js": "/static/js/main.89a40527.js",
+    "main.css": "/static/css/main.b5ed3617.css",
+    "main.js": "/static/js/main.749a8ccd.js",
     "static/media/WideMovieLogo.gif": "/static/media/WideMovieLogo.fb5a2153d857a59ad898.gif",
     "static/media/vecteezy_two-brown-dogs-digging-the-ground-for-hunting-fat-pets_32544191.gif": "/static/media/vecteezy_two-brown-dogs-digging-the-ground-for-hunting-fat-pets_32544191.9a2f7d0191dc928804fa.gif",
     "static/media/Revolutionize Your Pet Grooming Business_ AI-Powered Solutions.mp4": "/static/media/Revolutionize Your Pet Grooming Business_ AI-Powered Solutions.03536c75974482438bf6.mp4",
@@ -13,19 +13,28 @@
     "static/media/ResidentialDesign.jpg": "/static/media/ResidentialDesign.de580b8c23c54b8d96c7.jpg",
     "static/media/pexels-heyho-8134750.jpg": "/static/media/pexels-heyho-8134750.a233a40f809658c5f07e.jpg",
     "static/media/onboarding.jpg": "/static/media/onboarding.73dd2b8c7482196722fe.jpg",
+    "static/media/HOA.png": "/static/media/HOA.5100e4fa569bb968ae3d.png",
     "static/media/clientportfolio5.jpeg": "/static/media/clientportfolio5.e8c28d988ab4e8f424b7.jpeg",
     "static/media/Home.png": "/static/media/Home.9390e5c6bfb6556d6641.png",
     "static/media/OrderSummaryDesign1.png": "/static/media/OrderSummaryDesign1.1cc635b5df05bd7ecba3.png",
     "static/media/Apparell-malcolnphoto-14997441.jpg": "/static/media/Apparell-malcolnphoto-14997441.b1675c4c6ba5e96b15eb.jpg",
+    "static/media/HOANewPicture.png": "/static/media/HOANewPicture.6016ad901f4c1b7aacfc.png",
+    "static/media/HomeServicesLocation.png": "/static/media/HomeServicesLocation.a0c14a60559270a79890.png",
     "static/media/pexels-format-380633-1029757.jpg": "/static/media/pexels-format-380633-1029757.4fff1b8ace25ce6ae9c2.jpg",
     "static/media/Subscription.png": "/static/media/Subscription.6aeeb1ea145e0f32c3a1.png",
     "static/media/profilepicevan.png": "/static/media/profilepicevan.bc728563e19b9857a0dd.png",
+    "static/media/CRM.png": "/static/media/CRM.e6a68b8710fa373557b5.png",
+    "static/media/Apps.png": "/static/media/Apps.3005b5457c6660515fc6.png",
+    "static/media/WebPortfolios.png": "/static/media/WebPortfolios.6366c680e8c62fb4ac9b.png",
     "static/media/Apparell-yankrukov-8617515.jpg": "/static/media/Apparell-yankrukov-8617515.acb0af668ea8191bf1dd.jpg",
     "static/media/vecteezy_pet-hairdresser-woman-cutting-fur-of-cute-yellow-dog_11930357.jpg": "/static/media/vecteezy_pet-hairdresser-woman-cutting-fur-of-cute-yellow-dog_11930357.5465eb3d26b8ef5b304c.jpg",
+    "static/media/ContactUS.png": "/static/media/ContactUS.6c93cf3ca387cbfc27f0.png",
     "static/media/Apparell-aden-ardenrich-181745-581339.jpg": "/static/media/Apparell-aden-ardenrich-181745-581339.73256d8c738fe751710d.jpg",
     "static/media/pexels-canvastudio-3194518.jpg": "/static/media/pexels-canvastudio-3194518.beec14ef0a2ccdb25473.jpg",
     "static/media/websiteleadgeneration (1).png": "/static/media/websiteleadgeneration (1).3bcabbed1bdd29bfd1dc.png",
     "static/media/vecteezy_ai-generated-happy-veterinary-clinic-vibes_40513845.jpg": "/static/media/vecteezy_ai-generated-happy-veterinary-clinic-vibes_40513845.2e6363b3733b9b3d8319.jpg",
+    "static/media/Reports.png": "/static/media/Reports.9788920f20206b0d5ef4.png",
+    "static/media/Leadership.png": "/static/media/Leadership.4bfe0ed17aa6a4cee08e.png",
     "static/media/general-contracting.jpg": "/static/media/general-contracting.8dbee7ed4491c052731a.jpg",
     "static/media/OrderSummaryDesign2.png": "/static/media/OrderSummaryDesign2.064d3e921c9056ed2533.png",
     "static/media/vecteezy_person-holding-a-smartphone-with-a-screen-showing-5-yellow_8510218.jpg": "/static/media/vecteezy_person-holding-a-smartphone-with-a-screen-showing-5-yellow_8510218.05fd8d3fff09fbde560e.jpg",
@@ -99,11 +108,11 @@
     "static/media/emailcampaign.png": "/static/media/emailcampaign.8a52fcc895f241a867c2.png",
     "static/media/softball.webp": "/static/media/softball.b95b6f380168d7a598e9.webp",
     "index.html": "/index.html",
-    "main.5e6c3d5a.css.map": "/static/css/main.5e6c3d5a.css.map",
-    "main.89a40527.js.map": "/static/js/main.89a40527.js.map"
+    "main.b5ed3617.css.map": "/static/css/main.b5ed3617.css.map",
+    "main.749a8ccd.js.map": "/static/js/main.749a8ccd.js.map"
   },
   "entrypoints": [
-    "static/css/main.5e6c3d5a.css",
-    "static/js/main.89a40527.js"
+    "static/css/main.b5ed3617.css",
+    "static/js/main.749a8ccd.js"
   ]
 }
