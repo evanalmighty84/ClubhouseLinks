@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import "./LeadStormHero.css";
-import ClubhouseParty from "./HOAPicture.png";
+import ClubhouseParty from "../components/HOANewPicture.png";
 
 const hotspots = [
     { city: "Dallas", state: "TX", x: "48%", y: "66%", size: 1.25 },

@@ -8,13 +8,13 @@ import './Header.css';
 
 import leadIcon from "../LeadGenerationAI.png";
 import hoaEmoji from"../HOA.png";
-import teamIcon from "../OurTeamAI.png";
-import stockEmoji from "../ServicesAI.png";
-import eCommerceEmoji from "../WebsitePortfoliosAI.png";
-import onlineReviewsEmoji from "../ContactUsAI.png";
-import aiProjectsEmoji from "../StatisticsAI.png";
-import samplePortfoliosEmoji from "../CRMAI.png";
-import appStoreEmoji from "../AppsAI.png";
+import teamIcon from "../Leadership.png";
+import stockEmoji from "../HomeServicesLocation.png";
+import eCommerceEmoji from "../WebPortfolios.png";
+import onlineReviewsEmoji from "../ContactUS.png";
+import aiProjectsEmoji from "../Reports.png";
+import samplePortfoliosEmoji from "../CRM.png";
+import appStoreEmoji from "../Apps.png";
 import emailGeneration from "../email-leads.png"
 import socialGeneration from "../social-lead-generation.png"
 import websiteGeneration from "../websiteleadgeneration (1).png"
