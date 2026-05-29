@@ -100,7 +100,7 @@ const Header = () => {
                             <NavItem to="/clubhouseMarketing"        icon={aiProjectsEmoji} label="Reports" />
                             <NavItem to="/ClientPortfolios"        icon={eCommerceEmoji} label="Website Services" />
                             <NavItem to="/contactus"     icon={onlineReviewsEmoji} label="Contact Us" />
-                            <NavItem to="/leadershipTeam"     icon={teamIcon} label="Leadreship Team" />
+                            <NavItem to="/leadershipTeam"     icon={teamIcon} label="Leadership Team" />
                             <NavItem to="/appstore"          icon={appStoreEmoji}   label="Clubhouse Links Apps" />
 
                         </Nav>

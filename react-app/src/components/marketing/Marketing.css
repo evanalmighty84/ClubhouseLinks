@@ -381,6 +381,36 @@
         padding: 0 1rem 4rem;
     }
 
+    .reports-map-stage {
+        position: absolute !important;
+        top: 260px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: 100%;
+        height: 520px;
+        z-index: 2;
+        opacity: 0.85;
+    }
+
+    .reports-hero {
+        position: relative;
+        z-index: 10;
+        margin: 0 auto 2rem;
+        padding-top: 1.5rem;
+    }
+
+    .reports-filter-panel {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        z-index: 30;
+
+        width: 300px;
+        max-width: 300px;
+        margin: 2rem auto 3rem !important;
+        padding: 0;
+    }
+
     .reports-map-outline svg {
         width: 115%;
     }

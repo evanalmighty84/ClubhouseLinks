@@ -77,15 +77,23 @@
 ========================================================= */
 
 .custom-toggler {
-    border: 1px solid rgba(0, 225, 255, 0.28) !important;
-    border-radius: 12px;
-    background:
-            linear-gradient(145deg, rgba(4, 12, 22, 0.95), rgba(25, 4, 24, 0.9));
-    width: 44px;
-    height: 44px;
-    box-shadow:
-            0 0 12px rgba(0, 225, 255, 0.18),
-            0 0 18px rgba(255, 0, 128, 0.12);
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    width: auto;
+    height: auto;
+    padding: 0 !important;
+    margin-left: 10px;
+}
+
+.custom-toggler:focus,
+.custom-toggler:active,
+.custom-toggler:hover {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
 }
 
 .custom-toggler .navbar-toggler-icon {

@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
-import hoaPicture from "../../CRMpages/HOAPicture.png";
+import React, { useEffect, useMemo, useState } from "react";
+import hoaPicture from "../../components/HOANewPicture.png";
+import logo from "../../components/Untitled_design_7_o9dfvi_c_crop,w_1116,h_628,ar_16_9.png";
 import "./HOAPartySignup.css";
 
 const API_BASE =
@@ -13,7 +14,7 @@ const fallbackParties = [
         id: 1,
         city: "Plano",
         state: "Texas",
-        neighborhood: "Country Place",
+        neighborhood: "Country Place fallback",
         address: "3600 Country Place Dr, Plano, TX, United States, Texas",
         weekend: "June 13th and 14th",
         rain_note: "If Saturday is raining we will do Sunday.",
@@ -33,18 +34,15 @@ const industries = [
     "handyman",
     "house_cleaner",
     "hvac",
-    "interior designer",
     "interior_designer",
     "junk_removal",
     "landscaping",
     "lawn_care",
-    "lawncare",
     "lighting",
     "painter",
     "pest_control",
     "pet_sitter",
     "plumber",
-    "plumbing",
     "pool",
     "realtor",
     "roofer",
@@ -55,6 +53,7 @@ const industries = [
 
 const HOAPartySignup = () => {
     const [parties, setParties] = useState(fallbackParties);
+    const [selectedPartyId, setSelectedPartyId] = useState(String(fallbackParties[0].id));
     const [loadingParties, setLoadingParties] = useState(false);
 
     const [guestForm, setGuestForm] = useState({
@@ -77,8 +76,6 @@ const HOAPartySignup = () => {
     const [providerSaved, setProviderSaved] = useState(false);
     const [stripeClientReferenceId, setStripeClientReferenceId] = useState("");
 
-    const selectedParty = parties[0];
-
     useEffect(() => {
         const fetchParties = async () => {
             try {
@@ -94,6 +91,7 @@ const HOAPartySignup = () => {
 
                 if (Array.isArray(data) && data.length > 0) {
                     setParties(data);
+                    setSelectedPartyId(String(data[0].id));
                 }
             } catch (error) {
                 console.error("Using fallback HOA party data:", error);
@@ -104,6 +102,18 @@ const HOAPartySignup = () => {
 
         fetchParties();
     }, []);
+
+    const selectedParty =
+        parties.find((party) => String(party.id) === String(selectedPartyId)) ||
+        parties[0];
+
+    const sortedParties = useMemo(() => {
+        return [...parties].sort((a, b) => {
+            const aDate = new Date(a.event_date || a.date || a.created_at || 0).getTime();
+            const bDate = new Date(b.event_date || b.date || b.created_at || 0).getTime();
+            return bDate - aDate;
+        });
+    }, [parties]);
 
     const handleGuestChange = (e) => {
         setGuestForm((prev) => ({
@@ -118,6 +128,12 @@ const HOAPartySignup = () => {
             [e.target.name]: e.target.value,
         }));
 
+        setProviderSaved(false);
+        setStripeClientReferenceId("");
+    };
+
+    const handlePartyFilterChange = (e) => {
+        setSelectedPartyId(e.target.value);
         setProviderSaved(false);
         setStripeClientReferenceId("");
     };
@@ -193,8 +209,6 @@ const HOAPartySignup = () => {
 
             const data = await response.json();
 
-            console.log("Provider signup response:", data);
-
             if (!data?.id) {
                 throw new Error("Provider signup saved but no ID was returned");
             }
@@ -229,49 +243,59 @@ const HOAPartySignup = () => {
                 />
 
                 <div className="hoa-hero-overlay">
+                    <img
+                        src={logo}
+                        alt="Clubhouse Links"
+                        className="hoa-hero-logo"
+                    />
+
                     <p className="hoa-kicker">
                         {loadingParties ? "Loading Event..." : "HOA Community Event"}
                     </p>
 
-                    <h1>{selectedParty.neighborhood} Signup Sheet</h1>
 
-                    <div className="hoa-event-details">
-                        <p>
-                            <strong>City:</strong> {selectedParty.city}
-                        </p>
 
-                        <p>
-                            <strong>State:</strong> {selectedParty.state}
-                        </p>
-
-                        <p>
-                            <strong>Neighborhood:</strong> {selectedParty.neighborhood}
-                        </p>
-
-                        <p>
-                            <strong>Address:</strong> {selectedParty.address}
-                        </p>
-
-                        <p>
-                            <strong>Weekend:</strong> {selectedParty.weekend}
-                        </p>
-
-                        <p>
-                            <strong>Time:</strong> {selectedParty.time}
-                        </p>
-
-                        <p className="hoa-rain-note">
-                            {selectedParty.rain_note || selectedParty.rainNote}
-                        </p>
-                    </div>
                 </div>
+            </div>
+
+            <div className="hoa-event-picker">
+                <p className="hoa-card-kicker">See All Upcoming Events</p>
+
+                <select value={selectedPartyId} onChange={handlePartyFilterChange}>
+                    {sortedParties.map((party) => (
+                        <option key={party.id} value={party.id}>
+                            {party.city} • {party.neighborhood} • {party.weekend}
+                        </option>
+                    ))}
+                </select>
+            </div>
+
+            <div className="hoa-selected-event-card">
+                <h1 className="hoa-event-title">
+                    {selectedParty.neighborhood} Signup Sheet
+                </h1>
+                <h3>Event Details</h3>
+
+
+
+                <div className="hoa-event-detail-grid">
+                    <p><strong>City:</strong> {selectedParty.city}</p>
+                    <p><strong>State:</strong> {selectedParty.state}</p>
+                    <p><strong>Neighborhood:</strong> {selectedParty.neighborhood}</p>
+                    <p><strong>Address:</strong> {selectedParty.address}</p>
+                    <p><strong>Date:</strong> {selectedParty.weekend}</p>
+                    <p><strong>Time:</strong> {selectedParty.time}</p>
+                </div>
+
+                <p className="hoa-rain-note">
+                    {selectedParty.rain_note || selectedParty.rainNote}
+                </p>
             </div>
 
             <div className="hoa-signup-grid">
                 <form className="hoa-form-card" onSubmit={handleGuestSubmit}>
                     <div>
                         <p className="hoa-card-kicker">Guest RSVP</p>
-
                         <h2>Attend the HOA Party</h2>
 
                         <label>Name</label>
@@ -316,13 +340,9 @@ const HOAPartySignup = () => {
                     </button>
                 </form>
 
-                <form
-                    className="hoa-form-card provider-card"
-                    onSubmit={handleProviderSubmit}
-                >
+                <form className="hoa-form-card provider-card" onSubmit={handleProviderSubmit}>
                     <div>
                         <p className="hoa-card-kicker">Service Provider *Industry Exclusive</p>
-
                         <h2>Reserve a Space</h2>
 
                         <label>Business Name</label>
