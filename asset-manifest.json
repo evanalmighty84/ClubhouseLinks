@@ -1,13 +1,11 @@
 {
   "files": {
-    "main.css": "/static/css/main.b5ed3617.css",
-    "main.js": "/static/js/main.749a8ccd.js",
+    "main.css": "/static/css/main.a0c84d0e.css",
+    "main.js": "/static/js/main.c96df669.js",
     "static/media/WideMovieLogo.gif": "/static/media/WideMovieLogo.fb5a2153d857a59ad898.gif",
     "static/media/vecteezy_two-brown-dogs-digging-the-ground-for-hunting-fat-pets_32544191.gif": "/static/media/vecteezy_two-brown-dogs-digging-the-ground-for-hunting-fat-pets_32544191.9a2f7d0191dc928804fa.gif",
     "static/media/Revolutionize Your Pet Grooming Business_ AI-Powered Solutions.mp4": "/static/media/Revolutionize Your Pet Grooming Business_ AI-Powered Solutions.03536c75974482438bf6.mp4",
     "static/media/vecteezy_the-vet-is-taking-the-pug-dog-on-her-arms_35314315 (1).mp4": "/static/media/vecteezy_the-vet-is-taking-the-pug-dog-on-her-arms_35314315 (1).f77722808b0d7949b5dc.mp4",
-    "static/media/HOA.gif": "/static/media/HOA.cf16952c81614306334f.gif",
-    "static/media/Storm.gif": "/static/media/Storm.be5fbe6f269f02066be5.gif",
     "static/media/TeamStreamFinal.gif": "/static/media/TeamStreamFinal.4eb2e6856534d93782ba.gif",
     "static/media/soccerkids3.mp4": "/static/media/soccerkids3.f245be5ea944d176a7a0.mp4",
     "static/media/ResidentialDesign.jpg": "/static/media/ResidentialDesign.de580b8c23c54b8d96c7.jpg",
@@ -108,11 +106,11 @@
     "static/media/emailcampaign.png": "/static/media/emailcampaign.8a52fcc895f241a867c2.png",
     "static/media/softball.webp": "/static/media/softball.b95b6f380168d7a598e9.webp",
     "index.html": "/index.html",
-    "main.b5ed3617.css.map": "/static/css/main.b5ed3617.css.map",
-    "main.749a8ccd.js.map": "/static/js/main.749a8ccd.js.map"
+    "main.a0c84d0e.css.map": "/static/css/main.a0c84d0e.css.map",
+    "main.c96df669.js.map": "/static/js/main.c96df669.js.map"
   },
   "entrypoints": [
-    "static/css/main.b5ed3617.css",
-    "static/js/main.749a8ccd.js"
+    "static/css/main.a0c84d0e.css",
+    "static/js/main.c96df669.js"
   ]
 }
