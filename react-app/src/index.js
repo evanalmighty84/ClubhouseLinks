@@ -71,6 +71,7 @@ import HOAPartySignup from "./components/homeownersassociation/HOAPartySignup";
 import EmailLeadsSection from "./components/landing-pages/EmailLeadsSection";
 import PlumbingSection from "./components/landing-pages/PlumbingSection";
 import PrivacyPolicy from "./CRMpages/PrivacyPolicy";
+import LeadershipTeam from "./components/leadership/LeadershipTeam";
 
 
 const stripePromise = loadStripe("pk_live_4s4TtIY6HXHbiKpHOoFGvQRf");
@@ -172,6 +173,7 @@ class App extends Component {
                             <Route path="/DavidDixon" element={<SendGoogleReviewForm4 />} />
                             <Route path="/sms-optin-consent" element={<SMSConsentPage />} />
                             <Route path="/contactUs" element={<ContactUs />} />
+                            <Route path="/leadershipTeam" element={<LeadershipTeam/>} />
                             <Route path="/hoa" element={<HOAPartySignup />} />
                             <Route path="/blogs" element={<BlogsPage />} />
                             <Route path="/aiProjects" element={<AI />} />

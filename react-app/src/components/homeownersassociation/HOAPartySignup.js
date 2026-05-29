@@ -241,6 +241,9 @@ const HOAPartySignup = () => {
                     alt="HOA community event"
                     className="hoa-hero-img"
                 />
+                <p className="hoa-event-description">
+                    HOA community events create a unique opportunity for homeowners to meet trusted local service professionals face-to-face before ever needing a service. Whether it's a contractor, landscaper, pool company, painter, or other home service provider, these gatherings help build real relationships through personal interaction rather than advertisements or cold outreach. Homeowners gain access to vetted local businesses, while service providers have the chance to connect directly with the communities they serve. The result is stronger neighborhood relationships, greater trust, and a more connected local economy built on genuine conversations and referrals.
+                </p>
 
                 <div className="hoa-hero-overlay">
                     <img

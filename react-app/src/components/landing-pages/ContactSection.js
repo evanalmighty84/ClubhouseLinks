@@ -7,7 +7,9 @@ import './ContactUs.css';
 import profilePic from '../profilepicevan.png'; // Update path as needed
 import logo from '../../components/Untitled_design_7_o9dfvi_c_crop,w_1116,h_628,ar_16_9.png'; // Replace with your actual logo
 
-
+const API_BASE =
+    process.env.REACT_APP_API_BASE_URL ||
+    "https://crm-function-app-5d4de511071d.herokuapp.com";
 
 //old <WebServices> component
 const ContactUs = () => {
@@ -33,7 +35,7 @@ const ContactUs = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('https://crm-function-app.herokuapp.com/api/contactus', formData);
+            await axios.post(`${API_BASE}/server/lead_function/api/contactus`, formData);
             setStatus({ success: true, message: 'Message sent successfully!' });
             setFormData({ name: '', email: '', phone: '', address: '', message: '' });
         } catch (err) {

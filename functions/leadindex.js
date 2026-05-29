@@ -10,6 +10,7 @@ const reportsRoutes = require('./routes/reportRoutes')
 const paymentRoutes = require('./routes/paymentRoutes')
 const marketingRoutes = require('./routes/marketingRoutes')
 const hoaRoutes = require('./routes/hoaRoutes')
+const contactUsRoutes = require("./routes/contactUsRoutes");
 
 
 
@@ -57,6 +58,9 @@ app.use('/api/marketing',marketingRoutes);
 app.use('/api/hoa',hoaRoutes);
 
 app.use("/api/hoa", hoaRoutes);
+
+
+app.use("/api/contactus", contactUsRoutes);
 
 app.use('/api/test', (req, res) => {
     res.send('✅ CRM app is responding');
