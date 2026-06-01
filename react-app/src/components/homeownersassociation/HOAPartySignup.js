@@ -103,6 +103,51 @@ const HOAPartySignup = () => {
         fetchParties();
     }, []);
 
+
+    const handleProviderCheckout = async () => {
+        try {
+            setProviderSaving(true);
+
+            const payload = {
+                hoa_party_id: selectedParty.id,
+                business_name: providerForm.businessName,
+                contact_name: providerForm.contactName,
+                email: providerForm.email,
+                phone: providerForm.phone,
+                service_category: providerForm.serviceCategory,
+            };
+
+            const saveRes = await fetch(`${HOA_URL}/provider-signup`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            const savedProvider = await saveRes.json();
+
+            const checkoutRes = await fetch(`${HOA_URL}/create-provider-checkout`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    signup_id: savedProvider.id,
+                    stripe_client_reference_id: savedProvider.stripe_client_reference_id,
+                    price_id: "price_1Tc9ekLVTbVnCRoaAY4LwiBs",
+                }),
+            });
+
+            const checkoutData = await checkoutRes.json();
+
+            if (!checkoutData.url) throw new Error("No Stripe Checkout URL returned");
+
+            window.location.href = checkoutData.url;
+        } catch (err) {
+            console.error("Checkout error:", err);
+            alert("Something went wrong starting checkout.");
+        } finally {
+            setProviderSaving(false);
+        }
+    };
+
     const selectedParty =
         parties.find((party) => String(party.id) === String(selectedPartyId)) ||
         parties[0];
@@ -403,21 +448,14 @@ const HOAPartySignup = () => {
                     </div>
 
                     <div className="hoa-stripe-wrap">
-                        {!providerSaved || !stripeClientReferenceId ? (
-                            <button
-                                type="submit"
-                                className="stripe-button"
-                                disabled={!providerFormComplete || providerSaving}
-                            >
-                                {providerSaving ? "Saving..." : "Save Info & Continue"}
-                            </button>
-                        ) : (
-                            React.createElement("stripe-buy-button", {
-                                key: stripeClientReferenceId,
-                                "buy-button-id": "buy_btn_1Tc9gOLVTbVnCRoaBvGtFJ4K",
-                                "publishable-key": "pk_live_4s4TtIY6HXHbiKpHOoFGvQRf",
-                            })
-                        )}
+                        <button
+                            type="button"
+                            className="stripe-button"
+                            disabled={!providerFormComplete || providerSaving}
+                            onClick={handleProviderCheckout}
+                        >
+                            {providerSaving ? "Saving..." : "Save Info & Continue"}
+                        </button>
                     </div>
                 </form>
             </div>
