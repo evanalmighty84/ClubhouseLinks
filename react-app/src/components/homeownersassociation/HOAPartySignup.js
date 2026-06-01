@@ -38,6 +38,7 @@ const industries = [
     "landscaping",
     "lawn_care",
     "lighting",
+    "outdoor_cleaning",
     "other",
     "painter",
     "pest_control",
