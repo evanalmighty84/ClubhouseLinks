@@ -17,7 +17,7 @@ const fallbackParties = [
         neighborhood: "Country Place fallback",
         address: "3600 Country Place Dr, Plano, TX, United States, Texas",
         weekend: "June 13th and 14th",
-        rain_note: "If Saturday is raining we will do Sunday.",
+   /*     rain_note: "Sunday.",*/
         time: "12:00 PM - 3:00 PM",
     },
 ];
@@ -341,57 +341,16 @@ const HOAPartySignup = () => {
                 </p>
             </div>
 
-            <div className="hoa-signup-grid">
-                <form className="hoa-form-card" onSubmit={handleGuestSubmit}>
+            <div className="hoa-signup-grid hoa-signup-grid-single">
+                <form
+                    className="hoa-form-card provider-card provider-card-full"
+                    onSubmit={handleProviderSubmit}
+                >
                     <div>
-                        <p className="hoa-card-kicker">Guest RSVP</p>
-                        <h2>Attend the HOA Party</h2>
+                        <p className="hoa-card-kicker">
+                            Service Provider *Industry Exclusive
+                        </p>
 
-                        <label>Name</label>
-                        <input
-                            name="name"
-                            value={guestForm.name}
-                            onChange={handleGuestChange}
-                            placeholder="Your name"
-                            required
-                        />
-
-                        <label>Email</label>
-                        <input
-                            name="email"
-                            type="email"
-                            value={guestForm.email}
-                            onChange={handleGuestChange}
-                            placeholder="you@email.com"
-                            required
-                        />
-
-                        <label>Phone</label>
-                        <input
-                            name="phone"
-                            value={guestForm.phone}
-                            onChange={handleGuestChange}
-                            placeholder="Phone number"
-                        />
-
-                        <label>Number Attending</label>
-                        <input
-                            name="attendees"
-                            type="number"
-                            min="1"
-                            value={guestForm.attendees}
-                            onChange={handleGuestChange}
-                        />
-                    </div>
-
-                    <button type="submit" disabled={guestSaving}>
-                        {guestSaving ? "Saving..." : "RSVP"}
-                    </button>
-                </form>
-
-                <form className="hoa-form-card provider-card" onSubmit={handleProviderSubmit}>
-                    <div>
-                        <p className="hoa-card-kicker">Service Provider *Industry Exclusive</p>
                         <h2>Reserve a Space</h2>
 
                         <label>Business Name</label>

@@ -352,6 +352,16 @@ stripe-buy-button {
     min-height: 58px;
 }
 
+.hoa-signup-grid-single {
+    grid-template-columns: 1fr;
+}
+
+.provider-card-full {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
 /* MOBILE */
 
 @media (max-width: 900px) {
@@ -441,3 +451,4 @@ stripe-buy-button {
         height: 44px;
     }
 }
+
