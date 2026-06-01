@@ -24,7 +24,6 @@ const fallbackParties = [
 
 const industries = [
     "christmas_lights",
-    "commercial_lending",
     "electrician",
     "fencing",
     "garage",
@@ -39,6 +38,7 @@ const industries = [
     "landscaping",
     "lawn_care",
     "lighting",
+    "other",
     "painter",
     "pest_control",
     "pet_sitter",
@@ -48,6 +48,7 @@ const industries = [
     "roofer",
     "security",
     "tech",
+    "wellness",
     "windows",
 ];
 
