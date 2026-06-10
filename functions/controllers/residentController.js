@@ -47,9 +47,13 @@ exports.signupResident = async (req, res) => {
 
         const inviteResult = await pool.query(
             `
-                SELECT ic.id, n.id AS neighborhood_id
+                SELECT
+                    ic.id,
+                    n.id AS neighborhood_id,
+                    n.name AS neighborhood_name
                 FROM hoa_invite_codes ic
-                         JOIN hoa_neighborhoods n ON n.id = ic.neighborhood_id
+                         JOIN hoa_neighborhoods n
+                              ON n.id = ic.neighborhood_id
                 WHERE UPPER(ic.code) = UPPER($1)
                   AND ic.active = TRUE
                     LIMIT 1
@@ -62,32 +66,37 @@ exports.signupResident = async (req, res) => {
         }
 
         const neighborhoodId = inviteResult.rows[0].neighborhood_id;
+        const neighborhoodName = inviteResult.rows[0].neighborhood_name;
 
         const residentResult = await pool.query(
             `
-                INSERT INTO hoa_residents
-                (first_name, last_name, phone, neighborhood_id, approval_status, sms_verified)
-                VALUES
-                    ($1, $2, $3, $4, 'pending', TRUE)
-                    ON CONFLICT (phone, neighborhood_id)
+            INSERT INTO hoa_residents
+                (first_name, last_name, phone, neighborhood_id, approval_status, sms_verified, approved_at)
+            VALUES
+                ($1, $2, $3, $4, 'approved', TRUE, NOW())
+            ON CONFLICT (phone, neighborhood_id)
             DO UPDATE SET
-                    first_name = EXCLUDED.first_name,
-                                       last_name = EXCLUDED.last_name,
-                                       sms_verified = TRUE,
-                                       approval_status = 'pending',
-                                       updated_at = NOW()
-                                       RETURNING *
+                first_name = EXCLUDED.first_name,
+                last_name = EXCLUDED.last_name,
+                sms_verified = TRUE,
+                approval_status = 'approved',
+                approved_at = NOW(),
+                updated_at = NOW()
+            RETURNING *
             `,
             [first_name, last_name, cleanPhone, neighborhoodId]
         );
 
-        const resident = residentResult.rows[0];
+        const resident = {
+            ...residentResult.rows[0],
+            neighborhood_name: neighborhoodName
+        };
 
         res.json({
             success: true,
             resident_id: resident.id,
             resident,
-            message: 'Resident created and is pending HOA approval.'
+            message: 'Resident profile created successfully.'
         });
     } catch (err) {
         console.error('signupResident error:', err);
@@ -185,12 +194,17 @@ exports.getResidentProfile = async (req, res) => {
 
         const { rows } = await pool.query(
             `
-      SELECT r.*, n.name AS neighborhood_name
-      FROM hoa_residents r
-      JOIN hoa_neighborhoods n ON n.id = r.neighborhood_id
-      WHERE r.id = $1
-      LIMIT 1
-      `,
+                SELECT
+                    r.*,
+                    n.name AS neighborhood_name,
+                    n.city AS neighborhood_city,
+                    n.state AS neighborhood_state
+                FROM hoa_residents r
+                         JOIN hoa_neighborhoods n
+                              ON n.id = r.neighborhood_id
+                WHERE r.id = $1
+                    LIMIT 1
+            `,
             [residentId]
         );
 
