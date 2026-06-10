@@ -9,7 +9,7 @@ import React from "react";
  */
 
 const PrivacyPolicy = () => {
-    const lastUpdated = "December 29, 2025";
+    const lastUpdated = "June 10, 2026";
 
     return (
         <div style={styles.page}>
