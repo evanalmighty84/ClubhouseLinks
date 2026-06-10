@@ -236,3 +236,58 @@ exports.createProviderSignup = async (req, res) => {
         res.status(500).json({ error: "Failed to create provider signup" });
     }
 };
+
+exports.postClicks = async (req, res) => {
+    try {
+        const {
+            hoa_party_id,
+            source
+        } = req.body;
+
+        const ipAddress =
+            req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+            req.socket?.remoteAddress ||
+            req.ip ||
+            null;
+
+        const result = await pool.query(
+            `
+            INSERT INTO hoa_app_store_clicks
+            (
+                hoa_party_id,
+                source,
+                ip_address,
+                user_agent
+            )
+            VALUES ($1, $2, $3, $4)
+            RETURNING *
+            `,
+            [
+                hoa_party_id || null,
+                source || "hoa_page_app_store_button",
+                ipAddress,
+                req.headers["user-agent"] || null
+            ]
+        );
+
+        console.log("📱 App Store click saved:", {
+            hoa_party_id,
+            source,
+            ipAddress,
+            userAgent: req.headers["user-agent"]
+        });
+
+        res.status(201).json({
+            success: true,
+            click: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error("Error saving app store click:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to save click"
+        });
+    }
+};

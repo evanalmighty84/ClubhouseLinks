@@ -8,5 +8,6 @@ router.post("/guest-signup", hoaController.createGuestSignup);
 router.post("/provider-signup", hoaController.createProviderSignup);
 router.post("/create-provider-checkout", hoaController.createProviderCheckout);
 router.get("/parties/:partyId/reserved-categories", hoaController.getReservedCategories);
+router.post("/app-store-click", hoaController.postClicks);
 
 module.exports = router;

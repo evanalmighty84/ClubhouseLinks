@@ -54,10 +54,13 @@ const industries = [
 ];
 
 const HOAPartySignup = () => {
+
+    console.log("API_BASE =", API_BASE);
     const [parties, setParties] = useState(fallbackParties);
     const [selectedPartyId, setSelectedPartyId] = useState(String(fallbackParties[0].id));
     const [loadingParties, setLoadingParties] = useState(false);
-
+    const [showAppCountdown, setShowAppCountdown] = useState(false);
+    const [appCountdown, setAppCountdown] = useState("");
     const [guestForm, setGuestForm] = useState({
         name: "",
         email: "",
@@ -77,6 +80,51 @@ const HOAPartySignup = () => {
     const [providerSaving, setProviderSaving] = useState(false);
     const [providerSaved, setProviderSaved] = useState(false);
     const [stripeClientReferenceId, setStripeClientReferenceId] = useState("");
+
+    useEffect(() => {
+        if (!showAppCountdown) return;
+
+        const target = new Date("2026-06-14T11:00:00-05:00").getTime();
+
+        const tick = () => {
+            const now = Date.now();
+            const diff = target - now;
+
+            if (diff <= 0) {
+                setAppCountdown("Coming now!");
+                return;
+            }
+
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            const minutes = Math.floor((diff / (1000 * 60)) % 60);
+            const seconds = Math.floor((diff / 1000) % 60);
+
+            setAppCountdown(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+        };
+
+        tick();
+        const timer = setInterval(tick, 1000);
+
+        return () => clearInterval(timer);
+    }, [showAppCountdown]);
+
+    const handleAppStoreClick = async () => {
+        setShowAppCountdown(true);
+
+        try {
+            await fetch(`${HOA_URL}/app-store-click`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    hoa_party_id: selectedParty?.id,
+                    source: "hoa_page_app_store_button",
+                }),
+            });
+        } catch (error) {
+            console.error("App Store click tracking failed:", error);
+        }
+    };
 
     useEffect(() => {
         const fetchParties = async () => {
@@ -293,6 +341,25 @@ const HOAPartySignup = () => {
                 </p>
 
                 <div className="hoa-hero-overlay">
+                    <button
+                        type="button"
+                        className="app-store-coming-button"
+                        onClick={handleAppStoreClick}
+                    >
+                        <span className="app-store-icon"></span>
+                        <span>
+        <small>Available on the</small>
+        App Store
+    </span>
+                    </button>
+
+                    {showAppCountdown && (
+                        <div className="app-store-countdown">
+                            Coming Sunday, June 14th at 11:00 AM
+                            <br />
+                            <strong>{appCountdown}</strong>
+                        </div>
+                    )}
                     <img
                         src={logo}
                         alt="Clubhouse Links"
