@@ -6,6 +6,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const crmApp = require('./crmIndex'); // crm_function/crmIndex.js should export an app or router
 const leadApp = require('./leadindex'); // crm_function/crmIndex.js should export an app or router
+const residentApp = require('./residentIndex');
 const realEstatePipelineApp = require('./realEstatePipelineIndex');
 const { ensureStripeCustomer } = require('./controllers/paymentController');
 const pool = require('./db/db')
@@ -14,6 +15,8 @@ const pool = require('./db/db')
 app.use('/server/crm_function/', crmApp);
 
 app.use('/server/lead_function/', leadApp);
+
+app.use('/server/resident_function/', residentApp);
 
 app.use('/server/agent_pipeline/', realEstatePipelineApp);
 // TEMP: dev-only route

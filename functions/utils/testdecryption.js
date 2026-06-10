@@ -1,7 +1,7 @@
 const { decryptPassword } = require('./encryption');
 
 const testSmtpDecryption = () => {
-    const encryptedSmtpPassword = "32d2c1a80c87bcce8a5c981ad90028a5:2a37ea2d5612d1593c7a918a4c1decf4";
+    const encryptedSmtpPassword = "5fb23dbe50f35dea847373636faa927c:d262fc1fa5be73de30fccb14efed2108";
 
     try {
         console.log('Testing decryption with input:', encryptedSmtpPassword);

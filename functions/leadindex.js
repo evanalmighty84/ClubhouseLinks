@@ -57,7 +57,7 @@ app.use('/api/marketing',marketingRoutes);
 
 app.use('/api/hoa',hoaRoutes);
 
-app.use("/api/hoa", hoaRoutes);
+
 
 
 app.use("/api/contactus", contactUsRoutes);
