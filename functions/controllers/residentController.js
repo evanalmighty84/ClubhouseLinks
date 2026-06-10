@@ -103,6 +103,42 @@ exports.signupResident = async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 };
+exports.loginResident = async (req, res) => {
+    try {
+        const { phone } = req.body;
+
+        const { rows } = await pool.query(
+            `
+            SELECT
+                r.*,
+                n.name AS neighborhood_name
+            FROM hoa_residents r
+            JOIN hoa_neighborhoods n
+                ON n.id = r.neighborhood_id
+            WHERE r.phone = $1
+            LIMIT 1
+            `,
+            [phone]
+        );
+
+        if (!rows.length) {
+            return res.status(404).json({
+                error: 'Resident not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            resident: rows[0]
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({
+            error: 'Server error'
+        });
+    }
+};
 
 exports.verifyResidentSms = async (req, res) => {
     try {
@@ -216,5 +252,40 @@ exports.getResidentProfile = async (req, res) => {
     } catch (err) {
         console.error('getResidentProfile error:', err);
         res.status(500).json({ error: 'Server error' });
+    }
+};
+exports.getVendors = async (req, res) => {
+    try {
+        const { residentId } = req.params;
+
+        const { rows } = await pool.query(
+            `
+            SELECT
+                v.id,
+                v.company_name,
+                v.category,
+                v.contact_name,
+                v.phone,
+                v.email,
+                v.website,
+                v.description,
+                v.logo_url
+            FROM hoa_residents r
+            JOIN hoa_vendors v
+                ON v.neighborhood_id = r.neighborhood_id
+            WHERE r.id = $1
+              AND v.active = TRUE
+            ORDER BY v.category, v.company_name
+            `,
+            [residentId]
+        );
+
+        res.json(rows);
+
+    } catch (err) {
+        console.error('getVendors error:', err);
+        res.status(500).json({
+            error: 'Server error'
+        });
     }
 };
