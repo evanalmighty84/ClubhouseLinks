@@ -150,6 +150,93 @@
 
     font-weight: 400;
 }
+.hero-early-access-box {
+    max-width: 520px;
+    margin: 14px auto 12px;
+    padding: 16px;
+    border-radius: 18px;
+    background: rgba(2, 6, 13, 0.82);
+    border: 1px solid rgba(0, 225, 255, 0.38);
+    box-shadow: 0 12px 30px rgba(0,0,0,.42), 0 0 18px rgba(0,225,255,.18);
+    backdrop-filter: blur(10px);
+}
+
+.hero-early-access-title {
+    margin: 0 0 5px;
+    color: #ffde59;
+    font-size: 1rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}
+
+.hero-early-access-subtitle {
+    margin: 0 0 12px;
+    color: rgba(255,255,255,.9);
+    font-size: .9rem;
+    line-height: 1.35;
+}
+
+.hero-early-access-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.hero-early-access-form input {
+    width: 100%;
+    height: 38px;
+    border-radius: 10px;
+    border: 1px solid rgba(0,225,255,.32);
+    background: rgba(255,255,255,.08);
+    color: #fff;
+    padding: 0 10px;
+    font-size: .85rem;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.hero-early-access-form input::placeholder {
+    color: rgba(210,245,255,.7);
+}
+
+.hero-early-access-form button {
+    grid-column: 1 / -1;
+    height: 40px;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #00e1ff, #8b5cff, #ff2bd6);
+    color: white;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    cursor: pointer;
+    font-size: .78rem;
+}
+
+.hero-early-access-form button:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+}
+
+.hero-early-access-form input[name="neighborhoodCode"] {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 700px) {
+    .hero-early-access-box {
+        max-width: 92%;
+        padding: 12px;
+    }
+
+    .hero-early-access-form {
+        grid-template-columns: 1fr;
+    }
+
+    .hero-early-access-form input[name="neighborhoodCode"] {
+        grid-column: auto;
+    }
+}
 
 .app-store-coming-button {
     display: inline-flex;

@@ -9,6 +9,9 @@ const API_BASE =
 
 const HOA_URL = `${API_BASE}/server/lead_function/api/hoa`;
 
+const RESIDENT_SIGNUP_URL =
+    `${API_BASE}/server/resident_function/api/residents/signup`;
+
 const fallbackParties = [
     {
         id: 1,
@@ -17,7 +20,6 @@ const fallbackParties = [
         neighborhood: "Country Place fallback",
         address: "3600 Country Place Dr, Plano, TX, United States, Texas",
         weekend: "June 13th and 14th",
-   /*     rain_note: "Sunday.",*/
         time: "12:00 PM - 3:00 PM",
     },
 ];
@@ -54,19 +56,22 @@ const industries = [
 ];
 
 const HOAPartySignup = () => {
-
     console.log("API_BASE =", API_BASE);
+
     const [parties, setParties] = useState(fallbackParties);
     const [selectedPartyId, setSelectedPartyId] = useState(String(fallbackParties[0].id));
     const [loadingParties, setLoadingParties] = useState(false);
     const [showAppCountdown, setShowAppCountdown] = useState(false);
-    const [appCountdown, setAppCountdown] = useState("");
-    const [guestForm, setGuestForm] = useState({
-        name: "",
-        email: "",
+
+    const [earlyAccessForm, setEarlyAccessForm] = useState({
+        firstName: "",
+        lastName: "",
         phone: "",
-        attendees: "1",
+        address: "",
+        neighborhoodCode: "COUNTRYPLACE2026",
     });
+
+    const [earlyAccessSaving, setEarlyAccessSaving] = useState(false);
 
     const [providerForm, setProviderForm] = useState({
         businessName: "",
@@ -76,38 +81,13 @@ const HOAPartySignup = () => {
         serviceCategory: "",
     });
 
-    const [guestSaving, setGuestSaving] = useState(false);
     const [providerSaving, setProviderSaving] = useState(false);
     const [providerSaved, setProviderSaved] = useState(false);
     const [stripeClientReferenceId, setStripeClientReferenceId] = useState("");
 
-    useEffect(() => {
-        if (!showAppCountdown) return;
-
-        const target = new Date("2026-06-14T11:00:00-05:00").getTime();
-
-        const tick = () => {
-            const now = Date.now();
-            const diff = target - now;
-
-            if (diff <= 0) {
-                setAppCountdown("Coming now!");
-                return;
-            }
-
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-            const minutes = Math.floor((diff / (1000 * 60)) % 60);
-            const seconds = Math.floor((diff / 1000) % 60);
-
-            setAppCountdown(`${days}d ${hours}h ${minutes}m ${seconds}s`);
-        };
-
-        tick();
-        const timer = setInterval(tick, 1000);
-
-        return () => clearInterval(timer);
-    }, [showAppCountdown]);
+    const selectedParty =
+        parties.find((party) => String(party.id) === String(selectedPartyId)) ||
+        parties[0];
 
     const handleAppStoreClick = async () => {
         setShowAppCountdown(true);
@@ -153,68 +133,58 @@ const HOAPartySignup = () => {
         fetchParties();
     }, []);
 
-
-    const handleProviderCheckout = async () => {
-        try {
-            setProviderSaving(true);
-
-            const payload = {
-                hoa_party_id: selectedParty.id,
-                business_name: providerForm.businessName,
-                contact_name: providerForm.contactName,
-                email: providerForm.email,
-                phone: providerForm.phone,
-                service_category: providerForm.serviceCategory,
-            };
-
-            const saveRes = await fetch(`${HOA_URL}/provider-signup`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            });
-
-            const savedProvider = await saveRes.json();
-
-            const checkoutRes = await fetch(`${HOA_URL}/create-provider-checkout`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    signup_id: savedProvider.id,
-                    stripe_client_reference_id: savedProvider.stripe_client_reference_id,
-                    price_id: "price_1Tc9ekLVTbVnCRoaAY4LwiBs",
-                }),
-            });
-
-            const checkoutData = await checkoutRes.json();
-
-            if (!checkoutData.url) throw new Error("No Stripe Checkout URL returned");
-
-            window.location.href = checkoutData.url;
-        } catch (err) {
-            console.error("Checkout error:", err);
-            alert("Something went wrong starting checkout.");
-        } finally {
-            setProviderSaving(false);
-        }
-    };
-
-    const selectedParty =
-        parties.find((party) => String(party.id) === String(selectedPartyId)) ||
-        parties[0];
-
-    const sortedParties = useMemo(() => {
-        return [...parties].sort((a, b) => {
-            const aDate = new Date(a.event_date || a.date || a.created_at || 0).getTime();
-            const bDate = new Date(b.event_date || b.date || b.created_at || 0).getTime();
-            return bDate - aDate;
-        });
-    }, [parties]);
-
-    const handleGuestChange = (e) => {
-        setGuestForm((prev) => ({
+    const handleEarlyAccessChange = (e) => {
+        setEarlyAccessForm((prev) => ({
             ...prev,
             [e.target.name]: e.target.value,
         }));
+    };
+
+    const handleEarlyAccessSubmit = async (e) => {
+        e.preventDefault();
+
+        const payload = {
+            first_name: earlyAccessForm.firstName,
+            last_name: earlyAccessForm.lastName,
+            phone: earlyAccessForm.phone,
+            address: earlyAccessForm.address,
+            invite_code: earlyAccessForm.neighborhoodCode
+                .toUpperCase()
+                .trim(),
+        };
+
+        try {
+            setEarlyAccessSaving(true);
+
+            const response = await fetch(RESIDENT_SIGNUP_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || "Signup failed.");
+            }
+
+            alert("Thank you! You have been added for first access to the Clubhouse Resident app.");
+
+            setEarlyAccessForm({
+                firstName: "",
+                lastName: "",
+                phone: "",
+                address: "",
+                neighborhoodCode: "COUNTRYPLACE2026",
+            });
+        } catch (error) {
+            console.error("Resident early access signup failed:", error);
+            alert(error.message || "Could not save your signup. Please try again.");
+        } finally {
+            setEarlyAccessSaving(false);
+        }
     };
 
     const handleProviderChange = (e) => {
@@ -231,48 +201,6 @@ const HOAPartySignup = () => {
         setSelectedPartyId(e.target.value);
         setProviderSaved(false);
         setStripeClientReferenceId("");
-    };
-
-    const handleGuestSubmit = async (e) => {
-        e.preventDefault();
-
-        const payload = {
-            hoa_party_id: selectedParty.id,
-            name: guestForm.name,
-            email: guestForm.email,
-            phone: guestForm.phone,
-            attendees: Number(guestForm.attendees) || 1,
-        };
-
-        try {
-            setGuestSaving(true);
-
-            const response = await fetch(`${HOA_URL}/guest-signup`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(payload),
-            });
-
-            if (!response.ok) {
-                throw new Error("Guest signup failed");
-            }
-
-            alert("Thanks! You have been added to the guest signup sheet.");
-
-            setGuestForm({
-                name: "",
-                email: "",
-                phone: "",
-                attendees: "1",
-            });
-        } catch (error) {
-            console.error("Guest RSVP failed:", error);
-            alert("Could not save your RSVP. Please try again.");
-        } finally {
-            setGuestSaving(false);
-        }
     };
 
     const handleProviderSubmit = async (e) => {
@@ -321,6 +249,58 @@ const HOAPartySignup = () => {
         }
     };
 
+    const handleProviderCheckout = async () => {
+        try {
+            setProviderSaving(true);
+
+            const payload = {
+                hoa_party_id: selectedParty.id,
+                business_name: providerForm.businessName,
+                contact_name: providerForm.contactName,
+                email: providerForm.email,
+                phone: providerForm.phone,
+                service_category: providerForm.serviceCategory,
+            };
+
+            const saveRes = await fetch(`${HOA_URL}/provider-signup`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            const savedProvider = await saveRes.json();
+
+            const checkoutRes = await fetch(`${HOA_URL}/create-provider-checkout`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    signup_id: savedProvider.id,
+                    stripe_client_reference_id: savedProvider.stripe_client_reference_id,
+                    price_id: "price_1Tc9ekLVTbVnCRoaAY4LwiBs",
+                }),
+            });
+
+            const checkoutData = await checkoutRes.json();
+
+            if (!checkoutData.url) throw new Error("No Stripe Checkout URL returned");
+
+            window.location.href = checkoutData.url;
+        } catch (err) {
+            console.error("Checkout error:", err);
+            alert("Something went wrong starting checkout.");
+        } finally {
+            setProviderSaving(false);
+        }
+    };
+
+    const sortedParties = useMemo(() => {
+        return [...parties].sort((a, b) => {
+            const aDate = new Date(a.event_date || a.date || a.created_at || 0).getTime();
+            const bDate = new Date(b.event_date || b.date || b.created_at || 0).getTime();
+            return bDate - aDate;
+        });
+    }, [parties]);
+
     const providerFormComplete =
         providerForm.businessName &&
         providerForm.contactName &&
@@ -330,12 +310,22 @@ const HOAPartySignup = () => {
 
     return (
         <section className="hoa-page">
+            <img
+                src={logo}
+                alt="Clubhouse Links"
+                className="hoa-hero-logo"
+            />
+
+            <p className="hoa-kicker">
+                {loadingParties ? "Loading Event..." : "HOA Community Event"}
+            </p>
             <div className="hoa-hero">
                 <img
                     src={hoaPicture}
                     alt="HOA community event"
                     className="hoa-hero-img"
                 />
+
                 <p className="hoa-event-description">
                     HOA community events create a unique opportunity for homeowners to meet trusted local service professionals face-to-face before ever needing a service. Whether it's a contractor, landscaper, pool company, painter, or other home service provider, these gatherings help build real relationships through personal interaction rather than advertisements or cold outreach. Homeowners gain access to vetted local businesses, while service providers have the chance to connect directly with the communities they serve. The result is stronger neighborhood relationships, greater trust, and a more connected local economy built on genuine conversations and referrals.
                 </p>
@@ -348,28 +338,71 @@ const HOAPartySignup = () => {
                     >
                         <span className="app-store-icon"></span>
                         <span>
-        <small>Available on the</small>
-        App Store
-    </span>
+                            <small>Available on the</small>
+                            App Store
+                        </span>
                     </button>
 
                     {showAppCountdown && (
-                        <div className="app-store-countdown">
-                            Coming Sunday, June 14th at 11:00 AM
-                            <br />
-                            <strong>{appCountdown}</strong>
+                        <div className="hero-early-access-box">
+                            <p className="hero-early-access-title">
+                                App Still In Review
+                            </p>
+
+                            <p className="hero-early-access-subtitle">
+                                Sign up now for first access to the Clubhouse Resident app.
+                            </p>
+
+                            <form
+                                onSubmit={handleEarlyAccessSubmit}
+                                className="hero-early-access-form"
+                            >
+                                <input
+                                    name="firstName"
+                                    value={earlyAccessForm.firstName}
+                                    onChange={handleEarlyAccessChange}
+                                    placeholder="First name"
+                                    required
+                                />
+
+                                <input
+                                    name="lastName"
+                                    value={earlyAccessForm.lastName}
+                                    onChange={handleEarlyAccessChange}
+                                    placeholder="Last name"
+                                    required
+                                />
+
+                                <input
+                                    name="phone"
+                                    value={earlyAccessForm.phone}
+                                    onChange={handleEarlyAccessChange}
+                                    placeholder="Mobile phone"
+                                    required
+                                />
+
+                                <input
+                                    name="address"
+                                    value={earlyAccessForm.address}
+                                    onChange={handleEarlyAccessChange}
+                                    placeholder="Address"
+                                    required
+                                />
+
+                                <input
+                                    name="neighborhoodCode"
+                                    value={earlyAccessForm.neighborhoodCode}
+                                    onChange={handleEarlyAccessChange}
+                                    placeholder="COUNTRYPLACE2026"
+                                    required
+                                />
+
+                                <button type="submit" disabled={earlyAccessSaving}>
+                                    {earlyAccessSaving ? "Saving..." : "Get First Access"}
+                                </button>
+                            </form>
                         </div>
                     )}
-                    <img
-                        src={logo}
-                        alt="Clubhouse Links"
-                        className="hoa-hero-logo"
-                    />
-
-                    <p className="hoa-kicker">
-                        {loadingParties ? "Loading Event..." : "HOA Community Event"}
-                    </p>
-
 
 
                 </div>
@@ -389,11 +422,10 @@ const HOAPartySignup = () => {
 
             <div className="hoa-selected-event-card">
                 <h1 className="hoa-event-title">
-                    {selectedParty.neighborhood} Signup Sheet
+                    {selectedParty.neighborhood} HOA EVENT
                 </h1>
+
                 <h3>Event Details</h3>
-
-
 
                 <div className="hoa-event-detail-grid">
                     <p><strong>City:</strong> {selectedParty.city}</p>
