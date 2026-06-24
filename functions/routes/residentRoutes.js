@@ -10,7 +10,7 @@ const {
     approveResident,
     getResidentProfile,
     getVendors,
-    loginResident,
+    loginResident, getAddress,getAddressAutoComplete
 } = require('../controllers/residentController');
 
 router.post('/validate-invite-code', validateInviteCode);
@@ -21,5 +21,7 @@ router.post('/approve/:residentId', approveResident);
 router.get('/profile/:residentId', getResidentProfile);
 router.get( '/vendors/:residentId',getVendors);
 router.post('/login', loginResident);
+router.post("/address-lookup", getAddress);
+router.post("/address-autocomplete", getAddressAutoComplete);
 
-module.exports = router;
+    module.exports = router;

@@ -38,22 +38,26 @@ exports.validateInviteCode = async (req, res) => {
 
 exports.signupResident = async (req, res) => {
     try {
-        const { first_name, last_name, phone, invite_code } = req.body;
+        const { first_name, last_name, phone, address = null, invite_code } = req.body;
         const cleanPhone = normalizePhone(phone);
 
         if (!first_name || !last_name || !cleanPhone || !invite_code) {
-            return res.status(400).json({ error: 'Missing required fields' });
+            return res.status(400).json({ error: "Missing required fields" });
         }
 
         const inviteResult = await pool.query(
             `
                 SELECT
                     ic.id,
-                    n.id AS neighborhood_id,
+                    ic.code,
+                    ic.code_type,
+                    ic.contractor_user_id,
+                    ic.access_level,
+                    ic.neighborhood_id,
                     n.name AS neighborhood_name
                 FROM hoa_invite_codes ic
-                         JOIN hoa_neighborhoods n
-                              ON n.id = ic.neighborhood_id
+                         LEFT JOIN hoa_neighborhoods n
+                                   ON n.id = ic.neighborhood_id
                 WHERE UPPER(ic.code) = UPPER($1)
                   AND ic.active = TRUE
                     LIMIT 1
@@ -62,45 +66,104 @@ exports.signupResident = async (req, res) => {
         );
 
         if (!inviteResult.rows.length) {
-            return res.status(400).json({ error: 'Invalid invite code' });
+            return res.status(400).json({ error: "Invalid invite code" });
         }
 
-        const neighborhoodId = inviteResult.rows[0].neighborhood_id;
-        const neighborhoodName = inviteResult.rows[0].neighborhood_name;
+        const invite = inviteResult.rows[0];
+
+        const isResidentCode = invite.code_type === "resident";
+        const isContractorCode = invite.code_type === "contractor_customer";
+
+        if (!isResidentCode && !isContractorCode) {
+            return res.status(400).json({
+                error: "Unsupported invite code type."
+            });
+        }
+
+        if (isResidentCode && !invite.neighborhood_id) {
+            return res.status(400).json({
+                error: "Resident invite code is not connected to a neighborhood."
+            });
+        }
+
+        const neighborhoodId = invite.neighborhood_id || null;
+        const approvalStatus = "approved";
+        const accessLevel = isResidentCode ? "verified_neighborhood" : "contractor_customer";
 
         const residentResult = await pool.query(
             `
-            INSERT INTO hoa_residents
-                (first_name, last_name, phone, neighborhood_id, approval_status, sms_verified, approved_at)
-            VALUES
-                ($1, $2, $3, $4, 'approved', TRUE, NOW())
-            ON CONFLICT (phone, neighborhood_id)
+                INSERT INTO hoa_residents
+                (
+                    first_name,
+                    last_name,
+                    phone,
+                    address,
+                    neighborhood_id,
+                    approval_status,
+                    sms_verified,
+                    approved_at,
+                    access_level,
+                    invite_code_used,
+                    referred_by_contractor_id
+                )
+                VALUES
+                    (
+                        $1, $2, $3, $4, $5, $6, TRUE,
+                        CASE WHEN $6 = 'approved' THEN NOW() ELSE NULL END,
+                        $7, $8, $9
+                    )
+                    ON CONFLICT (phone, neighborhood_id)
             DO UPDATE SET
-                first_name = EXCLUDED.first_name,
-                last_name = EXCLUDED.last_name,
-                sms_verified = TRUE,
-                approval_status = 'approved',
-                approved_at = NOW(),
-                updated_at = NOW()
-            RETURNING *
+                    first_name = EXCLUDED.first_name,
+                                       last_name = EXCLUDED.last_name,
+                                       address = EXCLUDED.address,
+                                       sms_verified = TRUE,
+                                       approval_status = EXCLUDED.approval_status,
+                                       approved_at = EXCLUDED.approved_at,
+                                       access_level = EXCLUDED.access_level,
+                                       invite_code_used = EXCLUDED.invite_code_used,
+                                       referred_by_contractor_id = EXCLUDED.referred_by_contractor_id,
+                                       updated_at = NOW()
+                                       RETURNING *
             `,
-            [first_name, last_name, cleanPhone, neighborhoodId]
+            [
+                first_name,
+                last_name,
+                cleanPhone,
+                address,
+                neighborhoodId,
+                approvalStatus,
+                accessLevel,
+                invite.code,
+                isContractorCode ? invite.contractor_user_id : null
+            ]
+        );
+
+        await pool.query(
+            `
+                UPDATE hoa_invite_codes
+                SET used_count = COALESCE(used_count, 0) + 1
+                WHERE id = $1
+            `,
+            [invite.id]
         );
 
         const resident = {
             ...residentResult.rows[0],
-            neighborhood_name: neighborhoodName
+            neighborhood_name: invite.neighborhood_name || null
         };
 
         res.json({
             success: true,
             resident_id: resident.id,
             resident,
-            message: 'Resident profile created successfully.'
+            message: isResidentCode
+                ? "Resident profile created successfully."
+                : "Customer profile created successfully."
         });
     } catch (err) {
-        console.error('signupResident error:', err);
-        res.status(500).json({ error: 'Server error' });
+        console.error("signupResident error:", err);
+        res.status(500).json({ error: "Server error" });
     }
 };
 exports.loginResident = async (req, res) => {
@@ -258,10 +321,27 @@ exports.getVendors = async (req, res) => {
     try {
         const { residentId } = req.params;
 
-        const { rows } = await pool.query(
+        const residentResult = await pool.query(
+            `
+            SELECT id, neighborhood_id, address
+            FROM hoa_residents
+            WHERE id = $1
+            LIMIT 1
+            `,
+            [residentId]
+        );
+
+        if (!residentResult.rows.length) {
+            return res.status(404).json({ error: "Resident not found" });
+        }
+
+        const resident = residentResult.rows[0];
+
+        const vendorsResult = await pool.query(
             `
             SELECT
                 v.id,
+                v.neighborhood_id,
                 v.company_name,
                 v.category,
                 v.contact_name,
@@ -269,23 +349,156 @@ exports.getVendors = async (req, res) => {
                 v.email,
                 v.website,
                 v.description,
-                v.logo_url
-            FROM hoa_residents r
-            JOIN hoa_vendors v
-                ON v.neighborhood_id = r.neighborhood_id
-            WHERE r.id = $1
+                v.logo_url,
+                v.active,
+
+                COALESCE(COUNT(r.id), 0)::int AS signup_count,
+
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'id', r.id,
+                            'first_name', TRIM(r.first_name),
+                            'address', r.address
+                        )
+                        ORDER BY r.created_at DESC
+                    ) FILTER (WHERE r.id IS NOT NULL),
+                    '[]'
+                ) AS signed_up_people
+
+            FROM hoa_vendors v
+            LEFT JOIN hoa_residents r
+                ON r.neighborhood_id = v.neighborhood_id
+               AND UPPER(r.invite_code_used) = UPPER(v.company_name || '26')
+
+            WHERE v.neighborhood_id = $1
               AND v.active = TRUE
-            ORDER BY v.category, v.company_name
+
+            GROUP BY v.id
+            ORDER BY v.id ASC
             `,
-            [residentId]
+            [resident.neighborhood_id]
         );
 
-        res.json(rows);
-
+        res.json({
+            success: true,
+            vendors: vendorsResult.rows
+        });
     } catch (err) {
-        console.error('getVendors error:', err);
-        res.status(500).json({
-            error: 'Server error'
+        console.error("getVendorsForResident error:", err);
+        res.status(500).json({ error: "Failed to load vendors" });
+    }
+};
+
+
+exports.getAddress = async (req, res) => {
+    try {
+        const { address, city = "Plano", state = "TX" } = req.body;
+
+        if (!address) {
+            return res.status(400).json({
+                success: false,
+                error: "Address is required",
+            });
+        }
+
+        const normalizedAddress = address.toLowerCase().trim();
+        const normalizedCity = city.toLowerCase().trim();
+        const normalizedState = state.toLowerCase().trim();
+
+        const result = await pool.query(
+            `
+            SELECT
+                ns.neighborhood_id,
+                n.name AS neighborhood_name,
+                ns.invite_code,
+                ns.street_name,
+                ns.city,
+                ns.state
+            FROM hoa_neighborhood_streets ns
+            JOIN hoa_neighborhoods n
+              ON n.id = ns.neighborhood_id
+            WHERE ns.active = TRUE
+              AND LOWER($1) LIKE '%' || LOWER(ns.street_name) || '%'
+              AND LOWER(ns.city) = LOWER($2)
+              AND LOWER(ns.state) = LOWER($3)
+            ORDER BY LENGTH(ns.street_name) DESC
+            LIMIT 1
+            `,
+            [normalizedAddress, normalizedCity, normalizedState]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: "We could not match this address to a supported neighborhood yet.",
+            });
+        }
+
+        return res.json({
+            success: true,
+            match: result.rows[0],
+        });
+    } catch (err) {
+        console.error("Address lookup error:", err);
+        return res.status(500).json({
+            success: false,
+            error: "Server error looking up address.",
+        });
+    }
+};
+
+exports.getAddressAutoComplete = async (req, res) => {
+    try {
+        const {
+            q,
+            city = "Plano",
+            state = "TX"
+        } = req.body;
+
+        if (!q || q.trim().length < 2) {
+            return res.json({
+                success: true,
+                suggestions: []
+            });
+        }
+
+        const result = await pool.query(
+            `
+            SELECT DISTINCT
+                ns.street_name,
+                ns.city,
+                ns.state,
+                ns.invite_code,
+                ns.neighborhood_id,
+                n.name AS neighborhood_name
+            FROM hoa_neighborhood_streets ns
+            JOIN hoa_neighborhoods n
+                ON n.id = ns.neighborhood_id
+            WHERE ns.active = TRUE
+              AND ns.city ILIKE $2
+              AND ns.state ILIKE $3
+              AND ns.street_name ILIKE $1
+            ORDER BY ns.street_name ASC
+            LIMIT 10
+            `,
+            [
+                `%${q.trim()}%`,
+                city,
+                state
+            ]
+        );
+
+        return res.json({
+            success: true,
+            suggestions: result.rows
+        });
+    } catch (err) {
+        console.error("Address autocomplete error:", err);
+
+        return res.status(500).json({
+            success: false,
+            error: "Could not fetch address suggestions."
         });
     }
 };
