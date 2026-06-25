@@ -1,5 +1,6 @@
 // controllers/hoaResidentController.js
 const pool = require('../db/db');
+const jwt = require("jsonwebtoken");
 
 function normalizePhone(phone) {
     return String(phone || '').replace(/\D/g, '');
@@ -8,6 +9,298 @@ function normalizePhone(phone) {
 function generateCode() {
     return String(Math.floor(100000 + Math.random() * 900000));
 }
+let cachedAppleMapsToken = null;
+let cachedAppleMapsTokenExpiresAt = 0;
+
+function getAppleMapsToken() {
+    const now = Math.floor(Date.now() / 1000);
+
+    if (cachedAppleMapsToken && cachedAppleMapsTokenExpiresAt > now + 60) {
+        return cachedAppleMapsToken;
+    }
+
+    const keyId = process.env.APPLE_MAPS_KEY_ID;
+    const teamId = process.env.APPLE_TEAM_ID;
+    const privateKeyRaw = process.env.APPLE_MAPS_PRIVATE_KEY;
+
+    if (!keyId || !teamId || !privateKeyRaw) {
+        throw new Error("Missing Apple Maps environment variables.");
+    }
+
+    const privateKey = privateKeyRaw.replace(/\\n/g, "\n");
+
+    const expiresInSeconds = 60 * 60;
+
+    const token = jwt.sign(
+        {},
+        privateKey,
+        {
+            algorithm: "ES256",
+            issuer: teamId,
+            expiresIn: expiresInSeconds,
+            keyid: keyId,
+            header: {
+                typ: "JWT",
+                kid: keyId
+            }
+        }
+    );
+
+    cachedAppleMapsToken = token;
+    cachedAppleMapsTokenExpiresAt = now + expiresInSeconds;
+
+    return token;
+}
+
+async function geocodeAddressWithAppleMaps(address) {
+    if (!address) {
+        return null;
+    }
+
+    const token = getAppleMapsToken();
+
+    const fullAddress = `${address}, Plano, TX`;
+    const url = `https://maps-api.apple.com/v1/geocode?q=${encodeURIComponent(fullAddress)}&lang=en-US`;
+
+    const response = await fetch(url, {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.warn("Apple Maps geocode failed:", errorText);
+        return null;
+    }
+
+    const data = await response.json();
+    const firstResult = data.results && data.results[0];
+
+    if (!firstResult || !firstResult.coordinate) {
+        return null;
+    }
+
+    return {
+        latitude: firstResult.coordinate.latitude,
+        longitude: firstResult.coordinate.longitude
+    };
+}
+
+exports.getVendors = async (req, res) => {
+    try {
+        const { residentId } = req.params;
+
+        const residentResult = await pool.query(
+            `
+            SELECT id, neighborhood_id, address, latitude, longitude
+            FROM hoa_residents
+            WHERE id = $1
+            LIMIT 1
+            `,
+            [residentId]
+        );
+
+        if (!residentResult.rows.length) {
+            return res.status(404).json({ error: "Resident not found" });
+        }
+
+        let resident = residentResult.rows[0];
+
+        if ((!resident.latitude || !resident.longitude) && resident.address) {
+            const coordinates = await geocodeAddressWithAppleMaps(resident.address);
+
+            if (coordinates) {
+                await pool.query(
+                    `
+                    UPDATE hoa_residents
+                    SET
+                        latitude = $1,
+                        longitude = $2,
+                        updated_at = NOW()
+                    WHERE id = $3
+                    `,
+                    [coordinates.latitude, coordinates.longitude, resident.id]
+                );
+
+                resident = {
+                    ...resident,
+                    latitude: coordinates.latitude,
+                    longitude: coordinates.longitude
+                };
+            }
+        }
+
+        const radiusMiles = 3;
+
+        const vendorsResult = await pool.query(
+            `
+            WITH area_residents AS (
+                SELECT
+                    r.id,
+                    r.first_name,
+                    r.address,
+                    r.neighborhood_id,
+                    r.invite_code_used,
+                    r.latitude,
+                    r.longitude,
+
+                    CASE
+                        WHEN $2::numeric IS NOT NULL
+                         AND $3::numeric IS NOT NULL
+                         AND r.latitude IS NOT NULL
+                         AND r.longitude IS NOT NULL
+                        THEN
+                            3959 * acos(
+                                LEAST(
+                                    1,
+                                    GREATEST(
+                                        -1,
+                                        cos(radians($2::numeric)) *
+                                        cos(radians(r.latitude::numeric)) *
+                                        cos(radians(r.longitude::numeric) - radians($3::numeric)) +
+                                        sin(radians($2::numeric)) *
+                                        sin(radians(r.latitude::numeric))
+                                    )
+                                )
+                            )
+                        ELSE NULL
+                    END AS distance_miles
+
+                FROM hoa_residents r
+                WHERE r.invite_code_used IS NOT NULL
+                  AND (
+                        (
+                            $2::numeric IS NOT NULL
+                            AND $3::numeric IS NOT NULL
+                            AND r.latitude IS NOT NULL
+                            AND r.longitude IS NOT NULL
+                            AND (
+                                3959 * acos(
+                                    LEAST(
+                                        1,
+                                        GREATEST(
+                                            -1,
+                                            cos(radians($2::numeric)) *
+                                            cos(radians(r.latitude::numeric)) *
+                                            cos(radians(r.longitude::numeric) - radians($3::numeric)) +
+                                            sin(radians($2::numeric)) *
+                                            sin(radians(r.latitude::numeric))
+                                        )
+                                    )
+                                )
+                            ) <= $4::numeric
+                        )
+                        OR
+                        (
+                            $1::int IS NOT NULL
+                            AND r.neighborhood_id = $1
+                        )
+                  )
+            ),
+
+            vendor_stats AS (
+                SELECT
+                    v.id,
+                    v.neighborhood_id,
+                    v.company_name,
+                    v.category,
+                    v.contact_name,
+                    v.phone,
+                    v.email,
+                    v.website,
+                    v.description,
+                    v.logo_url,
+                    v.active,
+
+                    COALESCE(COUNT(ar.id), 0)::int AS signup_count,
+
+                    COALESCE(
+                        json_agg(
+                            json_build_object(
+                                'id', ar.id,
+                                'first_name', TRIM(ar.first_name),
+                                'address', ar.address,
+                                'distance_miles', ROUND(ar.distance_miles::numeric, 2)
+                            )
+                            ORDER BY
+                                ar.distance_miles ASC NULLS LAST,
+                                ar.id DESC
+                        ) FILTER (WHERE ar.id IS NOT NULL),
+                        '[]'
+                    ) AS signed_up_people
+
+                FROM hoa_vendors v
+
+                LEFT JOIN area_residents ar
+                    ON REPLACE(UPPER(ar.invite_code_used), ' ', '') =
+                       REPLACE(UPPER(v.company_name || '26'), ' ', '')
+                   AND (
+                        v.neighborhood_id IS NULL
+                        OR ar.neighborhood_id = v.neighborhood_id
+                        OR ar.distance_miles <= $4::numeric
+                   )
+
+                WHERE v.active = TRUE
+                  AND (
+                        $1::int IS NULL
+                        OR v.neighborhood_id = $1
+                        OR v.neighborhood_id IS NULL
+                  )
+
+                GROUP BY
+                    v.id,
+                    v.neighborhood_id,
+                    v.company_name,
+                    v.category,
+                    v.contact_name,
+                    v.phone,
+                    v.email,
+                    v.website,
+                    v.description,
+                    v.logo_url,
+                    v.active
+            )
+
+            SELECT
+                id,
+                neighborhood_id,
+                company_name,
+                category,
+                contact_name,
+                phone,
+                email,
+                website,
+                description,
+                logo_url,
+                active,
+                signup_count,
+                signed_up_people
+
+            FROM vendor_stats
+
+            ORDER BY
+                signup_count DESC,
+                category ASC,
+                id ASC
+            `,
+            [
+                resident.neighborhood_id || null,
+                resident.latitude || null,
+                resident.longitude || null,
+                radiusMiles
+            ]
+        );
+
+        res.json({
+            success: true,
+            vendors: vendorsResult.rows
+        });
+    } catch (err) {
+        console.error("getVendors error:", err);
+        res.status(500).json({ error: "Failed to load vendors" });
+    }
+};
 
 exports.validateInviteCode = async (req, res) => {
     try {
@@ -317,78 +610,7 @@ exports.getResidentProfile = async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 };
-exports.getVendors = async (req, res) => {
-    try {
-        const { residentId } = req.params;
 
-        const residentResult = await pool.query(
-            `
-            SELECT id, neighborhood_id, address
-            FROM hoa_residents
-            WHERE id = $1
-            LIMIT 1
-            `,
-            [residentId]
-        );
-
-        if (!residentResult.rows.length) {
-            return res.status(404).json({ error: "Resident not found" });
-        }
-
-        const resident = residentResult.rows[0];
-
-        const vendorsResult = await pool.query(
-            `
-            SELECT
-                v.id,
-                v.neighborhood_id,
-                v.company_name,
-                v.category,
-                v.contact_name,
-                v.phone,
-                v.email,
-                v.website,
-                v.description,
-                v.logo_url,
-                v.active,
-
-                COALESCE(COUNT(r.id), 0)::int AS signup_count,
-
-                COALESCE(
-                    json_agg(
-                        json_build_object(
-                            'id', r.id,
-                            'first_name', TRIM(r.first_name),
-                            'address', r.address
-                        )
-                        ORDER BY r.created_at DESC
-                    ) FILTER (WHERE r.id IS NOT NULL),
-                    '[]'
-                ) AS signed_up_people
-
-            FROM hoa_vendors v
-            LEFT JOIN hoa_residents r
-                ON r.neighborhood_id = v.neighborhood_id
-               AND UPPER(r.invite_code_used) = UPPER(v.company_name || '26')
-
-            WHERE v.neighborhood_id = $1
-              AND v.active = TRUE
-
-            GROUP BY v.id
-            ORDER BY v.id ASC
-            `,
-            [resident.neighborhood_id]
-        );
-
-        res.json({
-            success: true,
-            vendors: vendorsResult.rows
-        });
-    } catch (err) {
-        console.error("getVendorsForResident error:", err);
-        res.status(500).json({ error: "Failed to load vendors" });
-    }
-};
 
 
 exports.getAddress = async (req, res) => {
