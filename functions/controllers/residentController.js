@@ -9,14 +9,17 @@ function normalizePhone(phone) {
 function generateCode() {
     return String(Math.floor(100000 + Math.random() * 900000));
 }
-let cachedAppleMapsToken = null;
-let cachedAppleMapsTokenExpiresAt = 0;
+let cachedSignedAppleMapsJwt = null;
+let cachedSignedAppleMapsJwtExpiresAt = 0;
 
-function getAppleMapsToken() {
+let cachedAppleMapsAccessToken = null;
+let cachedAppleMapsAccessTokenExpiresAt = 0;
+
+function getSignedAppleMapsJwt() {
     const now = Math.floor(Date.now() / 1000);
 
-    if (cachedAppleMapsToken && cachedAppleMapsTokenExpiresAt > now + 60) {
-        return cachedAppleMapsToken;
+    if (cachedSignedAppleMapsJwt && cachedSignedAppleMapsJwtExpiresAt > now + 60) {
+        return cachedSignedAppleMapsJwt;
     }
 
     const keyId = process.env.APPLE_MAPS_KEY_ID;
@@ -46,10 +49,39 @@ function getAppleMapsToken() {
         }
     );
 
-    cachedAppleMapsToken = token;
-    cachedAppleMapsTokenExpiresAt = now + expiresInSeconds;
+    cachedSignedAppleMapsJwt = token;
+    cachedSignedAppleMapsJwtExpiresAt = now + expiresInSeconds;
 
     return token;
+}
+
+async function getAppleMapsAccessToken() {
+    const now = Math.floor(Date.now() / 1000);
+
+    if (cachedAppleMapsAccessToken && cachedAppleMapsAccessTokenExpiresAt > now + 60) {
+        return cachedAppleMapsAccessToken;
+    }
+
+    const signedJwt = getSignedAppleMapsJwt();
+
+    const response = await fetch("https://maps-api.apple.com/v1/token", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${signedJwt}`
+        }
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Apple Maps token failed: ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    cachedAppleMapsAccessToken = data.accessToken;
+    cachedAppleMapsAccessTokenExpiresAt = now + (data.expiresInSeconds || 1800);
+
+    return cachedAppleMapsAccessToken;
 }
 
 async function geocodeAddressWithAppleMaps(address) {
@@ -57,14 +89,14 @@ async function geocodeAddressWithAppleMaps(address) {
         return null;
     }
 
-    const token = getAppleMapsToken();
+    const accessToken = await getAppleMapsAccessToken();
 
     const fullAddress = `${address}, Plano, TX`;
     const url = `https://maps-api.apple.com/v1/geocode?q=${encodeURIComponent(fullAddress)}&lang=en-US`;
 
     const response = await fetch(url, {
         headers: {
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${accessToken}`
         }
     });
 
@@ -86,7 +118,6 @@ async function geocodeAddressWithAppleMaps(address) {
         longitude: firstResult.coordinate.longitude
     };
 }
-
 exports.getVendors = async (req, res) => {
     try {
         const { residentId } = req.params;
@@ -131,165 +162,164 @@ exports.getVendors = async (req, res) => {
             }
         }
 
-        const radiusMiles = 3;
+
+
+        const radiusMiles = 7;
 
         const vendorsResult = await pool.query(
             `
-            WITH area_residents AS (
-                SELECT
-                    r.id,
-                    r.first_name,
-                    r.address,
-                    r.neighborhood_id,
-                    r.invite_code_used,
-                    r.latitude,
-                    r.longitude,
+    WITH area_residents AS (
+        SELECT
+            r.id,
+            r.first_name,
+            r.address,
+            r.neighborhood_id,
+            r.latitude,
+            r.longitude,
 
-                    CASE
-                        WHEN $2::numeric IS NOT NULL
-                         AND $3::numeric IS NOT NULL
-                         AND r.latitude IS NOT NULL
-                         AND r.longitude IS NOT NULL
-                        THEN
-                            3959 * acos(
-                                LEAST(
-                                    1,
-                                    GREATEST(
-                                        -1,
-                                        cos(radians($2::numeric)) *
-                                        cos(radians(r.latitude::numeric)) *
-                                        cos(radians(r.longitude::numeric) - radians($3::numeric)) +
-                                        sin(radians($2::numeric)) *
-                                        sin(radians(r.latitude::numeric))
-                                    )
+            CASE
+                WHEN $2::numeric IS NOT NULL
+                 AND $3::numeric IS NOT NULL
+                 AND r.latitude IS NOT NULL
+                 AND r.longitude IS NOT NULL
+                THEN
+                    3959 * acos(
+                        LEAST(
+                            1,
+                            GREATEST(
+                                -1,
+                                cos(radians($2::numeric)) *
+                                cos(radians(r.latitude::numeric)) *
+                                cos(radians(r.longitude::numeric) - radians($3::numeric)) +
+                                sin(radians($2::numeric)) *
+                                sin(radians(r.latitude::numeric))
+                            )
+                        )
+                    )
+                ELSE NULL
+            END AS distance_miles
+
+        FROM hoa_residents r
+        WHERE r.latitude IS NOT NULL
+          AND r.longitude IS NOT NULL
+          AND (
+                (
+                    $2::numeric IS NOT NULL
+                    AND $3::numeric IS NOT NULL
+                    AND (
+                        3959 * acos(
+                            LEAST(
+                                1,
+                                GREATEST(
+                                    -1,
+                                    cos(radians($2::numeric)) *
+                                    cos(radians(r.latitude::numeric)) *
+                                    cos(radians(r.longitude::numeric) - radians($3::numeric)) +
+                                    sin(radians($2::numeric)) *
+                                    sin(radians(r.latitude::numeric))
                                 )
                             )
-                        ELSE NULL
-                    END AS distance_miles
-
-                FROM hoa_residents r
-                WHERE r.invite_code_used IS NOT NULL
-                  AND (
-                        (
-                            $2::numeric IS NOT NULL
-                            AND $3::numeric IS NOT NULL
-                            AND r.latitude IS NOT NULL
-                            AND r.longitude IS NOT NULL
-                            AND (
-                                3959 * acos(
-                                    LEAST(
-                                        1,
-                                        GREATEST(
-                                            -1,
-                                            cos(radians($2::numeric)) *
-                                            cos(radians(r.latitude::numeric)) *
-                                            cos(radians(r.longitude::numeric) - radians($3::numeric)) +
-                                            sin(radians($2::numeric)) *
-                                            sin(radians(r.latitude::numeric))
-                                        )
-                                    )
-                                )
-                            ) <= $4::numeric
                         )
-                        OR
-                        (
-                            $1::int IS NOT NULL
-                            AND r.neighborhood_id = $1
-                        )
-                  )
-            ),
+                    ) <= $4::numeric
+                )
+                OR
+                (
+                    $1::int IS NOT NULL
+                    AND r.neighborhood_id = $1
+                )
+          )
+    ),
 
-            vendor_stats AS (
-                SELECT
-                    v.id,
-                    v.neighborhood_id,
-                    v.company_name,
-                    v.category,
-                    v.contact_name,
-                    v.phone,
-                    v.email,
-                    v.website,
-                    v.description,
-                    v.logo_url,
-                    v.active,
+    vendor_stats AS (
+        SELECT
+            v.id,
+            v.neighborhood_id,
+            v.company_name,
+            v.category,
+            v.contact_name,
+            v.phone,
+            v.email,
+            v.website,
+            v.description,
+            v.logo_url,
+            v.active,
 
-                    COALESCE(COUNT(ar.id), 0)::int AS signup_count,
+            COALESCE(COUNT(ar.id), 0)::int AS signup_count,
 
-                    COALESCE(
-                        json_agg(
-                            json_build_object(
-                                'id', ar.id,
-                                'first_name', TRIM(ar.first_name),
-                                'address', ar.address,
-                                'distance_miles', ROUND(ar.distance_miles::numeric, 2)
-                            )
-                            ORDER BY
-                                ar.distance_miles ASC NULLS LAST,
-                                ar.id DESC
-                        ) FILTER (WHERE ar.id IS NOT NULL),
-                        '[]'
-                    ) AS signed_up_people
+            COALESCE(
+                json_agg(
+                    json_build_object(
+                        'id', ar.id,
+                        'first_name', TRIM(ar.first_name),
+                        'address', ar.address,
+                        'distance_miles', ROUND(ar.distance_miles::numeric, 2)
+                    )
+                    ORDER BY
+                        ar.distance_miles ASC NULLS LAST,
+                        ar.id DESC
+                ) FILTER (WHERE ar.id IS NOT NULL),
+                '[]'
+            ) AS signed_up_people
 
-                FROM hoa_vendors v
+        FROM hoa_vendors v
 
-                LEFT JOIN area_residents ar
-                    ON REPLACE(UPPER(ar.invite_code_used), ' ', '') =
-                       REPLACE(UPPER(v.company_name || '26'), ' ', '')
-                   AND (
-                        v.neighborhood_id IS NULL
-                        OR ar.neighborhood_id = v.neighborhood_id
-                        OR ar.distance_miles <= $4::numeric
-                   )
+        LEFT JOIN hoa_resident_contractors rc
+            ON rc.vendor_id = v.id
+           AND rc.category = v.category
 
-                WHERE v.active = TRUE
-                  AND (
-                        $1::int IS NULL
-                        OR v.neighborhood_id = $1
-                        OR v.neighborhood_id IS NULL
-                  )
+        LEFT JOIN area_residents ar
+            ON ar.id = rc.resident_id
 
-                GROUP BY
-                    v.id,
-                    v.neighborhood_id,
-                    v.company_name,
-                    v.category,
-                    v.contact_name,
-                    v.phone,
-                    v.email,
-                    v.website,
-                    v.description,
-                    v.logo_url,
-                    v.active
-            )
+        WHERE v.active = TRUE
+          AND (
+                $1::int IS NULL
+                OR v.neighborhood_id = $1
+                OR v.neighborhood_id IS NULL
+          )
 
-            SELECT
-                id,
-                neighborhood_id,
-                company_name,
-                category,
-                contact_name,
-                phone,
-                email,
-                website,
-                description,
-                logo_url,
-                active,
-                signup_count,
-                signed_up_people
+        GROUP BY
+            v.id,
+            v.neighborhood_id,
+            v.company_name,
+            v.category,
+            v.contact_name,
+            v.phone,
+            v.email,
+            v.website,
+            v.description,
+            v.logo_url,
+            v.active
+    )
 
-            FROM vendor_stats
+    SELECT
+        id,
+        neighborhood_id,
+        company_name,
+        category,
+        contact_name,
+        phone,
+        email,
+        website,
+        description,
+        logo_url,
+        active,
+        signup_count,
+        signed_up_people
 
-            ORDER BY
-                signup_count DESC,
-                category ASC,
-                id ASC
-            `,
+    FROM vendor_stats
+
+    ORDER BY
+        signup_count DESC,
+        category ASC,
+        id ASC
+    `,
             [
                 resident.neighborhood_id || null,
                 resident.latitude || null,
                 resident.longitude || null,
                 radiusMiles
             ]
+
         );
 
         res.json({
