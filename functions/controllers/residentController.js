@@ -641,7 +641,47 @@ exports.getResidentProfile = async (req, res) => {
     }
 };
 
+exports.getCompletedProjects = async (req, res) => {
+    try {
+        const { residentId } = req.params;
 
+        const result = await pool.query(
+            `
+            SELECT
+                rc.id,
+                rc.resident_id,
+                rc.vendor_id,
+                v.company_name AS vendor_name,
+                rc.category AS service,
+                rc.finished_photo_url AS image_url,
+                rc.photo_approval_status AS approval_status,
+                rc.moderation_status,
+                rc.photo_submitted_at,
+                rc.photo_approved_at,
+                rc.photo_rejected_at,
+                rc.photo_rejection_reason
+            FROM hoa_resident_contractors rc
+            JOIN hoa_vendors v
+                ON v.id = rc.vendor_id
+            WHERE rc.resident_id = $1
+              AND rc.finished_photo_url IS NOT NULL
+            ORDER BY rc.updated_at DESC
+            `,
+            [residentId]
+        );
+
+        res.json({
+            success: true,
+            projects: result.rows
+        });
+    } catch (err) {
+        console.error("getCompletedProjects error:", err);
+        res.status(500).json({
+            success: false,
+            error: "Failed to load completed projects."
+        });
+    }
+};
 
 exports.getAddress = async (req, res) => {
     try {
