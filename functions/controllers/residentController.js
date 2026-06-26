@@ -248,12 +248,20 @@ exports.getVendors = async (req, res) => {
 
             COALESCE(
                 json_agg(
-                    json_build_object(
-                        'id', ar.id,
-                        'first_name', TRIM(ar.first_name),
-                        'address', ar.address,
-                        'distance_miles', ROUND(ar.distance_miles::numeric, 2)
-                    )
+    json_build_object(
+    'id', ar.id,
+    'first_name', TRIM(ar.first_name),
+    'address', ar.address,
+    'distance_miles', ROUND(ar.distance_miles::numeric, 2),
+    'finished_photo_url',
+    CASE
+    WHEN rc.finished_photo_url IS NOT NULL
+    AND rc.photo_approval_status IN ('approved', 'pending_review')
+    THEN rc.finished_photo_url
+    ELSE NULL
+    END,
+    'photo_approval_status', rc.photo_approval_status
+    )
                     ORDER BY
                         ar.distance_miles ASC NULLS LAST,
                         ar.id DESC
