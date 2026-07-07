@@ -2,6 +2,7 @@
 const pool = require('../db/db');
 const jwt = require("jsonwebtoken");
 
+const DEFAULT_GENERATED_AREA_RADIUS_MILES = 0.35;
 function normalizePhone(phone) {
     return String(phone || '').replace(/\D/g, '');
 }
@@ -83,6 +84,8 @@ async function getAppleMapsAccessToken() {
 
     return cachedAppleMapsAccessToken;
 }
+
+
 function normalizeStateForDisplay(state) {
     if (!state) return null;
 
@@ -90,37 +93,28 @@ function normalizeStateForDisplay(state) {
 
     const stateMap = {
         Texas: "TX",
-        TX: "TX"
+        TX: "TX",
+        Georgia: "GA",
+        GA: "GA"
     };
 
     return stateMap[clean] || clean;
 }
 
-function getDisplayAreaFromAddressFallback(address) {
-    if (!address) return null;
+function buildDisplayAreaName(city, state) {
+    const cleanCity = city ? String(city).trim() : null;
+    const cleanState = normalizeStateForDisplay(state);
 
-    const cleanAddress = String(address).toLowerCase();
+    if (cleanCity && cleanState) {
+        return `${cleanCity}, ${cleanState}`;
+    }
 
-    const knownCities = [
-        "Plano",
-        "Dallas",
-        "Grand Prairie",
-        "Richardson",
-        "Allen",
-        "McKinney",
-        "Frisco",
-        "Garland",
-        "Wylie",
-        "Princeton",
-        "Lucas"
-    ];
+    if (cleanCity) {
+        return cleanCity;
+    }
 
-    const matchedCity = knownCities.find(city =>
-        cleanAddress.includes(city.toLowerCase())
-    );
-
-    if (matchedCity) {
-        return `${matchedCity}, TX`;
+    if (cleanState) {
+        return cleanState;
     }
 
     return null;
@@ -151,17 +145,10 @@ async function geocodeAddressWithAppleMaps(address) {
     }
 
     const data = await response.json();
-
     const firstResult = data?.results?.[0];
 
     if (!firstResult) {
-        return {
-            latitude: null,
-            longitude: null,
-            city: null,
-            state: null,
-            display_area_name: getDisplayAreaFromAddressFallback(address)
-        };
+        return null;
     }
 
     const structuredAddress = firstResult?.structuredAddress || {};
@@ -187,36 +174,198 @@ async function geocodeAddressWithAppleMaps(address) {
         firstResult?.city ||
         null;
 
-    const rawState =
-        structuredAddress?.administrativeArea ||
-        structuredAddress?.administrativeAreaCode ||
-        firstResult?.administrativeArea ||
-        firstResult?.administrativeAreaCode ||
-        firstResult?.state ||
-        null;
+    const state =
+        normalizeStateForDisplay(
+            structuredAddress?.administrativeAreaCode ||
+            structuredAddress?.administrativeArea ||
+            firstResult?.administrativeAreaCode ||
+            firstResult?.administrativeArea ||
+            firstResult?.state ||
+            null
+        );
 
-    const state = normalizeStateForDisplay(rawState);
+    const formattedAddress =
+        firstResult?.formattedAddressLines?.join(", ") ||
+        firstResult?.name ||
+        address;
 
-    let displayAreaName = null;
-
-    if (city && state) {
-        displayAreaName = `${city}, ${state}`;
-    } else if (city) {
-        displayAreaName = city;
-    } else if (state) {
-        displayAreaName = state;
-    }
-
-    if (!displayAreaName) {
-        displayAreaName = getDisplayAreaFromAddressFallback(address);
-    }
+    const displayAreaName = buildDisplayAreaName(city, state);
 
     return {
-        latitude,
-        longitude,
+        lat: latitude !== null ? Number(latitude) : null,
+        lng: longitude !== null ? Number(longitude) : null,
+        latitude: latitude !== null ? Number(latitude) : null,
+        longitude: longitude !== null ? Number(longitude) : null,
         city,
         state,
-        display_area_name: displayAreaName
+        display_area_name: displayAreaName,
+        formattedAddress,
+        raw: firstResult
+    };
+}
+
+function pointInPolygon(pointLng, pointLat, polygon) {
+    let inside = false;
+
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = Number(polygon[i][0]);
+        const yi = Number(polygon[i][1]);
+        const xj = Number(polygon[j][0]);
+        const yj = Number(polygon[j][1]);
+
+        const intersects =
+            yi > pointLat !== yj > pointLat &&
+            pointLng < ((xj - xi) * (pointLat - yi)) / (yj - yi) + xi;
+
+        if (intersects) inside = !inside;
+    }
+
+    return inside;
+}
+
+function createCirclePolygon({ lat, lng, radiusMiles, points = 32 }) {
+    const earthRadiusMiles = 3958.8;
+    const coords = [];
+
+    const latRad = lat * Math.PI / 180;
+    const lngRad = lng * Math.PI / 180;
+    const angularDistance = radiusMiles / earthRadiusMiles;
+
+    for (let i = 0; i <= points; i++) {
+        const bearing = 2 * Math.PI * (i / points);
+
+        const pointLatRad = Math.asin(
+            Math.sin(latRad) * Math.cos(angularDistance) +
+            Math.cos(latRad) * Math.sin(angularDistance) * Math.cos(bearing)
+        );
+
+        const pointLngRad =
+            lngRad +
+            Math.atan2(
+                Math.sin(bearing) * Math.sin(angularDistance) * Math.cos(latRad),
+                Math.cos(angularDistance) - Math.sin(latRad) * Math.sin(pointLatRad)
+            );
+
+        coords.push([
+            Number((pointLngRad * 180 / Math.PI).toFixed(7)),
+            Number((pointLatRad * 180 / Math.PI).toFixed(7))
+        ]);
+    }
+
+    return coords;
+}
+
+async function findExistingGeneratedArea(lat, lng) {
+    const result = await pool.query(`
+        SELECT
+            id,
+            area_name,
+            city,
+            state,
+            center_lat,
+            center_lng,
+            radius_miles,
+            polygon
+        FROM hoa_generated_areas
+        WHERE active = TRUE
+        ORDER BY created_at DESC
+    `);
+
+    for (const area of result.rows) {
+        let polygon = area.polygon;
+
+        if (typeof polygon === "string") {
+            try {
+                polygon = JSON.parse(polygon);
+            } catch {
+                polygon = null;
+            }
+        }
+
+        if (Array.isArray(polygon) && pointInPolygon(lng, lat, polygon)) {
+            return area;
+        }
+    }
+
+    return null;
+}
+
+function chooseGeneratedAreaName(geo) {
+    if (geo?.city) {
+        return `${geo.city} Area`;
+    }
+
+    return "Local Customer Area";
+}
+
+async function createGeneratedArea(geo, sourceAddress) {
+    const areaName = chooseGeneratedAreaName(geo);
+
+    const polygon = createCirclePolygon({
+        lat: geo.lat,
+        lng: geo.lng,
+        radiusMiles: DEFAULT_GENERATED_AREA_RADIUS_MILES
+    });
+
+    const result = await pool.query(
+        `
+            INSERT INTO hoa_generated_areas
+            (
+                area_name,
+                city,
+                state,
+                center_lat,
+                center_lng,
+                radius_miles,
+                polygon,
+                source,
+                confidence,
+                created_from_address
+            )
+            VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10)
+            RETURNING *
+        `,
+        [
+            areaName,
+            geo.city || null,
+            geo.state || null,
+            geo.lat,
+            geo.lng,
+            DEFAULT_GENERATED_AREA_RADIUS_MILES,
+            JSON.stringify(polygon),
+            "auto_generated_signup",
+            0.70,
+            sourceAddress
+        ]
+    );
+
+    return result.rows[0];
+}
+
+async function getOrCreateGeneratedAreaForAddress(address) {
+    const geo = await geocodeAddressWithAppleMaps(address);
+
+    if (!geo || geo.lat === null || geo.lng === null) {
+        return {
+            geo,
+            generatedArea: null
+        };
+    }
+
+    const existingArea = await findExistingGeneratedArea(geo.lat, geo.lng);
+
+    if (existingArea) {
+        return {
+            geo,
+            generatedArea: existingArea
+        };
+    }
+
+    const createdArea = await createGeneratedArea(geo, address);
+
+    return {
+        geo,
+        generatedArea: createdArea
     };
 }
 
@@ -276,32 +425,38 @@ exports.signupResident = async (req, res) => {
             ? "verified_neighborhood"
             : "contractor_customer";
 
-        let displayArea = null;
         let latitude = null;
         let longitude = null;
+        let generatedAreaId = null;
+        let displayAreaName = null;
 
-        // Only calculate display area for people who are NOT tied to an HOA.
+        // Only generate service areas for people who are NOT tied to an HOA.
         if (!neighborhoodId && address) {
             try {
-                const geo = await geocodeAddressWithAppleMaps(address);
+                const { geo, generatedArea } = await getOrCreateGeneratedAreaForAddress(address);
 
-                console.log("APPLE GEO DEBUG:", JSON.stringify(geo, null, 2));
-
-                displayArea = geo?.display_area_name || null;
-                latitude = geo?.latitude || null;
-                longitude = geo?.longitude || null;
-
-                console.log("DISPLAY AREA RESOLVED:", {
+                console.log("GENERATED AREA SIGNUP DEBUG:", {
                     address,
-                    displayArea,
-                    latitude,
-                    longitude
+                    geo,
+                    generatedArea
                 });
+
+                latitude = geo?.lat || null;
+                longitude = geo?.lng || null;
+                generatedAreaId = generatedArea?.id || null;
+
+                displayAreaName =
+                    generatedArea?.area_name ||
+                    geo?.display_area_name ||
+                    buildDisplayAreaName(geo?.city, geo?.state) ||
+                    null;
             } catch (geoErr) {
-                console.error("Apple Maps display area lookup failed:", geoErr);
-                displayArea = getDisplayAreaFromAddressFallback(address);
+                console.error("Generated area lookup failed:", geoErr);
+
                 latitude = null;
                 longitude = null;
+                generatedAreaId = null;
+                displayAreaName = null;
             }
         }
 
@@ -322,30 +477,32 @@ exports.signupResident = async (req, res) => {
                     referred_by_contractor_id,
                     latitude,
                     longitude,
+                    generated_area_id,
                     display_area_name
                 )
                 VALUES
-                (
-                    $1, $2, $3, $4, $5, $6, TRUE,
-                    CASE WHEN $6 = 'approved' THEN NOW() ELSE NULL END,
-                    $7, $8, $9, $10, $11, $12
-                )
-                ON CONFLICT (phone, neighborhood_id)
+                    (
+                        $1, $2, $3, $4, $5, $6, TRUE,
+                        CASE WHEN $6 = 'approved' THEN NOW() ELSE NULL END,
+                        $7, $8, $9, $10, $11, $12, $13
+                    )
+                    ON CONFLICT (phone, neighborhood_id)
                 DO UPDATE SET
                     first_name = EXCLUDED.first_name,
-                    last_name = EXCLUDED.last_name,
-                    address = EXCLUDED.address,
-                    sms_verified = TRUE,
-                    approval_status = EXCLUDED.approval_status,
-                    approved_at = EXCLUDED.approved_at,
-                    access_level = EXCLUDED.access_level,
-                    invite_code_used = EXCLUDED.invite_code_used,
-                    referred_by_contractor_id = EXCLUDED.referred_by_contractor_id,
-                    latitude = EXCLUDED.latitude,
-                    longitude = EXCLUDED.longitude,
-                    display_area_name = EXCLUDED.display_area_name,
-                    updated_at = NOW()
-                RETURNING *
+                                           last_name = EXCLUDED.last_name,
+                                           address = EXCLUDED.address,
+                                           sms_verified = TRUE,
+                                           approval_status = EXCLUDED.approval_status,
+                                           approved_at = EXCLUDED.approved_at,
+                                           access_level = EXCLUDED.access_level,
+                                           invite_code_used = EXCLUDED.invite_code_used,
+                                           referred_by_contractor_id = EXCLUDED.referred_by_contractor_id,
+                                           latitude = EXCLUDED.latitude,
+                                           longitude = EXCLUDED.longitude,
+                                           generated_area_id = EXCLUDED.generated_area_id,
+                                           display_area_name = EXCLUDED.display_area_name,
+                                           updated_at = NOW()
+                                           RETURNING *
             `,
             [
                 first_name,
@@ -359,7 +516,8 @@ exports.signupResident = async (req, res) => {
                 isContractorCode ? invite.contractor_user_id : null,
                 latitude,
                 longitude,
-                displayArea
+                generatedAreaId,
+                displayAreaName
             ]
         );
 
