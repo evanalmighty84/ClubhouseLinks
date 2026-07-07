@@ -83,6 +83,48 @@ async function getAppleMapsAccessToken() {
 
     return cachedAppleMapsAccessToken;
 }
+function normalizeStateForDisplay(state) {
+    if (!state) return null;
+
+    const clean = String(state).trim();
+
+    const stateMap = {
+        Texas: "TX",
+        TX: "TX"
+    };
+
+    return stateMap[clean] || clean;
+}
+
+function getDisplayAreaFromAddressFallback(address) {
+    if (!address) return null;
+
+    const cleanAddress = String(address).toLowerCase();
+
+    const knownCities = [
+        "Plano",
+        "Dallas",
+        "Grand Prairie",
+        "Richardson",
+        "Allen",
+        "McKinney",
+        "Frisco",
+        "Garland",
+        "Wylie",
+        "Princeton",
+        "Lucas"
+    ];
+
+    const matchedCity = knownCities.find(city =>
+        cleanAddress.includes(city.toLowerCase())
+    );
+
+    if (matchedCity) {
+        return `${matchedCity}, TX`;
+    }
+
+    return null;
+}
 
 async function geocodeAddressWithAppleMaps(address) {
     if (!address || !String(address).trim()) {
@@ -113,7 +155,13 @@ async function geocodeAddressWithAppleMaps(address) {
     const firstResult = data?.results?.[0];
 
     if (!firstResult) {
-        return null;
+        return {
+            latitude: null,
+            longitude: null,
+            city: null,
+            state: null,
+            display_area_name: getDisplayAreaFromAddressFallback(address)
+        };
     }
 
     const structuredAddress = firstResult?.structuredAddress || {};
@@ -134,12 +182,20 @@ async function geocodeAddressWithAppleMaps(address) {
         structuredAddress?.locality ||
         structuredAddress?.subLocality ||
         structuredAddress?.dependentLocality ||
+        firstResult?.locality ||
+        firstResult?.subLocality ||
+        firstResult?.city ||
         null;
 
-    const state =
+    const rawState =
         structuredAddress?.administrativeArea ||
         structuredAddress?.administrativeAreaCode ||
+        firstResult?.administrativeArea ||
+        firstResult?.administrativeAreaCode ||
+        firstResult?.state ||
         null;
+
+    const state = normalizeStateForDisplay(rawState);
 
     let displayAreaName = null;
 
@@ -151,15 +207,190 @@ async function geocodeAddressWithAppleMaps(address) {
         displayAreaName = state;
     }
 
+    if (!displayAreaName) {
+        displayAreaName = getDisplayAreaFromAddressFallback(address);
+    }
+
     return {
         latitude,
         longitude,
         city,
         state,
-        display_area_name: displayAreaName,
-        raw: firstResult
+        display_area_name: displayAreaName
     };
 }
+
+exports.signupResident = async (req, res) => {
+    try {
+        const { first_name, last_name, phone, address = null, invite_code } = req.body;
+        const cleanPhone = normalizePhone(phone);
+
+        if (!first_name || !last_name || !cleanPhone || !invite_code) {
+            return res.status(400).json({ error: "Missing required fields" });
+        }
+
+        const inviteResult = await pool.query(
+            `
+                SELECT
+                    ic.id,
+                    ic.code,
+                    ic.code_type,
+                    ic.contractor_user_id,
+                    ic.access_level,
+                    ic.neighborhood_id,
+                    n.name AS neighborhood_name
+                FROM hoa_invite_codes ic
+                         LEFT JOIN hoa_neighborhoods n
+                                   ON n.id = ic.neighborhood_id
+                WHERE UPPER(ic.code) = UPPER($1)
+                  AND ic.active = TRUE
+                    LIMIT 1
+            `,
+            [invite_code]
+        );
+
+        if (!inviteResult.rows.length) {
+            return res.status(400).json({ error: "Invalid invite code" });
+        }
+
+        const invite = inviteResult.rows[0];
+
+        const isResidentCode = invite.code_type === "resident";
+        const isContractorCode = invite.code_type === "contractor_customer";
+
+        if (!isResidentCode && !isContractorCode) {
+            return res.status(400).json({
+                error: "Unsupported invite code type."
+            });
+        }
+
+        if (isResidentCode && !invite.neighborhood_id) {
+            return res.status(400).json({
+                error: "Resident invite code is not connected to a neighborhood."
+            });
+        }
+
+        const neighborhoodId = invite.neighborhood_id || null;
+        const approvalStatus = "approved";
+        const accessLevel = isResidentCode
+            ? "verified_neighborhood"
+            : "contractor_customer";
+
+        let displayArea = null;
+        let latitude = null;
+        let longitude = null;
+
+        // Only calculate display area for people who are NOT tied to an HOA.
+        if (!neighborhoodId && address) {
+            try {
+                const geo = await geocodeAddressWithAppleMaps(address);
+
+                console.log("APPLE GEO DEBUG:", JSON.stringify(geo, null, 2));
+
+                displayArea = geo?.display_area_name || null;
+                latitude = geo?.latitude || null;
+                longitude = geo?.longitude || null;
+
+                console.log("DISPLAY AREA RESOLVED:", {
+                    address,
+                    displayArea,
+                    latitude,
+                    longitude
+                });
+            } catch (geoErr) {
+                console.error("Apple Maps display area lookup failed:", geoErr);
+                displayArea = getDisplayAreaFromAddressFallback(address);
+                latitude = null;
+                longitude = null;
+            }
+        }
+
+        const residentResult = await pool.query(
+            `
+                INSERT INTO hoa_residents
+                (
+                    first_name,
+                    last_name,
+                    phone,
+                    address,
+                    neighborhood_id,
+                    approval_status,
+                    sms_verified,
+                    approved_at,
+                    access_level,
+                    invite_code_used,
+                    referred_by_contractor_id,
+                    latitude,
+                    longitude,
+                    display_area_name
+                )
+                VALUES
+                (
+                    $1, $2, $3, $4, $5, $6, TRUE,
+                    CASE WHEN $6 = 'approved' THEN NOW() ELSE NULL END,
+                    $7, $8, $9, $10, $11, $12
+                )
+                ON CONFLICT (phone, neighborhood_id)
+                DO UPDATE SET
+                    first_name = EXCLUDED.first_name,
+                    last_name = EXCLUDED.last_name,
+                    address = EXCLUDED.address,
+                    sms_verified = TRUE,
+                    approval_status = EXCLUDED.approval_status,
+                    approved_at = EXCLUDED.approved_at,
+                    access_level = EXCLUDED.access_level,
+                    invite_code_used = EXCLUDED.invite_code_used,
+                    referred_by_contractor_id = EXCLUDED.referred_by_contractor_id,
+                    latitude = EXCLUDED.latitude,
+                    longitude = EXCLUDED.longitude,
+                    display_area_name = EXCLUDED.display_area_name,
+                    updated_at = NOW()
+                RETURNING *
+            `,
+            [
+                first_name,
+                last_name,
+                cleanPhone,
+                address,
+                neighborhoodId,
+                approvalStatus,
+                accessLevel,
+                invite.code,
+                isContractorCode ? invite.contractor_user_id : null,
+                latitude,
+                longitude,
+                displayArea
+            ]
+        );
+
+        await pool.query(
+            `
+                UPDATE hoa_invite_codes
+                SET used_count = COALESCE(used_count, 0) + 1
+                WHERE id = $1
+            `,
+            [invite.id]
+        );
+
+        const resident = {
+            ...residentResult.rows[0],
+            neighborhood_name: invite.neighborhood_name || null
+        };
+
+        res.json({
+            success: true,
+            resident_id: resident.id,
+            resident,
+            message: isResidentCode
+                ? "Resident profile created successfully."
+                : "Customer profile created successfully."
+        });
+    } catch (err) {
+        console.error("signupResident error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+};
+
 exports.getVendors = async (req, res) => {
     try {
         const { residentId } = req.params;
@@ -409,198 +640,7 @@ exports.validateInviteCode = async (req, res) => {
     }
 };
 
-exports.signupResident = async (req, res) => {
-    try {
-        const { first_name, last_name, phone, address = null, invite_code } = req.body;
-        const cleanPhone = normalizePhone(phone);
 
-        if (!first_name || !last_name || !cleanPhone || !invite_code) {
-            return res.status(400).json({ error: "Missing required fields" });
-        }
-
-        const inviteResult = await pool.query(
-            `
-                SELECT
-                    ic.id,
-                    ic.code,
-                    ic.code_type,
-                    ic.contractor_user_id,
-                    ic.access_level,
-                    ic.neighborhood_id,
-                    n.name AS neighborhood_name
-                FROM hoa_invite_codes ic
-                         LEFT JOIN hoa_neighborhoods n
-                                   ON n.id = ic.neighborhood_id
-                WHERE UPPER(ic.code) = UPPER($1)
-                  AND ic.active = TRUE
-                    LIMIT 1
-            `,
-            [invite_code]
-        );
-
-        if (!inviteResult.rows.length) {
-            return res.status(400).json({ error: "Invalid invite code" });
-        }
-
-        const invite = inviteResult.rows[0];
-
-        const isResidentCode = invite.code_type === "resident";
-        const isContractorCode = invite.code_type === "contractor_customer";
-
-        if (!isResidentCode && !isContractorCode) {
-            return res.status(400).json({
-                error: "Unsupported invite code type."
-            });
-        }
-
-        if (isResidentCode && !invite.neighborhood_id) {
-            return res.status(400).json({
-                error: "Resident invite code is not connected to a neighborhood."
-            });
-        }
-
-        const neighborhoodId = invite.neighborhood_id || null;
-        const approvalStatus = "approved";
-        const accessLevel = isResidentCode
-            ? "verified_neighborhood"
-            : "contractor_customer";
-
-        let displayArea = null;
-
-// Only calculate display area for people who are NOT tied to an HOA.
-        if (!neighborhoodId && address) {
-            try {
-                const geo = await geocodeAddressWithAppleMaps(address);
-
-                console.log("APPLE GEO DEBUG:", JSON.stringify(geo, null, 2));
-
-                const firstResult = geo?.results?.[0] || geo?.[0] || null;
-
-                const structuredAddress =
-                    firstResult?.structuredAddress ||
-                    firstResult?.address ||
-                    {};
-
-                const city =
-                    structuredAddress.locality ||
-                    structuredAddress.subLocality ||
-                    structuredAddress.dependentLocality ||
-                    structuredAddress.city ||
-                    firstResult?.locality ||
-                    firstResult?.subLocality ||
-                    firstResult?.city ||
-                    null;
-
-                const state =
-                    structuredAddress.administrativeArea ||
-                    structuredAddress.administrativeAreaCode ||
-                    structuredAddress.state ||
-                    structuredAddress.region ||
-                    firstResult?.administrativeArea ||
-                    firstResult?.administrativeAreaCode ||
-                    firstResult?.state ||
-                    firstResult?.region ||
-                    null;
-
-                if (city && state) {
-                    displayArea = `${city}, ${state}`;
-                } else if (city) {
-                    displayArea = city;
-                } else if (state) {
-                    displayArea = state;
-                }
-
-                console.log("DISPLAY AREA RESOLVED:", {
-                    address,
-                    city,
-                    state,
-                    displayArea
-                });
-            } catch (geoErr) {
-                console.error("Apple Maps display area lookup failed:", geoErr);
-                displayArea = null;
-            }
-        }
-
-        const residentResult = await pool.query(
-            `
-                INSERT INTO hoa_residents
-                (
-                    first_name,
-                    last_name,
-                    phone,
-                    address,
-                    neighborhood_id,
-                    approval_status,
-                    sms_verified,
-                    approved_at,
-                    access_level,
-                    invite_code_used,
-                    referred_by_contractor_id,
-                    display_area_name
-                )
-                VALUES
-                (
-                    $1, $2, $3, $4, $5, $6, TRUE,
-                    CASE WHEN $6 = 'approved' THEN NOW() ELSE NULL END,
-                    $7, $8, $9, $10
-                )
-                ON CONFLICT (phone, neighborhood_id)
-                DO UPDATE SET
-                    first_name = EXCLUDED.first_name,
-                    last_name = EXCLUDED.last_name,
-                    address = EXCLUDED.address,
-                    sms_verified = TRUE,
-                    approval_status = EXCLUDED.approval_status,
-                    approved_at = EXCLUDED.approved_at,
-                    access_level = EXCLUDED.access_level,
-                    invite_code_used = EXCLUDED.invite_code_used,
-                    referred_by_contractor_id = EXCLUDED.referred_by_contractor_id,
-                    display_area_name = EXCLUDED.display_area_name,
-                    updated_at = NOW()
-                RETURNING *
-            `,
-            [
-                first_name,
-                last_name,
-                cleanPhone,
-                address,
-                neighborhoodId,
-                approvalStatus,
-                accessLevel,
-                invite.code,
-                isContractorCode ? invite.contractor_user_id : null,
-                displayArea
-            ]
-        );
-
-        await pool.query(
-            `
-                UPDATE hoa_invite_codes
-                SET used_count = COALESCE(used_count, 0) + 1
-                WHERE id = $1
-            `,
-            [invite.id]
-        );
-
-        const resident = {
-            ...residentResult.rows[0],
-            neighborhood_name: invite.neighborhood_name || null
-        };
-
-        res.json({
-            success: true,
-            resident_id: resident.id,
-            resident,
-            message: isResidentCode
-                ? "Resident profile created successfully."
-                : "Customer profile created successfully."
-        });
-    } catch (err) {
-        console.error("signupResident error:", err);
-        res.status(500).json({ error: "Server error" });
-    }
-};
 exports.loginResident = async (req, res) => {
     try {
         const { phone } = req.body;
