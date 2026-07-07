@@ -3,12 +3,45 @@ const pool = require('../db/db');
 const jwt = require("jsonwebtoken");
 
 const DEFAULT_GENERATED_AREA_RADIUS_MILES = 0.35;
+
+
 function normalizePhone(phone) {
     return String(phone || '').replace(/\D/g, '');
 }
 
-function generateCode() {
-    return String(Math.floor(100000 + Math.random() * 900000));
+function getDisplayAreaFromAddressFallback(address) {
+    if (!address) return null;
+
+    const cleanAddress = String(address).toLowerCase();
+
+    const knownCities = [
+        "Plano",
+        "Dallas",
+        "Grand Prairie",
+        "Richardson",
+        "Allen",
+        "McKinney",
+        "Frisco",
+        "Garland",
+        "Wylie",
+        "Princeton",
+        "Lucas",
+        "Roswell"
+    ];
+
+    const matchedCity = knownCities.find(city =>
+        cleanAddress.includes(city.toLowerCase())
+    );
+
+    if (matchedCity) {
+        if (matchedCity === "Roswell") {
+            return "Roswell, GA";
+        }
+
+        return `${matchedCity}, TX`;
+    }
+
+    return null;
 }
 let cachedSignedAppleMapsJwt = null;
 let cachedSignedAppleMapsJwtExpiresAt = 0;
@@ -125,7 +158,7 @@ async function geocodeAddressWithAppleMaps(address) {
         return null;
     }
 
-    const token = generateAppleMapsToken();
+    const accessToken = await getAppleMapsAccessToken();
 
     const url =
         "https://maps-api.apple.com/v1/geocode" +
@@ -135,7 +168,7 @@ async function geocodeAddressWithAppleMaps(address) {
     const response = await fetch(url, {
         method: "GET",
         headers: {
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${accessToken}`
         }
     });
 
@@ -145,6 +178,7 @@ async function geocodeAddressWithAppleMaps(address) {
     }
 
     const data = await response.json();
+
     const firstResult = data?.results?.[0];
 
     if (!firstResult) {
@@ -450,14 +484,14 @@ exports.signupResident = async (req, res) => {
                     geo?.display_area_name ||
                     buildDisplayAreaName(geo?.city, geo?.state) ||
                     null;
-            } catch (geoErr) {
-                console.error("Generated area lookup failed:", geoErr);
+             } catch (geoErr) {
+            console.error("Generated area lookup failed:", geoErr);
 
-                latitude = null;
-                longitude = null;
-                generatedAreaId = null;
-                displayAreaName = null;
-            }
+            latitude = null;
+            longitude = null;
+            generatedAreaId = null;
+            displayAreaName = getDisplayAreaFromAddressFallback(address);
+        }
         }
 
         const residentResult = await pool.query(
