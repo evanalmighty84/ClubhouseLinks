@@ -425,20 +425,39 @@ exports.signupResident = async (req, res) => {
 
         let displayArea = null;
 
-        // Only calculate display area for people who are NOT tied to an HOA.
+// Only calculate display area for people who are NOT tied to an HOA.
         if (!neighborhoodId && address) {
             try {
                 const geo = await geocodeAddressWithAppleMaps(address);
 
-                const firstResult = geo?.results?.[0];
+                console.log("APPLE GEO DEBUG:", JSON.stringify(geo, null, 2));
+
+                const firstResult = geo?.results?.[0] || geo?.[0] || null;
+
+                const structuredAddress =
+                    firstResult?.structuredAddress ||
+                    firstResult?.address ||
+                    {};
 
                 const city =
-                    firstResult?.structuredAddress?.locality ||
-                    firstResult?.structuredAddress?.subLocality ||
+                    structuredAddress.locality ||
+                    structuredAddress.subLocality ||
+                    structuredAddress.dependentLocality ||
+                    structuredAddress.city ||
+                    firstResult?.locality ||
+                    firstResult?.subLocality ||
+                    firstResult?.city ||
                     null;
 
                 const state =
-                    firstResult?.structuredAddress?.administrativeArea ||
+                    structuredAddress.administrativeArea ||
+                    structuredAddress.administrativeAreaCode ||
+                    structuredAddress.state ||
+                    structuredAddress.region ||
+                    firstResult?.administrativeArea ||
+                    firstResult?.administrativeAreaCode ||
+                    firstResult?.state ||
+                    firstResult?.region ||
                     null;
 
                 if (city && state) {
@@ -448,6 +467,13 @@ exports.signupResident = async (req, res) => {
                 } else if (state) {
                     displayArea = state;
                 }
+
+                console.log("DISPLAY AREA RESOLVED:", {
+                    address,
+                    city,
+                    state,
+                    displayArea
+                });
             } catch (geoErr) {
                 console.error("Apple Maps display area lookup failed:", geoErr);
                 displayArea = null;
