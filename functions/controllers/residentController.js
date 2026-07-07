@@ -1,4 +1,4 @@
-// controllers/hoaResidentController.js
+
 const pool = require('../db/db');
 const jwt = require("jsonwebtoken");
 
