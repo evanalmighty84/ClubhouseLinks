@@ -85,37 +85,79 @@ async function getAppleMapsAccessToken() {
 }
 
 async function geocodeAddressWithAppleMaps(address) {
-    if (!address) {
+    if (!address || !String(address).trim()) {
         return null;
     }
 
-    const accessToken = await getAppleMapsAccessToken();
+    const token = generateAppleMapsToken();
 
-    const fullAddress = `${address}, Plano, TX`;
-    const url = `https://maps-api.apple.com/v1/geocode?q=${encodeURIComponent(fullAddress)}&lang=en-US`;
+    const url =
+        "https://maps-api.apple.com/v1/geocode" +
+        `?q=${encodeURIComponent(address)}` +
+        `&lang=en-US`;
 
     const response = await fetch(url, {
+        method: "GET",
         headers: {
-            Authorization: `Bearer ${accessToken}`
+            Authorization: `Bearer ${token}`
         }
     });
 
     if (!response.ok) {
         const errorText = await response.text();
-        console.warn("Apple Maps geocode failed:", errorText);
-        return null;
+        throw new Error(`Apple Maps geocode failed: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
-    const firstResult = data.results && data.results[0];
 
-    if (!firstResult || !firstResult.coordinate) {
+    const firstResult = data?.results?.[0];
+
+    if (!firstResult) {
         return null;
     }
 
+    const structuredAddress = firstResult?.structuredAddress || {};
+
+    const latitude =
+        firstResult?.coordinate?.latitude ??
+        firstResult?.center?.latitude ??
+        firstResult?.displayMapRegion?.center?.latitude ??
+        null;
+
+    const longitude =
+        firstResult?.coordinate?.longitude ??
+        firstResult?.center?.longitude ??
+        firstResult?.displayMapRegion?.center?.longitude ??
+        null;
+
+    const city =
+        structuredAddress?.locality ||
+        structuredAddress?.subLocality ||
+        structuredAddress?.dependentLocality ||
+        null;
+
+    const state =
+        structuredAddress?.administrativeArea ||
+        structuredAddress?.administrativeAreaCode ||
+        null;
+
+    let displayAreaName = null;
+
+    if (city && state) {
+        displayAreaName = `${city}, ${state}`;
+    } else if (city) {
+        displayAreaName = city;
+    } else if (state) {
+        displayAreaName = state;
+    }
+
     return {
-        latitude: firstResult.coordinate.latitude,
-        longitude: firstResult.coordinate.longitude
+        latitude,
+        longitude,
+        city,
+        state,
+        display_area_name: displayAreaName,
+        raw: firstResult
     };
 }
 exports.getVendors = async (req, res) => {
