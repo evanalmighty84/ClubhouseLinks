@@ -419,7 +419,40 @@ exports.signupResident = async (req, res) => {
 
         const neighborhoodId = invite.neighborhood_id || null;
         const approvalStatus = "approved";
-        const accessLevel = isResidentCode ? "verified_neighborhood" : "contractor_customer";
+        const accessLevel = isResidentCode
+            ? "verified_neighborhood"
+            : "contractor_customer";
+
+        let displayArea = null;
+
+        // Only calculate display area for people who are NOT tied to an HOA.
+        if (!neighborhoodId && address) {
+            try {
+                const geo = await geocodeAddressWithAppleMaps(address);
+
+                const firstResult = geo?.results?.[0];
+
+                const city =
+                    firstResult?.structuredAddress?.locality ||
+                    firstResult?.structuredAddress?.subLocality ||
+                    null;
+
+                const state =
+                    firstResult?.structuredAddress?.administrativeArea ||
+                    null;
+
+                if (city && state) {
+                    displayArea = `${city}, ${state}`;
+                } else if (city) {
+                    displayArea = city;
+                } else if (state) {
+                    displayArea = state;
+                }
+            } catch (geoErr) {
+                console.error("Apple Maps display area lookup failed:", geoErr);
+                displayArea = null;
+            }
+        }
 
         const residentResult = await pool.query(
             `
@@ -435,27 +468,29 @@ exports.signupResident = async (req, res) => {
                     approved_at,
                     access_level,
                     invite_code_used,
-                    referred_by_contractor_id
+                    referred_by_contractor_id,
+                    display_area_name
                 )
                 VALUES
-                    (
-                        $1, $2, $3, $4, $5, $6, TRUE,
-                        CASE WHEN $6 = 'approved' THEN NOW() ELSE NULL END,
-                        $7, $8, $9
-                    )
-                    ON CONFLICT (phone, neighborhood_id)
-            DO UPDATE SET
+                (
+                    $1, $2, $3, $4, $5, $6, TRUE,
+                    CASE WHEN $6 = 'approved' THEN NOW() ELSE NULL END,
+                    $7, $8, $9, $10
+                )
+                ON CONFLICT (phone, neighborhood_id)
+                DO UPDATE SET
                     first_name = EXCLUDED.first_name,
-                                       last_name = EXCLUDED.last_name,
-                                       address = EXCLUDED.address,
-                                       sms_verified = TRUE,
-                                       approval_status = EXCLUDED.approval_status,
-                                       approved_at = EXCLUDED.approved_at,
-                                       access_level = EXCLUDED.access_level,
-                                       invite_code_used = EXCLUDED.invite_code_used,
-                                       referred_by_contractor_id = EXCLUDED.referred_by_contractor_id,
-                                       updated_at = NOW()
-                                       RETURNING *
+                    last_name = EXCLUDED.last_name,
+                    address = EXCLUDED.address,
+                    sms_verified = TRUE,
+                    approval_status = EXCLUDED.approval_status,
+                    approved_at = EXCLUDED.approved_at,
+                    access_level = EXCLUDED.access_level,
+                    invite_code_used = EXCLUDED.invite_code_used,
+                    referred_by_contractor_id = EXCLUDED.referred_by_contractor_id,
+                    display_area_name = EXCLUDED.display_area_name,
+                    updated_at = NOW()
+                RETURNING *
             `,
             [
                 first_name,
@@ -466,7 +501,8 @@ exports.signupResident = async (req, res) => {
                 approvalStatus,
                 accessLevel,
                 invite.code,
-                isContractorCode ? invite.contractor_user_id : null
+                isContractorCode ? invite.contractor_user_id : null,
+                displayArea
             ]
         );
 
