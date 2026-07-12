@@ -25,12 +25,12 @@ router.post("/address-lookup", getAddress);
 router.post("/address-autocomplete", getAddressAutoComplete);
 router.get("/completed-projects/:residentId", getCompletedProjects);
 router.post(
-    "/residents/send-verification",
+    "/send-verification",
     sendPhoneVerification
 );
 
 router.post(
-    "/residents/check-verification",
+    "/check-verification",
     checkPhoneVerification
 );
 
