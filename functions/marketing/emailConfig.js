@@ -1,0 +1,80 @@
+module.exports = {
+    recipientEmail: "Dean@fullcirclels.com",
+    recipientName: "Dean",
+    subject: "A fellow LeTip member who would love to help Full Circle Services",
+
+    bodyHtml: `
+        <p style="margin:0 0 18px 0;">
+            I’m Evan Ligon, a fellow LeTip member here in Dallas. Even though
+            we’re in different chapters, I always feel like LeTip members have
+            an immediate connection because we understand the value of trust,
+            referrals, and helping one another grow.
+        </p>
+
+        <p style="margin:0 0 18px 0;">
+            I came across your profile through
+            <strong>LeTip of Central Bucks</strong> and wanted to personally
+            introduce myself. I noticed that you joined last year, and I thought
+            <strong>Full Circle Services</strong> could be a really good fit for
+            something I’ve built and have been successfully using with service
+            providers here in Texas.
+        </p>
+
+        <p style="margin:0 0 18px 0;">
+            I created proprietary software that identifies homeowners who are
+            actively asking their neighbors on Nextdoor for help with
+            <strong>
+                pest control, rodent removal, termite treatment, ants, spiders,
+                wasps, mosquitoes, and other pest-related problems
+            </strong>.
+            Instead of relying on homeowners to find you first, my system
+            uncovers those neighborhood conversations and routes the opportunity
+            to a local provider who is ready to respond.
+        </p>
+
+        <p style="margin:0 0 18px 0;">
+            Based on your Doylestown location and Central Bucks connections, I
+            believe Full Circle Services could perform especially well throughout
+            <strong>
+                Doylestown, Warrington, Chalfont, New Britain, Buckingham,
+                New Hope, Jamison, Warminster, and surrounding Bucks County
+                communities
+            </strong>.
+            These are the kinds of established neighborhoods where homeowners
+            regularly ask their neighbors for a trusted local recommendation.
+        </p>
+
+        <p style="margin:0 0 18px 0;">
+            The goal would be to generate approximately
+            <strong>40 matched homeowner leads per month</strong>.
+            Even using a conservative estimate, if only
+            <strong>10% become customers</strong>,
+            that would be about
+            <strong>4 additional jobs each month</strong>.
+        </p>
+
+        <p style="margin:0 0 18px 0;">
+            At an average of only
+            <strong>$350 per new customer</strong>,
+            that could represent approximately
+            <strong>$16,800 in additional annual revenue</strong>.
+            That does not include recurring service plans or larger termite,
+            rodent, exclusion, and commercial projects, which could make the
+            overall value considerably higher.
+        </p>
+
+        <p style="margin:0 0 18px 0;">
+            More than anything, I’d genuinely appreciate the opportunity to
+            earn your business and support another LeTip member. I’d love to
+            show you what I can generate for
+            <strong>Full Circle Services</strong>.
+            Would you be open to trying it? Which cities or pest-control
+            services would be the most valuable for you right now?
+        </p>
+
+        <p style="margin:0 0 18px 0;">
+            You’re welcome to call, text, or email me back with any questions.
+            I’d be glad to talk through it with you.
+        </p>
+    `
+};

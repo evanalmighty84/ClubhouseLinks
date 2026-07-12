@@ -4,6 +4,159 @@ const jwt = require("jsonwebtoken");
 
 const DEFAULT_GENERATED_AREA_RADIUS_MILES = 0.35;
 
+const twilio = require("twilio");
+
+const twilioClient = twilio(
+    process.env.TWILIO_ACCOUNT_SID,
+    process.env.TWILIO_AUTH_TOKEN
+);
+
+const verifyServiceSid = process.env.TWILIO_VERIFY_SERVICE_SID;
+
+function normalizeUSPhoneToE164(value) {
+    const digits = String(value || "").replace(/\D/g, "");
+
+    if (digits.length === 10) {
+        return `+1${digits}`;
+    }
+
+    if (digits.length === 11 && digits.startsWith("1")) {
+        return `+${digits}`;
+    }
+
+    if (String(value || "").trim().startsWith("+") && digits.length >= 10) {
+        return `+${digits}`;
+    }
+
+    return null;
+}
+
+/**
+ * POST /api/residents/send-verification
+ *
+ * Body:
+ * {
+ *   "phone": "2145489175"
+ * }
+ */
+
+
+/**
+ * POST /api/residents/check-verification
+ *
+ * Body:
+ * {
+ *   "phone": "2145489175",
+ *   "code": "123456"
+ * }
+ */
+
+
+exports.sendPhoneVerification = async (req, res)=> {
+    try {
+        if (!verifyServiceSid) {
+            console.error("TWILIO_VERIFY_SERVICE_SID is not configured.");
+
+            return res.status(500).json({
+                success: false,
+                error: "Phone verification is not configured."
+            });
+        }
+
+        const phone = normalizeUSPhoneToE164(req.body?.phone);
+
+        if (!phone) {
+            return res.status(400).json({
+                success: false,
+                error: "Please enter a valid mobile phone number."
+            });
+        }
+
+        const verification = await twilioClient.verify.v2
+            .services(verifyServiceSid)
+            .verifications.create({
+                to: phone,
+                channel: "sms"
+            });
+
+        return res.status(200).json({
+            success: true,
+            status: verification.status,
+            phone
+        });
+    } catch (error) {
+        console.error("SEND PHONE VERIFICATION ERROR:", error);
+
+        return res.status(500).json({
+            success: false,
+            error:
+                error?.message ||
+                "We could not send the verification code."
+        });
+    }
+
+}
+
+exports.checkPhoneVerification = async (req, res)=> {
+    try {
+        if (!verifyServiceSid) {
+            console.error("TWILIO_VERIFY_SERVICE_SID is not configured.");
+
+            return res.status(500).json({
+                success: false,
+                error: "Phone verification is not configured."
+            });
+        }
+
+        const phone = normalizeUSPhoneToE164(req.body?.phone);
+        const code = String(req.body?.code || "").trim();
+
+        if (!phone) {
+            return res.status(400).json({
+                success: false,
+                error: "Please enter a valid mobile phone number."
+            });
+        }
+
+        if (!/^\d{4,10}$/.test(code)) {
+            return res.status(400).json({
+                success: false,
+                error: "Please enter the verification code from your text."
+            });
+        }
+
+        const verificationCheck = await twilioClient.verify.v2
+            .services(verifyServiceSid)
+            .verificationChecks.create({
+                to: phone,
+                code
+            });
+
+        if (verificationCheck.status !== "approved") {
+            return res.status(400).json({
+                success: false,
+                verified: false,
+                error: "That verification code is incorrect or expired."
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            verified: true,
+            phone
+        });
+    } catch (error) {
+        console.error("CHECK PHONE VERIFICATION ERROR:", error);
+
+        return res.status(500).json({
+            success: false,
+            verified: false,
+            error:
+                error?.message ||
+                "We could not verify that code."
+        });
+    }
+}
 
 function normalizePhone(phone) {
     return String(phone || '').replace(/\D/g, '');
