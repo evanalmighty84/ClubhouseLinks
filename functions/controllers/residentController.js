@@ -558,181 +558,420 @@ async function getOrCreateGeneratedAreaForAddress(address) {
 
 exports.signupResident = async (req, res) => {
     try {
-        const { first_name, last_name, phone, address = null, invite_code } = req.body;
+        const {
+            first_name,
+            last_name,
+            phone,
+            address,
+            invite_code
+        } = req.body || {};
+
+        const cleanFirstName = String(first_name || "").trim();
+        const cleanLastName = String(last_name || "").trim();
         const cleanPhone = normalizePhone(phone);
+        const cleanAddress = String(address || "").trim();
 
-        if (!first_name || !last_name || !cleanPhone || !invite_code) {
-            return res.status(400).json({ error: "Missing required fields" });
+        const cleanInviteCode = String(invite_code || "")
+            .trim()
+            .toUpperCase();
+
+        if (
+            !cleanFirstName ||
+            !cleanLastName ||
+            !cleanPhone ||
+            !cleanAddress
+        ) {
+            return res.status(400).json({
+                success: false,
+                error: "Missing required fields."
+            });
         }
 
-        const inviteResult = await pool.query(
-            `
-                SELECT
-                    ic.id,
-                    ic.code,
-                    ic.code_type,
-                    ic.contractor_user_id,
-                    ic.access_level,
-                    ic.neighborhood_id,
-                    n.name AS neighborhood_name
-                FROM hoa_invite_codes ic
-                         LEFT JOIN hoa_neighborhoods n
-                                   ON n.id = ic.neighborhood_id
-                WHERE UPPER(ic.code) = UPPER($1)
-                  AND ic.active = TRUE
+        let invite = null;
+        let isResidentCode = false;
+        let isContractorCode = false;
+
+        /*
+         * Invite codes are optional.
+         * Only look up and validate an invite when the user supplied one.
+         */
+        if (cleanInviteCode) {
+            const inviteResult = await pool.query(
+                `
+                    SELECT
+                        ic.id,
+                        ic.code,
+                        ic.code_type,
+                        ic.contractor_user_id,
+                        ic.access_level,
+                        ic.neighborhood_id,
+                        n.name AS neighborhood_name
+                    FROM hoa_invite_codes ic
+                    LEFT JOIN hoa_neighborhoods n
+                        ON n.id = ic.neighborhood_id
+                    WHERE UPPER(ic.code) = $1
+                      AND ic.active = TRUE
                     LIMIT 1
-            `,
-            [invite_code]
-        );
+                `,
+                [cleanInviteCode]
+            );
 
-        if (!inviteResult.rows.length) {
-            return res.status(400).json({ error: "Invalid invite code" });
+            if (!inviteResult.rows.length) {
+                return res.status(400).json({
+                    success: false,
+                    error: "Invalid or inactive invite code."
+                });
+            }
+
+            invite = inviteResult.rows[0];
+
+            isResidentCode =
+                invite.code_type === "resident";
+
+            isContractorCode = [
+                "contractor_customer",
+                "vendor_customer"
+            ].includes(invite.code_type);
+
+            if (!isResidentCode && !isContractorCode) {
+                return res.status(400).json({
+                    success: false,
+                    error: "Unsupported invite code type."
+                });
+            }
+
+            if (
+                isResidentCode &&
+                !invite.neighborhood_id
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    error:
+                        "Resident invite code is not connected to a neighborhood."
+                });
+            }
         }
 
-        const invite = inviteResult.rows[0];
+        const neighborhoodId =
+            invite?.neighborhood_id || null;
 
-        const isResidentCode = invite.code_type === "resident";
-        const isContractorCode = invite.code_type === "contractor_customer";
-
-        if (!isResidentCode && !isContractorCode) {
-            return res.status(400).json({
-                error: "Unsupported invite code type."
-            });
-        }
-
-        if (isResidentCode && !invite.neighborhood_id) {
-            return res.status(400).json({
-                error: "Resident invite code is not connected to a neighborhood."
-            });
-        }
-
-        const neighborhoodId = invite.neighborhood_id || null;
         const approvalStatus = "approved";
+
         const accessLevel = isResidentCode
             ? "verified_neighborhood"
-            : "contractor_customer";
+            : isContractorCode
+                ? "contractor_customer"
+                : "resident";
+
+        const inviteCodeUsed =
+            invite?.code || null;
+
+        const referredByContractorId =
+            isContractorCode
+                ? invite?.contractor_user_id || null
+                : null;
 
         let latitude = null;
         let longitude = null;
         let generatedAreaId = null;
         let displayAreaName = null;
 
-        // Only generate service areas for people who are NOT tied to an HOA.
-        if (!neighborhoodId && address) {
+        /*
+         * People with no HOA neighborhood are placed into a generated
+         * local service area based on their submitted address.
+         */
+        if (!neighborhoodId) {
             try {
-                const { geo, generatedArea } = await getOrCreateGeneratedAreaForAddress(address);
-
-                console.log("GENERATED AREA SIGNUP DEBUG:", {
-                    address,
+                const {
                     geo,
                     generatedArea
-                });
+                } = await getOrCreateGeneratedAreaForAddress(
+                    cleanAddress
+                );
 
-                latitude = geo?.lat || null;
-                longitude = geo?.lng || null;
-                generatedAreaId = generatedArea?.id || null;
+                console.log(
+                    "GENERATED AREA SIGNUP DEBUG:",
+                    {
+                        address: cleanAddress,
+                        geo,
+                        generatedArea
+                    }
+                );
+
+                latitude =
+                    geo?.lat ?? null;
+
+                longitude =
+                    geo?.lng ?? null;
+
+                generatedAreaId =
+                    generatedArea?.id ?? null;
 
                 displayAreaName =
                     generatedArea?.area_name ||
                     geo?.display_area_name ||
-                    buildDisplayAreaName(geo?.city, geo?.state) ||
+                    buildDisplayAreaName(
+                        geo?.city,
+                        geo?.state
+                    ) ||
                     null;
-             } catch (geoErr) {
-            console.error("Generated area lookup failed:", geoErr);
+            } catch (geoErr) {
+                console.error(
+                    "Generated area lookup failed:",
+                    geoErr
+                );
 
-            latitude = null;
-            longitude = null;
-            generatedAreaId = null;
-            displayAreaName = getDisplayAreaFromAddressFallback(address);
+                latitude = null;
+                longitude = null;
+                generatedAreaId = null;
+
+                displayAreaName =
+                    getDisplayAreaFromAddressFallback(
+                        cleanAddress
+                    );
+            }
         }
+
+        const client = await pool.connect();
+
+        let residentRow;
+        let isNewResident = false;
+        let shouldIncrementInvite = false;
+
+        try {
+            await client.query("BEGIN");
+
+            /*
+             * IS NOT DISTINCT FROM treats two NULL neighborhood IDs as
+             * matching. This prevents duplicate public profiles when the
+             * neighborhood ID is NULL.
+             */
+            const existingResult = await client.query(
+                `
+                    SELECT
+                        id,
+                        invite_code_used
+                    FROM hoa_residents
+                    WHERE phone = $1
+                      AND neighborhood_id
+                          IS NOT DISTINCT FROM $2
+                    LIMIT 1
+                    FOR UPDATE
+                `,
+                [
+                    cleanPhone,
+                    neighborhoodId
+                ]
+            );
+
+            if (existingResult.rows.length) {
+                const existingResident =
+                    existingResult.rows[0];
+
+                shouldIncrementInvite =
+                    Boolean(invite) &&
+                    existingResident.invite_code_used !==
+                    inviteCodeUsed;
+
+                const updateResult =
+                    await client.query(
+                        `
+                            UPDATE hoa_residents
+                            SET
+                                first_name = $1,
+                                last_name = $2,
+                                address = $3,
+                                approval_status = $4,
+                                sms_verified = TRUE,
+                                approved_at =
+                                    CASE
+                                        WHEN $4 = 'approved'
+                                        THEN COALESCE(
+                                            approved_at,
+                                            NOW()
+                                        )
+                                        ELSE approved_at
+                                    END,
+                                access_level =
+                                    CASE
+                                        WHEN $6 IS NULL
+                                        THEN access_level
+                                        ELSE $5
+                                    END,
+                                invite_code_used =
+                                    COALESCE(
+                                        $6,
+                                        invite_code_used
+                                    ),
+                                referred_by_contractor_id =
+                                    COALESCE(
+                                        $7,
+                                        referred_by_contractor_id
+                                    ),
+                                latitude = $8,
+                                longitude = $9,
+                                generated_area_id = $10,
+                                display_area_name = $11,
+                                updated_at = NOW()
+                            WHERE id = $12
+                            RETURNING *
+                        `,
+                        [
+                            cleanFirstName,
+                            cleanLastName,
+                            cleanAddress,
+                            approvalStatus,
+                            accessLevel,
+                            inviteCodeUsed,
+                            referredByContractorId,
+                            latitude,
+                            longitude,
+                            generatedAreaId,
+                            displayAreaName,
+                            existingResident.id
+                        ]
+                    );
+
+                residentRow =
+                    updateResult.rows[0];
+            } else {
+                isNewResident = true;
+
+                shouldIncrementInvite =
+                    Boolean(invite);
+
+                const insertResult =
+                    await client.query(
+                        `
+                            INSERT INTO hoa_residents
+                            (
+                                first_name,
+                                last_name,
+                                phone,
+                                address,
+                                neighborhood_id,
+                                approval_status,
+                                sms_verified,
+                                approved_at,
+                                access_level,
+                                invite_code_used,
+                                referred_by_contractor_id,
+                                latitude,
+                                longitude,
+                                generated_area_id,
+                                display_area_name
+                            )
+                            VALUES
+                            (
+                                $1,
+                                $2,
+                                $3,
+                                $4,
+                                $5,
+                                $6,
+                                TRUE,
+                                CASE
+                                    WHEN $6 = 'approved'
+                                    THEN NOW()
+                                    ELSE NULL
+                                END,
+                                $7,
+                                $8,
+                                $9,
+                                $10,
+                                $11,
+                                $12,
+                                $13
+                            )
+                            RETURNING *
+                        `,
+                        [
+                            cleanFirstName,
+                            cleanLastName,
+                            cleanPhone,
+                            cleanAddress,
+                            neighborhoodId,
+                            approvalStatus,
+                            accessLevel,
+                            inviteCodeUsed,
+                            referredByContractorId,
+                            latitude,
+                            longitude,
+                            generatedAreaId,
+                            displayAreaName
+                        ]
+                    );
+
+                residentRow =
+                    insertResult.rows[0];
+            }
+
+            if (
+                invite &&
+                shouldIncrementInvite
+            ) {
+                await client.query(
+                    `
+                        UPDATE hoa_invite_codes
+                        SET
+                            used_count =
+                                COALESCE(
+                                    used_count,
+                                    0
+                                ) + 1
+                        WHERE id = $1
+                    `,
+                    [invite.id]
+                );
+            }
+
+            await client.query("COMMIT");
+        } catch (transactionErr) {
+            await client.query("ROLLBACK");
+            throw transactionErr;
+        } finally {
+            client.release();
         }
-
-        const residentResult = await pool.query(
-            `
-                INSERT INTO hoa_residents
-                (
-                    first_name,
-                    last_name,
-                    phone,
-                    address,
-                    neighborhood_id,
-                    approval_status,
-                    sms_verified,
-                    approved_at,
-                    access_level,
-                    invite_code_used,
-                    referred_by_contractor_id,
-                    latitude,
-                    longitude,
-                    generated_area_id,
-                    display_area_name
-                )
-                VALUES
-                    (
-                        $1, $2, $3, $4, $5, $6, TRUE,
-                        CASE WHEN $6 = 'approved' THEN NOW() ELSE NULL END,
-                        $7, $8, $9, $10, $11, $12, $13
-                    )
-                    ON CONFLICT (phone, neighborhood_id)
-                DO UPDATE SET
-                    first_name = EXCLUDED.first_name,
-                                           last_name = EXCLUDED.last_name,
-                                           address = EXCLUDED.address,
-                                           sms_verified = TRUE,
-                                           approval_status = EXCLUDED.approval_status,
-                                           approved_at = EXCLUDED.approved_at,
-                                           access_level = EXCLUDED.access_level,
-                                           invite_code_used = EXCLUDED.invite_code_used,
-                                           referred_by_contractor_id = EXCLUDED.referred_by_contractor_id,
-                                           latitude = EXCLUDED.latitude,
-                                           longitude = EXCLUDED.longitude,
-                                           generated_area_id = EXCLUDED.generated_area_id,
-                                           display_area_name = EXCLUDED.display_area_name,
-                                           updated_at = NOW()
-                                           RETURNING *
-            `,
-            [
-                first_name,
-                last_name,
-                cleanPhone,
-                address,
-                neighborhoodId,
-                approvalStatus,
-                accessLevel,
-                invite.code,
-                isContractorCode ? invite.contractor_user_id : null,
-                latitude,
-                longitude,
-                generatedAreaId,
-                displayAreaName
-            ]
-        );
-
-        await pool.query(
-            `
-                UPDATE hoa_invite_codes
-                SET used_count = COALESCE(used_count, 0) + 1
-                WHERE id = $1
-            `,
-            [invite.id]
-        );
 
         const resident = {
-            ...residentResult.rows[0],
-            neighborhood_name: invite.neighborhood_name || null
+            ...residentRow,
+            neighborhood_name:
+                invite?.neighborhood_name || null
         };
 
-        res.json({
+        let message =
+            isNewResident
+                ? "Account created successfully."
+                : "Account updated successfully.";
+
+        if (isResidentCode) {
+            message =
+                isNewResident
+                    ? "Resident profile created successfully."
+                    : "Resident profile updated successfully.";
+        } else if (isContractorCode) {
+            message =
+                isNewResident
+                    ? "Customer profile created successfully."
+                    : "Customer profile updated successfully.";
+        }
+
+        return res.status(200).json({
             success: true,
             resident_id: resident.id,
             resident,
-            message: isResidentCode
-                ? "Resident profile created successfully."
-                : "Customer profile created successfully."
+            message
         });
     } catch (err) {
-        console.error("signupResident error:", err);
-        res.status(500).json({ error: "Server error" });
+        console.error(
+            "signupResident error:",
+            err
+        );
+
+        return res.status(500).json({
+            success: false,
+            error: "Server error."
+        });
     }
 };
 
