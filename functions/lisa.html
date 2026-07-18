@@ -1,0 +1,696 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nextdoor Possible Leads Report</title>
+    <style>
+        :root {
+            --bg: #050816;
+            --panel: rgba(10, 16, 34, 0.96);
+            --panel-soft: rgba(17, 26, 54, 0.92);
+            --cyan: #25f4ff;
+            --pink: #ff3bd4;
+            --lime: #b8ff3d;
+            --purple: #8c63ff;
+            --text: #f4f7ff;
+            --muted: #98a5c4;
+            --line: rgba(37, 244, 255, 0.22);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 36px;
+            color: var(--text);
+            font-family: Arial, Helvetica, sans-serif;
+            background:
+                    linear-gradient(rgba(37,244,255,.035) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(37,244,255,.035) 1px, transparent 1px),
+                    radial-gradient(circle at 12% 8%, rgba(255,59,212,.18), transparent 30%),
+                    radial-gradient(circle at 88% 0%, rgba(37,244,255,.16), transparent 32%),
+                    var(--bg);
+            background-size: 34px 34px, 34px 34px, auto, auto, auto;
+        }
+
+        .wrap {
+            max-width: 1320px;
+            margin: 0 auto;
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 24px;
+            padding: 28px;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background:
+                    linear-gradient(135deg, rgba(18,28,58,.98), rgba(6,11,28,.96));
+            box-shadow:
+                    0 22px 70px rgba(0,0,0,.45),
+                    0 0 42px rgba(37,244,255,.08);
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                    linear-gradient(90deg, transparent 0%, rgba(37,244,255,.08) 50%, transparent 100%);
+            transform: translateX(-100%);
+            animation: scan 8s linear infinite;
+        }
+
+        @keyframes scan {
+            to { transform: translateX(100%); }
+        }
+
+        .kicker {
+            margin: 0 0 10px;
+            color: var(--cyan);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: .23em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(34px, 5vw, 62px);
+            line-height: 1;
+            letter-spacing: -.045em;
+        }
+
+        h1 span {
+            color: var(--pink);
+            text-shadow: 0 0 24px rgba(255,59,212,.38);
+        }
+
+        .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 22px;
+        }
+
+        .meta-card {
+            min-width: 185px;
+            padding: 12px 14px;
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 10px;
+            background: rgba(255,255,255,.035);
+        }
+
+        .meta-label {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+        }
+
+        .meta-value {
+            font-weight: 800;
+        }
+
+        .meta-value a {
+            color: var(--cyan);
+            text-decoration: none;
+        }
+
+        .table-shell {
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: var(--panel);
+            box-shadow: 0 22px 70px rgba(0,0,0,.36);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background:
+                    linear-gradient(90deg, rgba(37,244,255,.13), rgba(255,59,212,.10));
+        }
+
+        th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            padding: 16px;
+            color: var(--cyan);
+            background: rgba(10,16,34,.97);
+            border-bottom: 1px solid var(--line);
+            font-size: 11px;
+            letter-spacing: .14em;
+            text-align: left;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 15px 16px;
+            vertical-align: top;
+            border-bottom: 1px solid rgba(255,255,255,.055);
+            line-height: 1.55;
+        }
+
+        tbody tr:nth-child(even) {
+            background: rgba(255,255,255,.018);
+        }
+
+        tbody tr:hover {
+            background: rgba(37,244,255,.055);
+        }
+
+        .id {
+            width: 88px;
+            color: var(--lime);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-weight: 800;
+        }
+
+        .types {
+            width: 265px;
+        }
+
+        .badge {
+            display: inline-block;
+            margin: 0 6px 6px 0;
+            padding: 5px 9px;
+            color: var(--cyan);
+            border: 1px solid rgba(37,244,255,.34);
+            border-radius: 999px;
+            background: rgba(37,244,255,.075);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: .035em;
+            text-transform: uppercase;
+        }
+
+        .badge:nth-child(2n) {
+            color: var(--pink);
+            border-color: rgba(255,59,212,.36);
+            background: rgba(255,59,212,.075);
+        }
+
+        .badge:nth-child(3n) {
+            color: var(--lime);
+            border-color: rgba(184,255,61,.36);
+            background: rgba(184,255,61,.07);
+        }
+
+        .description {
+            color: #edf2ff;
+        }
+
+        .footer {
+            padding-top: 18px;
+            color: var(--muted);
+            font-size: 12px;
+            text-align: right;
+        }
+
+        @media (max-width: 760px) {
+            body {
+                padding: 18px;
+            }
+
+            .hero {
+                padding: 22px;
+            }
+
+            th,
+            td {
+                padding: 12px;
+            }
+
+            .id {
+                display: none;
+            }
+
+            th:first-child {
+                display: none;
+            }
+
+            .types {
+                width: 155px;
+            }
+        }
+
+        @media print {
+            body {
+                padding: 0;
+                color: #111;
+                background: #fff;
+            }
+
+            .hero,
+            .table-shell {
+                box-shadow: none;
+                border-color: #aaa;
+            }
+
+            .hero {
+                color: #111;
+                background: #fff;
+            }
+
+            h1,
+            .meta-value,
+            .description {
+                color: #111;
+            }
+
+            th {
+                color: #111;
+                background: #eee;
+            }
+
+            .badge {
+                color: #111;
+                border-color: #777;
+                background: #eee;
+            }
+        }
+    </style>
+</head>
+<body>
+<main class="wrap">
+    <section class="hero">
+        <p class="kicker">Clubhouse Links • Community Demand Intelligence</p>
+        <h1>Nextdoor <span>Possible Leads</span> Report</h1>
+
+        <div class="meta">
+            <div class="meta-card">
+                <span class="meta-label">Report Date</span>
+                <span class="meta-value">July 13, 2026</span>
+            </div>
+
+            <div class="meta-card">
+                <span class="meta-label">Lead Count</span>
+                <span class="meta-value">46</span>
+            </div>
+
+            <div class="meta-card">
+                <span class="meta-label">Prepared By</span>
+                <span class="meta-value">Evan Ligon</span>
+            </div>
+
+            <div class="meta-card">
+                <span class="meta-label">Phone</span>
+                <span class="meta-value">
+                        <a href="tel:+12145489175">214-548-9175</a>
+                    </span>
+            </div>
+        </div>
+    </section>
+
+    <section class="table-shell">
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Lead Type</th>
+                <th>Description</th>
+            </tr>
+            </thead>
+            <tbody>
+
+            <tr>
+                <td class="id">7</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">Hi we have a baby raccoon that has died in our backyard. Now it’s collecting all kinds of bugs. Any idea who I can call to have this cleaned up?</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">415</td>
+                <td class="types"><span class="badge">plumber</span><span class="badge">pest control</span></td>
+                <td class="description">Can someone give me a price to snake out my main line it&#x27;s not very old pvc and accessible no digging involved</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">702</td>
+                <td class="types"><span class="badge">pest control</span><span class="badge">general contractor</span></td>
+                <td class="description">Anybody have recommendations for a general contractor close to Severn, MD that does basement finishing? Licensed and permit pulling pros only please - thanks in advance for anyone who replies!</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">577</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">Need pest control to be done every 3 months. Pls IM me with reasonable price for it. No specific issues.</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">633</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">Does anyone know any pest control services who offer a one-time treatment without breaking your bank? Please advise. Thank you!</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">632</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">I’m looking for someone to mow my backyard very soon. I have a mower but can’t get it started and I’m not able to afford to hire a full lawn service. It’s a Very small yard, it would usually take me 10-15 minutes to do it when my mower was working. Please message me if interested</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">636</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">Does anyone know of a wasp remover company? I am getting trapped inside by them making nest and they are not friendly!!</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">816</td>
+                <td class="types"><span class="badge">pest control</span><span class="badge">roofer</span></td>
+                <td class="description">We have rats or squirrels chewing up spots on our roof trying to get into the attic. How do you stop this?</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">849</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">Can anyone recommend a decent exterminator for a house near 635 and Rosser ? (Rosser /Glen Cove) Seems like it is getting overrun by carpenter ants….</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1376</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">hi all, does anyone know a good and reliable pest control? i’ve wasps in my backyard. thank you in advance!!!!</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1105</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">any pest control companies without cancellation fees? looking for a low monthly fee 3 14 b</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1254</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">iso pest control recommendations. my property has creepy crawlers in the garage</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1329</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">hey need a pest control guy , no contract in irving 1 5 l</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1108</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">can anyone recommend someone reasonably priced and good for pest control? tyia</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1106</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">can you recommend the best pest control company ??? one that can spray your house once and you won&#x27;t see anything for a year or more ??? thank you in advance</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1107</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">looking for pest control. mosquitos yellow jackets outside and spiders inside 2 13 s</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1109</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">any suggestions for pest control services to deal with termites? i need help as soon as possible. 2 h</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1110</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">looking for a new pest control company for both inside and outside. any suggestions that you’re happy with? thanks in advance!!</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1111</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">any recommendations for pest control companies? for roaches/waterbugs. thanks! 5 15 m</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1251</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">any recommendations for pest control services that offer good prices? please share your experiences and info. thank you in advance. 3 8 m</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1252</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">i need a recommendation of a locally owned pest control service. thanks i advance. 10 p</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1112</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">hi neighbors, any recommendations for pest control? i would like to treat all 3 of my homes here in grand prairie.</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1248</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">looking for a good pest control guy. if you have one… let me know. 214-212-</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1253</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">hi friendly neighbors! needing pest control services? look no further! i wanted to share a great local business that i recommend for anyone needing residential pest control services. if anyone is looking for honest, re…</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1250</td>
+                <td class="types"><span class="badge">pest control</span><span class="badge">lawn care</span></td>
+                <td class="description">not happy with my lawn care company.... would like one that does lawn, sprinklers, pest control too... any suggestions?</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1777</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">i need to do carpenter ant treatment in my house in cedar hill. please quote. thank you!</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1771</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">hello! i&#x27;m looking for a pest control company for a good treatment before i move into my house... any recommendations?? i&#x27;m also looking for an insulation company... and a house cleaner.... thank you for… 1 15 n</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1757</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">looking for someone to knock down wasp hives in our front n backyard / allen silhouette area 1 4 c corei m.</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1770</td>
+                <td class="types"><span class="badge">pest control</span><span class="badge">lawn care</span><span class="badge">house cleaner</span></td>
+                <td class="description">hello! my boyfriend and i just moved to the area and we are looking for guidance on different services. tia! 1) pest control 2) landscaping/weed control 3) pet sitter 4) home cleaners</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1772</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">hello everyone i’m hoping someone can help me out for pest control i have these drain flies i believe in past few weeks they rest on ceilings and walls of the house so i’m wondering if anyone has any help or if any of you know anyone that can help . thank you ! 1 1 k</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1778</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">hi! anyone have a recommendation for a pet safe pest control company? thank you!</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1779</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">anyone have recommendations for pest control ? mosquitoes roaches etc anyone but white knight</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1780</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">we have a serious ant problem around our house and now they are coming in .. does anyone know of an affordable pest control place in mckinney?</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1773</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">help. i need a pest control guy to help me get rid of gnats. i’ve tried everything. i need someone who can pinpoint the source. tia 1 21 k</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1774</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">i need a pest control. does anyone have a local company they recommend?</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1775</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">recommendations on pest control? i want to keep every insect and critter away 8 m</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1776</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">looking for recommendations on pest control. are they helpful with mosquitoes and spiders? how much? 1 6 d</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1826</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">🟩🩵🟫 i need only a perimeter spray for pests, [ants, bugs, roaches, mites, etc.... ] so, just the outside of the house. but, i have an elderly cat, 14+ years old, has mild asthma.... that&#x27;s why they can&#x27;t spray inside - i don&#x27;t want that! does anyone know of a person/company who cou…</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1906</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">hello, i need an exterminator please!! i have about 4 cicada killer nest in my yard right by the front door. they are not attacking they are just so intimidating. also, i hav a wasp nest on my porch😳 please … 2 10 d</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1912</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">have any on inside window sill think they are pharaoh ants. i sprayed but new ones today. need name of reliable pest control inside only do not want yard sprayed 1 7 s</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1998</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">i&#x27;m in allen tx. …i thought i was having a bee problem in one of my squirrel homes in one of my oak trees. well, now i know i do !!!! i need someone on here that does a bee removal asap!!! i will post a picture soon!!</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1996</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">would someone please recommend an exterminator service. it appears that i have tiny spiders that are causing damage underneath my kitchen cabinets near the strip lights. 5 m</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">1994</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">anybody know of a good pest control service? i’ve been dealing with roaches for years at my house and i’ve hired a company before they had been coming for months but they never went away. so i need someone that know someone recommended 💯 guarant… 5 21 e</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">2172</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">hi neighbors! does anyone have a recommendation for a reliable pest control service that offers one-time,safe treatments. 4 b beverly vinyard</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">2268</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">is anyone else dealing with ticks? its so bad at my house.. wynnewood area… anyone know who can help, ive tried everything 2 10 r</td>
+            </tr>
+
+
+            <tr>
+                <td class="id">2277</td>
+                <td class="types"><span class="badge">pest control</span></td>
+                <td class="description">hi yall. can anyone recommend pest control to spray my mom’s house and yard? mosquitos, spiders, etc. so general spray would be great. tia!! zip code 75218 2 15 k</td>
+            </tr>
+
+            </tbody>
+        </table>
+    </section>
+
+    <div class="footer">
+        Clubhouse Links • www.ClubhouseLinks.com
+    </div>
+</main>
+</body>
+</html><script>
+    (function() {
+        var ws = new WebSocket('ws://' + window.location.host +
+            '/jb-server-page?reloadMode=RELOAD_ON_SAVE&'+
+            'referrer=' + encodeURIComponent(window.location.pathname));
+        ws.onmessage = function (msg) {
+            if (msg.data === 'reload') {
+                window.location.reload();
+            }
+            if (msg.data.startsWith('update-css ')) {
+                var messageId = msg.data.substring(11);
+                var links = document.getElementsByTagName('link');
+                for (var i = 0; i < links.length; i++) {
+                    var link = links[i];
+                    if (link.rel !== 'stylesheet') continue;
+                    var clonedLink = link.cloneNode(true);
+                    var newHref = link.href.replace(/(&|\?)jbUpdateLinksId=\d+/, "$1jbUpdateLinksId=" + messageId);
+                    if (newHref !== link.href) {
+                        clonedLink.href = newHref;
+                    }
+                    else {
+                        var indexOfQuest = newHref.indexOf('?');
+                        if (indexOfQuest >= 0) {
+                            // to support ?foo#hash
+                            clonedLink.href = newHref.substring(0, indexOfQuest + 1) + 'jbUpdateLinksId=' + messageId + '&' +
+                                newHref.substring(indexOfQuest + 1);
+                        }
+                        else {
+                            clonedLink.href += '?' + 'jbUpdateLinksId=' + messageId;
+                        }
+                    }
+                    link.replaceWith(clonedLink);
+                }
+            }
+        };
+    })();
+</script>

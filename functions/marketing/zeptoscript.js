@@ -2,13 +2,13 @@ const nodemailer = require("nodemailer");
 const path = require("path");
 const fs = require("fs");
 const emailConfig = require("./emailConfig");
+const leadReportHtml = require("./RooferLeadReportHtml");
 
 const PAYMENT_URL =
-    "https://checkout.clubhouselinks.com/b/cNi14o3Tj7Qs9Mpgs70VO1m";
+    "https://checkout.clubhouselinks.com/b/eVqcN63Tj6MocYB2Bh0VO1b";
 
-/*
- * These images should be in the same folder as zeptoscript.js.
- */
+
+
 const CLUBHOUSE_LOGO_PATH = path.join(
     __dirname,
     "clubhouse-logo.png"
@@ -24,10 +24,6 @@ const HEADSHOT_PATH = path.join(
     "headshot.png"
 );
 
-/*
- * Supports several common environment-variable names.
- * Your existing working variables should be picked up automatically.
- */
 const SMTP_USER =
     process.env.ZEPTOMAIL_SMTP_USER ||
     process.env.ZEPTOMAIL_SMTP_USERNAME ||
@@ -44,6 +40,22 @@ const SMTP_PASS =
     process.env.ZEPTO_PASSWORD ||
     process.env.SMTP_PASS;
 
+const SMTP_HOST =
+    process.env.ZEPTOMAIL_SMTP_HOST ||
+    "smtp.zeptomail.com";
+
+const SMTP_PORT =
+    Number(process.env.ZEPTOMAIL_SMTP_PORT) ||
+    587;
+
+const FROM_EMAIL =
+    process.env.ZEPTOMAIL_FROM_EMAIL ||
+    "evan.ligon@clubhouselinks.com";
+
+const FROM_NAME =
+    process.env.ZEPTOMAIL_FROM_NAME ||
+    "Evan Ligon";
+
 if (!SMTP_USER || !SMTP_PASS) {
     throw new Error(
         "Missing ZeptoMail SMTP credentials. Check your environment variables."
@@ -51,9 +63,9 @@ if (!SMTP_USER || !SMTP_PASS) {
 }
 
 const transport = nodemailer.createTransport({
-    host: "smtp.zeptomail.com",
-    port: 587,
-    secure: false,
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_PORT === 465,
     auth: {
         user: SMTP_USER,
         pass: SMTP_PASS
@@ -133,7 +145,7 @@ function buildEmail(config) {
                 style="
                     margin:0;
                     padding:0;
-                    background:#f4f7f8;
+                    background:#ffffff;
                 "
             >
                 <table
@@ -144,33 +156,39 @@ function buildEmail(config) {
                     border="0"
                     style="
                         width:100%;
-                        background:#f4f7f8;
+                        background:#ffffff;
                     "
                 >
                     <tr>
                         <td
                             align="center"
-                            style="padding:24px 12px;"
+                            style="
+                                padding:0;
+                                background:#ffffff;
+                            "
                         >
                             <table
                                 role="presentation"
-                                width="680"
+                                width="1100"
                                 cellspacing="0"
                                 cellpadding="0"
                                 border="0"
                                 style="
                                     width:100%;
-                                    max-width:680px;
+                                    max-width:1100px;
                                     background:#ffffff;
-                                    border-radius:10px;
+                                    border:0;
+                                    border-radius:0;
                                     overflow:hidden;
+                                    box-shadow:none;
                                 "
                             >
                                 <tr>
                                     <td
                                         align="center"
                                         style="
-                                            padding:28px 24px 18px;
+                                            padding:20px 20px 14px;
+                                            background:#ffffff;
                                         "
                                     >
                                         <img
@@ -191,7 +209,8 @@ function buildEmail(config) {
                                     <td
                                         align="center"
                                         style="
-                                            padding:0 24px 24px;
+                                            padding:0 20px 18px;
+                                            background:#ffffff;
                                         "
                                     >
                                         <img
@@ -200,10 +219,12 @@ function buildEmail(config) {
                                             style="
                                                 display:block;
                                                 width:100%;
-                                                max-width:620px;
+                                                max-width:900px;
                                                 height:auto;
                                                 border:0;
-                                                border-radius:10px;
+                                                border-radius:12px;
+                                                box-shadow:
+                                                    0 0 22px rgba(37,244,255,0.16);
                                             "
                                         >
                                     </td>
@@ -212,7 +233,7 @@ function buildEmail(config) {
                                 <tr>
                                     <td
                                         style="
-                                            padding:0 32px 32px;
+                                            padding:0;
                                             font-family:
                                                 Verdana,
                                                 Arial,
@@ -221,130 +242,190 @@ function buildEmail(config) {
                                             font-size:15px;
                                             line-height:1.65;
                                             color:#111827;
+                                            background:#ffffff;
                                         "
                                     >
-                                        <p
-                                            style="
-                                                margin:0 0 18px 0;
-                                            "
-                                        >
-                                            Hi ${safeRecipientName},
-                                        </p>
-
-                                        ${config.bodyHtml}
-
-                                        <p
-                                            style="
-                                                margin:26px 0;
-                                            "
-                                        >
-                                            <a
-                                                href="${safePaymentUrl}"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                style="
-                                                    display:inline-block;
-                                                    padding:13px 22px;
-                                                    background:#009899;
-                                                    color:#ffffff;
-                                                    text-decoration:none;
-                                                    font-weight:700;
-                                                    border-radius:6px;
-                                                "
-                                            >
-                                                Get started for $200
-                                            </a>
-                                        </p>
+                                        ${leadReportHtml}
 
                                         <table
                                             role="presentation"
+                                            width="100%"
                                             cellspacing="0"
                                             cellpadding="0"
                                             border="0"
                                             style="
-                                                margin-top:30px;
+                                                width:100%;
+                                                margin-top:0;
+                                                border-collapse:collapse;
+                                                border-spacing:0;
+                                                background:#ffffff;
+                                                border:0;
+                                                border-radius:0;
                                             "
                                         >
                                             <tr>
                                                 <td
-                                                    valign="top"
                                                     style="
-                                                        padding-right:14px;
-                                                    "
-                                                >
-                                                    <img
-                                                        src="cid:evan-headshot"
-                                                        alt="Evan Ligon"
-                                                        width="75"
-                                                        style="
-                                                            display:block;
-                                                            width:75px;
-                                                            height:75px;
-                                                            object-fit:cover;
-                                                            border-radius:50%;
-                                                            border:0;
-                                                        "
-                                                    >
-                                                </td>
-
-                                                <td
-                                                    valign="middle"
-                                                    style="
+                                                        padding:18px 20px 24px;
+                                                        color:#111827;
                                                         font-family:
                                                             Verdana,
                                                             Arial,
                                                             Helvetica,
                                                             sans-serif;
-                                                        font-size:14px;
-                                                        line-height:1.5;
-                                                        color:#111827;
+                                                        font-size:15px;
+                                                        line-height:1.65;
                                                     "
                                                 >
-                                       <strong>
-    Evan Ligon
-</strong>
-<br>
+                                                    <p
+                                                        style="
+                                                            margin:0 0 18px 0;
+                                                            color:#111827;
+                                                        "
+                                                    >
+                                                        Hi ${safeRecipientName},
+                                                    </p>
 
-CEO / Web Developer
-<br>
+                                                    <div
+                                                        style="
+                                                            color:#111827;
+                                                        "
+                                                    >
+                                                        ${config.bodyHtml}
+                                                    </div>
 
-<a
-    href="https://www.clubhouselinks.com"
-    target="_blank"
-    rel="noopener noreferrer"
-    style="
-        color:#009899;
-        text-decoration:none;
-        font-weight:600;
-    "
->
-    www.ClubhouseLinks.com
-</a>
-<br>
+                                                    <p
+                                                        style="
+                                                            margin:26px 0;
+                                                        "
+                                                    >
+                                                        <a
+                                                            href="${safePaymentUrl}"
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            style="
+                                                                display:inline-block;
+                                                                padding:13px 22px;
+                                                                background:#ff3bd4;
+                                                                color:#ffffff;
+                                                                text-decoration:none;
+                                                                font-weight:700;
+                                                                border:1px solid #25f4ff;
+                                                                border-radius:7px;
+                                                                box-shadow:
+                                                                    0 0 16px rgba(255,59,212,0.35);
+                                                            "
+                                                        >
+                                                            Get started for $200/Month
+                                                        </a>
+                                                    </p>
 
-<a
-    href="mailto:Evan.Ligon@ClubhouseLinks.com"
-    style="
-        color:#009899;
-        text-decoration:none;
-    "
->
-    Evan.Ligon@ClubhouseLinks.com
-</a>
-<br>
+                                                    <table
+                                                        role="presentation"
+                                                        cellspacing="0"
+                                                        cellpadding="0"
+                                                        border="0"
+                                                        style="
+                                                            margin-top:30px;
+                                                            border-collapse:collapse;
+                                                        "
+                                                    >
+                                                        <tr>
+                                                            <td
+                                                                valign="top"
+                                                                style="
+                                                                    padding-right:14px;
+                                                                "
+                                                            >
+                                                                <img
+                                                                    src="cid:evan-headshot"
+                                                                    alt="Evan Ligon"
+                                                                    width="75"
+                                                                    style="
+                                                                        display:block;
+                                                                        width:75px;
+                                                                        height:75px;
+                                                                        object-fit:cover;
+                                                                        border-radius:50%;
+                                                                        border:2px solid #25f4ff;
+                                                                        box-shadow:
+                                                                            0 0 14px rgba(37,244,255,0.28);
+                                                                    "
+                                                                >
+                                                            </td>
 
-<a
-    href="tel:+12145489175"
-    style="
-        color:#009899;
-        text-decoration:none;
-    "
->
-    214-548-9175
-</a>
-<br>
+                                                            <td
+                                                                valign="middle"
+                                                                style="
+                                                                    font-family:
+                                                                        Verdana,
+                                                                        Arial,
+                                                                        Helvetica,
+                                                                        sans-serif;
+                                                                    font-size:14px;
+                                                                    line-height:1.5;
+                                                                    color:#111827;
+                                                                "
+                                                            >
+                                                                <strong
+                                                                    style="
+                                                                        color:#111827;
+                                                                        font-size:15px;
+                                                                    "
+                                                                >
+                                                                    Evan Ligon
+                                                                </strong>
+                                                                <br>
 
-Fellow LeTip Member — Dallas
+                                                                <span style="color:#111827;">
+                                                                    CEO / Web Developer
+                                                                </span>
+                                                                <br>
+
+                                                                <a
+                                                                    href="https://www.clubhouselinks.com"
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    style="
+                                                                        color:#009899;
+                                                                        text-decoration:none;
+                                                                        font-weight:600;
+                                                                    "
+                                                                >
+                                                                    www.ClubhouseLinks.com
+                                                                </a>
+                                                                <br>
+
+                                                                <a
+                                                                    href="mailto:Evan.Ligon@ClubhouseLinks.com"
+                                                                    style="
+                                                                        color:#009899;
+                                                                        text-decoration:none;
+                                                                    "
+                                                                >
+                                                                    Evan.Ligon@ClubhouseLinks.com
+                                                                </a>
+                                                                <br>
+
+                                                                <a
+                                                                    href="tel:+12145489175"
+                                                                    style="
+                                                                        color:#009899;
+                                                                        text-decoration:none;
+                                                                        font-weight:700;
+                                                                    "
+                                                                >
+                                                                    214-548-9175
+                                                                </a>
+                                                                <br>
+
+                                                                <span style="color:#4b5563;">
+                                                                    Fellow LeTip Member — Dallas
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
                                             </tr>
                                         </table>
                                     </td>
@@ -377,15 +458,10 @@ async function sendEmail() {
         );
 
         const info = await transport.sendMail({
-            from:
-                '"Evan Ligon" <evan.ligon@clubhouselinks.com>',
-
+            from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
             to: email.to,
-
             subject: email.subject,
-
             html: email.html,
-
             attachments: [
                 {
                     filename: "clubhouse-logo.png",
@@ -393,7 +469,7 @@ async function sendEmail() {
                     cid: "clubhouse-logo"
                 },
                 {
-                    filename: "new-lead-preview.png",
+                    filename: "lead-preview.png",
                     path: LEAD_PREVIEW_PATH,
                     cid: "new-lead-preview"
                 },
