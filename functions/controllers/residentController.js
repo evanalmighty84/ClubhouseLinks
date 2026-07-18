@@ -579,11 +579,12 @@ exports.signupResident = async (req, res) => {
         if (
             !cleanFirstName ||
             !cleanLastName ||
-            !cleanPhone
+            !cleanPhone ||
+            !cleanInviteCode
         ) {
             return res.status(400).json({
                 success: false,
-                error: "Missing required fields."
+                error: "First name, last name, phone, and invite code are required."
             });
         }
 
@@ -592,64 +593,60 @@ exports.signupResident = async (req, res) => {
         let isContractorCode = false;
 
         /*
-         * Invite codes are optional.
-         * Only look up and validate an invite when the user supplied one.
+         * Invite code is required.
+         * Validate the invite code before creating or updating the resident profile.
          */
-        if (cleanInviteCode) {
-            const inviteResult = await pool.query(
-                `
-                    SELECT
-                        ic.id,
-                        ic.code,
-                        ic.code_type,
-                        ic.contractor_user_id,
-                        ic.access_level,
-                        ic.neighborhood_id,
-                        n.name AS neighborhood_name
-                    FROM hoa_invite_codes ic
-                    LEFT JOIN hoa_neighborhoods n
-                        ON n.id = ic.neighborhood_id
-                    WHERE UPPER(ic.code) = $1
-                      AND ic.active = TRUE
-                    LIMIT 1
-                `,
-                [cleanInviteCode]
-            );
+        const inviteResult = await pool.query(
+            `
+                SELECT
+                    ic.id,
+                    ic.code,
+                    ic.code_type,
+                    ic.neighborhood_id,
+                    n.name AS neighborhood_name
+                FROM hoa_invite_codes ic
+                LEFT JOIN hoa_neighborhoods n
+                    ON n.id = ic.neighborhood_id
+                WHERE UPPER(ic.code) = $1
+                  AND ic.active = TRUE
+                LIMIT 1
+            `,
+            [cleanInviteCode]
+        );
 
-            if (!inviteResult.rows.length) {
-                return res.status(400).json({
-                    success: false,
-                    error: "Invalid or inactive invite code."
-                });
-            }
+        if (!inviteResult.rows.length) {
+            return res.status(400).json({
+                success: false,
+                error: "Invalid or inactive invite code."
+            });
+        }
 
-            invite = inviteResult.rows[0];
+        invite = inviteResult.rows[0];
 
-            isResidentCode =
-                invite.code_type === "resident";
+        isResidentCode =
+            invite.code_type === "resident";
 
-            isContractorCode = [
-                "contractor_customer",
-                "vendor_customer"
-            ].includes(invite.code_type);
+        isContractorCode = [
+            "contractor_customer",
+            "vendor_customer"
+        ].includes(invite.code_type);
 
-            if (!isResidentCode && !isContractorCode) {
-                return res.status(400).json({
-                    success: false,
-                    error: "Unsupported invite code type."
-                });
-            }
+        if (!isResidentCode && !isContractorCode) {
+            return res.status(400).json({
+                success: false,
+                error: "Unsupported invite code type."
+            });
+        }
 
-            if (
-                isResidentCode &&
-                !invite.neighborhood_id
-            ) {
-                return res.status(400).json({
-                    success: false,
-                    error:
-                        "Resident invite code is not connected to a neighborhood."
-                });
-            }
+        if (
+            isResidentCode &&
+            !invite.neighborhood_id
+        ) {
+            return res.status(400).json({
+                success: false,
+                error:
+                    "Resident invite code is not connected to a neighborhood."
+            });
         }
 
         const neighborhoodId =
@@ -666,10 +663,7 @@ exports.signupResident = async (req, res) => {
         const inviteCodeUsed =
             invite?.code || null;
 
-        const referredByContractorId =
-            isContractorCode
-                ? invite?.contractor_user_id || null
-                : null;
+        const referredByContractorId = null;
 
         let latitude = null;
         let longitude = null;
@@ -677,8 +671,8 @@ exports.signupResident = async (req, res) => {
         let displayAreaName = null;
 
         /*
-         * People with no HOA neighborhood are placed into a generated
-         * local service area based on their submitted address.
+         * Address is optional.
+         * Only create/generated area when the user supplied an address.
          */
         if (!neighborhoodId && cleanAddress) {
             try {
@@ -741,23 +735,18 @@ exports.signupResident = async (req, res) => {
         try {
             await client.query("BEGIN");
 
-            /*
-             * IS NOT DISTINCT FROM treats two NULL neighborhood IDs as
-             * matching. This prevents duplicate public profiles when the
-             * neighborhood ID is NULL.
-             */
             const existingResult = await client.query(
                 `
-            SELECT
-                id,
-                invite_code_used
-            FROM hoa_residents
-            WHERE phone = $1
-              AND neighborhood_id
-                  IS NOT DISTINCT FROM $2
-            LIMIT 1
-            FOR UPDATE
-        `,
+                    SELECT
+                        id,
+                        invite_code_used
+                    FROM hoa_residents
+                    WHERE phone = $1
+                      AND neighborhood_id
+                        IS NOT DISTINCT FROM $2
+                        LIMIT 1
+                        FOR UPDATE
+                `,
                 [
                     cleanPhone,
                     neighborhoodId
@@ -776,46 +765,41 @@ exports.signupResident = async (req, res) => {
                 const updateResult =
                     await client.query(
                         `
-                    UPDATE hoa_residents
-                    SET
-                        first_name = $1,
-                        last_name = $2,
-                        address = $3,
-                        approval_status = $4,
-                        sms_verified = TRUE,
-                        approved_at =
-                            CASE
-                                WHEN $4 = 'approved'
-                                THEN COALESCE(
-                                    approved_at,
-                                    NOW()
-                                )
-                                ELSE approved_at
-                            END,
-                        access_level =
-                            CASE
-                                WHEN $6 IS NULL
-                                THEN access_level
-                                ELSE $5
-                            END,
-                        invite_code_used =
-                            COALESCE(
-                                $6,
+                            UPDATE hoa_residents
+                            SET
+                                first_name = $1,
+                                last_name = $2,
+                                address = $3,
+                                approval_status = $4,
+                                sms_verified = TRUE,
+                                approved_at =
+                                    CASE
+                                        WHEN $4 = 'approved'
+                                            THEN COALESCE(
+                                                approved_at,
+                                                NOW()
+                                                 )
+                                        ELSE approved_at
+                                        END,
+                                access_level = $5::text,
+                                invite_code_used =
+                                    COALESCE(
+                                $6::text,
                                 invite_code_used
-                            ),
-                        referred_by_contractor_id =
-                            COALESCE(
-                                $7,
+                                ),
+                                referred_by_contractor_id =
+                                COALESCE(
+                                $7::integer,
                                 referred_by_contractor_id
-                            ),
-                        latitude = $8,
-                        longitude = $9,
-                        generated_area_id = $10,
-                        display_area_name = $11,
-                        updated_at = NOW()
-                    WHERE id = $12
-                    RETURNING *
-                `,
+                                ),
+                                latitude = $8::numeric,
+                                longitude = $9::numeric,
+                                generated_area_id = $10::integer,
+                                display_area_name = $11::text,
+                                updated_at = NOW()
+                            WHERE id = $12
+                                RETURNING *
+                        `,
                         [
                             cleanFirstName,
                             cleanLastName,
@@ -843,48 +827,48 @@ exports.signupResident = async (req, res) => {
                 const insertResult =
                     await client.query(
                         `
-                    INSERT INTO hoa_residents
-                    (
-                        first_name,
-                        last_name,
-                        phone,
-                        address,
-                        neighborhood_id,
-                        approval_status,
-                        sms_verified,
-                        approved_at,
-                        access_level,
-                        invite_code_used,
-                        referred_by_contractor_id,
-                        latitude,
-                        longitude,
-                        generated_area_id,
-                        display_area_name
-                    )
-                    VALUES
-                    (
-                        $1,
-                        $2,
-                        $3,
-                        $4,
-                        $5,
-                        $6,
-                        TRUE,
-                        CASE
-                            WHEN $6 = 'approved'
-                            THEN NOW()
-                            ELSE NULL
-                        END,
-                        $7,
-                        $8,
-                        $9,
-                        $10,
-                        $11,
-                        $12,
-                        $13
-                    )
-                    RETURNING *
-                `,
+                            INSERT INTO hoa_residents
+                            (
+                                first_name,
+                                last_name,
+                                phone,
+                                address,
+                                neighborhood_id,
+                                approval_status,
+                                sms_verified,
+                                approved_at,
+                                access_level,
+                                invite_code_used,
+                                referred_by_contractor_id,
+                                latitude,
+                                longitude,
+                                generated_area_id,
+                                display_area_name
+                            )
+                            VALUES
+                                (
+                                    $1,
+                                    $2,
+                                    $3,
+                                    $4,
+                                    $5,
+                                    $6,
+                                    TRUE,
+                                    CASE
+                                        WHEN $6 = 'approved'
+                                            THEN NOW()
+                                        ELSE NULL
+                                        END,
+                                    $7,
+                                    $8,
+                                    $9,
+                                    $10,
+                                    $11,
+                                    $12,
+                                    $13
+                                )
+                                RETURNING *
+                        `,
                         [
                             cleanFirstName,
                             cleanLastName,
@@ -912,15 +896,15 @@ exports.signupResident = async (req, res) => {
             ) {
                 await client.query(
                     `
-                UPDATE hoa_invite_codes
-                SET
-                    used_count =
-                        COALESCE(
-                            used_count,
-                            0
-                        ) + 1
-                WHERE id = $1
-            `,
+                        UPDATE hoa_invite_codes
+                        SET
+                            used_count =
+                                COALESCE(
+                                        used_count,
+                                        0
+                                ) + 1
+                        WHERE id = $1
+                    `,
                     [invite.id]
                 );
             }
