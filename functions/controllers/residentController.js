@@ -1,6 +1,7 @@
 
 const pool = require('../db/db');
 const jwt = require("jsonwebtoken");
+const cloudinary = require("cloudinary").v2;
 
 const DEFAULT_GENERATED_AREA_RADIUS_MILES = 0.35;
 
@@ -1463,7 +1464,163 @@ exports.getResidentProfile = async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 };
+exports.submitCompletedProject = async (req, res) => {
+    try {
+        const {
+            resident_id,
+            vendor_id,
+            category,
+            image_base64
+        } = req.body || {};
 
+        const residentId = Number(resident_id);
+        const vendorId = Number(vendor_id);
+        const cleanCategory = String(category || "").trim();
+        const cleanImageBase64 = String(image_base64 || "").trim();
+
+        if (
+            !residentId ||
+            Number.isNaN(residentId) ||
+            !vendorId ||
+            Number.isNaN(vendorId) ||
+            !cleanCategory ||
+            !cleanImageBase64
+        ) {
+            return res.status(400).json({
+                success: false,
+                error: "resident_id, vendor_id, category, and image_base64 are required."
+            });
+        }
+
+        const residentResult = await pool.query(
+            `
+                SELECT id
+                FROM hoa_residents
+                WHERE id = $1
+                LIMIT 1
+            `,
+            [residentId]
+        );
+
+        if (!residentResult.rows.length) {
+            return res.status(404).json({
+                success: false,
+                error: "Resident not found."
+            });
+        }
+
+        const vendorResult = await pool.query(
+            `
+                SELECT
+                    id,
+                    company_name,
+                    category
+                FROM hoa_vendors
+                WHERE id = $1
+                  AND active = TRUE
+                LIMIT 1
+            `,
+            [vendorId]
+        );
+
+        if (!vendorResult.rows.length) {
+            return res.status(404).json({
+                success: false,
+                error: "Vendor not found."
+            });
+        }
+
+        const vendor = vendorResult.rows[0];
+
+        /*
+         * image_base64 should be a full data URL:
+         * data:image/jpeg;base64,...
+         */
+        const uploadResult = await cloudinary.uploader.upload(
+            cleanImageBase64,
+            {
+                folder: "clubhouse_completed_projects",
+                resource_type: "image"
+            }
+        );
+
+        const result = await pool.query(
+            `
+                INSERT INTO hoa_resident_contractors
+                (
+                    resident_id,
+                    vendor_id,
+                    category,
+                    source,
+                    finished_photo_url,
+                    finished_photo_public_id,
+                    photo_approval_status,
+                    photo_submitted_at,
+                    moderation_status,
+                    created_at,
+                    updated_at
+                )
+                VALUES
+                (
+                    $1,
+                    $2,
+                    $3,
+                    'resident_upload',
+                    $4,
+                    $5,
+                    'pending_review',
+                    NOW(),
+                    'not_checked',
+                    NOW(),
+                    NOW()
+                )
+                ON CONFLICT (resident_id, category)
+                DO UPDATE SET
+                    vendor_id = EXCLUDED.vendor_id,
+                    finished_photo_url = EXCLUDED.finished_photo_url,
+                    finished_photo_public_id = EXCLUDED.finished_photo_public_id,
+                    photo_approval_status = 'pending_review',
+                    photo_submitted_at = NOW(),
+                    photo_approved_at = NULL,
+                    photo_rejected_at = NULL,
+                    photo_rejection_reason = NULL,
+                    moderation_status = 'not_checked',
+                    source = 'resident_upload',
+                    updated_at = NOW()
+                RETURNING *
+            `,
+            [
+                residentId,
+                vendorId,
+                cleanCategory,
+                uploadResult.secure_url,
+                uploadResult.public_id
+            ]
+        );
+
+        return res.status(200).json({
+            success: true,
+            project: {
+                ...result.rows[0],
+                vendor_name: vendor.company_name,
+                service: cleanCategory,
+                image_url: uploadResult.secure_url,
+                approval_status: "pending_review"
+            },
+            message: "Completed project submitted for review."
+        });
+    } catch (err) {
+        console.error(
+            "submitCompletedProject error:",
+            err
+        );
+
+        return res.status(500).json({
+            success: false,
+            error: "Failed to submit completed project."
+        });
+    }
+};
 exports.getCompletedProjects = async (req, res) => {
     try {
         const { residentId } = req.params;
