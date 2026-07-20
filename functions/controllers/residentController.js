@@ -959,7 +959,108 @@ exports.signupResident = async (req, res) => {
     }
 };
 
+exports.updateResidentAddress = async (req, res) => {
+    try {
+        const residentId = Number(req.params.residentId);
+        const cleanAddress = String(req.body?.address || "").trim();
 
+        if (!residentId || Number.isNaN(residentId)) {
+            return res.status(400).json({
+                success: false,
+                error: "Invalid resident ID."
+            });
+        }
+
+        if (!cleanAddress) {
+            return res.status(400).json({
+                success: false,
+                error: "Address is required."
+            });
+        }
+
+        let latitude = null;
+        let longitude = null;
+        let generatedAreaId = null;
+        let displayAreaName = null;
+
+        try {
+            const {
+                geo,
+                generatedArea
+            } = await getOrCreateGeneratedAreaForAddress(
+                cleanAddress
+            );
+
+            latitude = geo?.lat ?? null;
+            longitude = geo?.lng ?? null;
+            generatedAreaId = generatedArea?.id ?? null;
+
+            displayAreaName =
+                generatedArea?.area_name ||
+                geo?.display_area_name ||
+                buildDisplayAreaName(
+                    geo?.city,
+                    geo?.state
+                ) ||
+                null;
+        } catch (geoErr) {
+            console.error(
+                "updateResidentAddress generated area lookup failed:",
+                geoErr
+            );
+
+            displayAreaName =
+                getDisplayAreaFromAddressFallback(cleanAddress) ||
+                null;
+        }
+
+        const result = await pool.query(
+            `
+                UPDATE hoa_residents
+                SET
+                    address = $1,
+                    latitude = $2,
+                    longitude = $3,
+                    generated_area_id = $4,
+                    display_area_name = $5,
+                    updated_at = NOW()
+                WHERE id = $6
+                RETURNING *
+            `,
+            [
+                cleanAddress,
+                latitude,
+                longitude,
+                generatedAreaId,
+                displayAreaName,
+                residentId
+            ]
+        );
+
+        if (!result.rows.length) {
+            return res.status(404).json({
+                success: false,
+                error: "Resident not found."
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            resident: result.rows[0],
+            message: "Address updated successfully."
+        });
+    } catch (err) {
+        console.error(
+            "updateResidentAddress error:",
+            err
+        );
+
+        return res.status(500).json({
+            success: false,
+            error: "Server error."
+        });
+    }
+};
 
 exports.getVendors = async (req, res) => {
     try {

@@ -10,7 +10,7 @@ const {
     approveResident,
     getResidentProfile,
     getVendors,
-    loginResident, getAddress,getAddressAutoComplete,getCompletedProjects,sendPhoneVerification,checkPhoneVerification
+    loginResident, getAddress,getAddressAutoComplete,getCompletedProjects,sendPhoneVerification,checkPhoneVerification,updateResidentAddress
 } = require('../controllers/residentController');
 
 router.post('/validate-invite-code', validateInviteCode);
@@ -24,6 +24,10 @@ router.post('/login', loginResident);
 router.post("/address-lookup", getAddress);
 router.post("/address-autocomplete", getAddressAutoComplete);
 router.get("/completed-projects/:residentId", getCompletedProjects);
+router.patch(
+    "/profile/:residentId/address",
+    updateResidentAddress
+);
 router.post(
     "/send-verification",
     sendPhoneVerification
