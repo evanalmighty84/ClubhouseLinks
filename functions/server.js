@@ -2,8 +2,22 @@
 const express = require('express');
 const app = express();
 // ⭐ ADD THESE TWO LINES BEFORE ANY ROUTES ⭐
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Needed for resident completed-project photo uploads.
+// Base64 images are larger than the original photo.
+app.use(express.json({ limit: '35mb' }));
+app.use(express.urlencoded({ extended: true, limit: '35mb' }));
+
+// Clean JSON error instead of raw HTML when payload is too large.
+app.use((err, req, res, next) => {
+    if (err && err.type === 'entity.too.large') {
+        return res.status(413).json({
+            success: false,
+            error: 'Photo is too large. Please choose a smaller photo.'
+        });
+    }
+
+    next(err);
+});
 const crmApp = require('./crmIndex'); // crm_function/crmIndex.js should export an app or router
 const leadApp = require('./leadindex'); // crm_function/crmIndex.js should export an app or router
 const residentApp = require('./residentIndex');
