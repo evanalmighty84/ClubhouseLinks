@@ -9,7 +9,7 @@ const {
     getPendingResidents,
     approveResident,
     getResidentProfile,
-    getVendors,
+    getVendors,deleteResidentAccount,
     loginResident, getAddress,getAddressAutoComplete,getCompletedProjects,sendPhoneVerification,checkPhoneVerification,submitCompletedProject,updateResidentAddress
 } = require('../controllers/residentController');
 
@@ -24,6 +24,10 @@ router.post('/login', loginResident);
 router.post("/address-lookup", getAddress);
 router.post("/address-autocomplete", getAddressAutoComplete);
 router.get("/completed-projects/:residentId", getCompletedProjects);
+router.post(
+    "/residents/delete-account",
+    deleteResidentAccount
+);
 router.post(
     "/completed-projects",
     submitCompletedProject

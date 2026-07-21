@@ -1312,6 +1312,62 @@ exports.validateInviteCode = async (req, res) => {
     }
 };
 
+exports.deleteResidentAccount = async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        const residentId = Number(req.body.resident_id);
+
+        if (!Number.isInteger(residentId) || residentId <= 0) {
+            return res.status(400).json({
+                error: "A valid resident ID is required."
+            });
+        }
+
+        await client.query("BEGIN");
+
+        // Delete dependent records here first if foreign keys require it.
+        // Example:
+        // await client.query(
+        //     `DELETE FROM hoa_app_store_clicks WHERE resident_id = $1`,
+        //     [residentId]
+        // );
+
+        const result = await client.query(
+            `
+                DELETE FROM hoa_residents
+                WHERE id = $1
+                RETURNING id
+            `,
+            [residentId]
+        );
+
+        if (!result.rows.length) {
+            await client.query("ROLLBACK");
+
+            return res.status(404).json({
+                error: "Resident account was not found."
+            });
+        }
+
+        await client.query("COMMIT");
+
+        return res.status(200).json({
+            success: true,
+            deleted_resident_id: result.rows[0].id
+        });
+    } catch (error) {
+        await client.query("ROLLBACK");
+        console.error("Delete resident account error:", error);
+
+        return res.status(500).json({
+            error: "The account could not be deleted."
+        });
+    } finally {
+        client.release();
+    }
+};
+
 
 exports.loginResident = async (req, res) => {
     try {
