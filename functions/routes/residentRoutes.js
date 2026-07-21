@@ -25,7 +25,7 @@ router.post("/address-lookup", getAddress);
 router.post("/address-autocomplete", getAddressAutoComplete);
 router.get("/completed-projects/:residentId", getCompletedProjects);
 router.post(
-    "/residents/delete-account",
+    "/delete-account",
     deleteResidentAccount
 );
 router.post(
