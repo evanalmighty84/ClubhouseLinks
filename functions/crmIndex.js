@@ -23,6 +23,7 @@ const smsMobileRoutes = require('./routes/smsMobileRoutes')
 const paymentRoutes = require('./routes/paymentRoutes')
 const poolRoutes = require('./routes/poolRoutes')
 const calendarRoutes = require("./routes/calendarRoutes");
+const ftnRoutes = require('./routes/ftnRoutes');
 
 
 const path = require('path');
@@ -99,6 +100,9 @@ app.use('/api/workflow', workflowRoutes);
 app.use('/api/ionwave', ionRoutes);
 
 app.use('/api/nextdoor', nextDoorRoutes);
+
+app.use('/api/ftn', ftnRoutes);
+
 
 app.use('/api/test', (req, res) => {
     res.send('✅ CRM app is responding');
