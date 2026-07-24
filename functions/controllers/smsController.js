@@ -311,114 +311,292 @@ exports.notifyUsersForLead = async (req, res) => {
         /**********************************************
          * 🚨 PROSPECT BYPASS (STRICT — NO FALLBACK)
          **********************************************/
-        if ((lead.lead_type || "").trim().toLowerCase() === "prospect") {
+        /**********************************************
+         * EXPLICIT RECIPIENT BYPASS
+         *
+         * When professionalnumbertocall is provided,
+         * send directly to that number. The company
+         * does not need to exist in the users table.
+         **********************************************/
 
-            console.log("🔍 RAW lead_type:", JSON.stringify(lead.lead_type));
-            console.log("🔍 company_name:", lead.company_name);
-            console.log("🔍 professionalnumbertocall:", lead.professionalnumbertocall);
+        const isProspect =
+            String(lead.lead_type || "")
+                .trim()
+                .toLowerCase() === "prospect";
 
-            if (!lead.professionalnumbertocall || !lead.professionalnumbertocall.length) {
-                return res.status(200).json({
-                    message: "Prospect has no professionalnumbertocall.",
-                    lead
-                });
+        const normalizeArrayValue = (value) => {
+            if (Array.isArray(value)) {
+                return value
+                    .map((item) =>
+                        String(item || "").trim()
+                    )
+                    .filter(Boolean);
             }
 
-            const toNumbers = lead.professionalnumbertocall
-                .map(p => normalizeToE164(p))
-                .filter(Boolean);
-
-            if (!toNumbers.length) {
-                return res.status(200).json({
-                    message: "Invalid professional numbers.",
-                    lead
-                });
+            if (value === null || value === undefined) {
+                return [];
             }
 
-            const text = [
-                `Hi this is Evan Ligon from ${lead.networkingsource || "a networking source"}.`,
-                ``,
-                `Here is a lead for ${lead.company_name || "your company"}.`,
-                ``,
-                lead.description ? truncate(lead.description, 250) : "",
-                ``,
-                `If you find value in it, maybe we could meet later this week and talk about subscribing.`,
-                ``,
-                `Thanks!`
-            ].filter(Boolean).join("\n");
+            const text = String(value).trim();
+
+            return text ? [text] : [];
+        };
+
+        const assignedCompanies =
+            normalizeArrayValue(
+                lead.company_name,
+            );
+
+        const assignedProfessionalNumbers =
+            normalizeArrayValue(
+                lead.professionalnumbertocall,
+            );
+
+        const explicitRecipients =
+            assignedProfessionalNumbers
+                .map((rawPhone, index) => ({
+                    to: normalizeToE164(rawPhone),
+
+                    companyName:
+                        assignedCompanies[index] ||
+                        assignedCompanies[0] ||
+                        "Manual Assignment",
+                }))
+                .filter((recipient) =>
+                    Boolean(recipient.to)
+                );
+
+        if (explicitRecipients.length > 0) {
+            console.log(
+                "🎯 Explicit recipient assignment found.",
+            );
+
+            console.log(
+                "🏢 Assigned companies:",
+                assignedCompanies,
+            );
+
+            console.log(
+                "☎️ Assigned professional numbers:",
+                assignedProfessionalNumbers,
+            );
+
+            const leadPhoneLines =
+                deduped.map(
+                    (leadPhone) =>
+                        `📞 ${leadPhone}`,
+                );
+
+            const normalLeadText = [
+                `🔔 New ${leadTypes
+                    .map(titleCase)
+                    .join("/")} lead in ${titleCase(city)}`,
+
+                `👤 ${lead.author || "Unknown"}`,
+
+                lead.timestamp
+                    ? `🕒 ${fmtCST(
+                        lead.timestamp,
+                    )} (CST)`
+                    : "",
+
+                `📍 ${lead.location || "Unknown"}${
+                    finalPhysicalAddress
+                        ? " • " +
+                        finalPhysicalAddress
+                        : ""
+                }`,
+
+                ...leadPhoneLines,
+
+                lead.description
+                    ? `📝 ${truncate(
+                        lead.description,
+                        300,
+                    )}`
+                    : "",
+            ]
+                .filter(Boolean)
+                .join("\n");
+
+            const prospectText = [
+                `Hi this is Evan Ligon from ${
+                    lead.networkingsource ||
+                    "a networking source"
+                }.`,
+
+                "",
+
+                `Here is a lead for ${
+                    assignedCompanies[0] ||
+                    "your company"
+                }.`,
+
+                "",
+
+                lead.description
+                    ? truncate(
+                        lead.description,
+                        250,
+                    )
+                    : "",
+
+                "",
+
+                "If you find value in it, maybe we could " +
+                "meet later this week and talk about subscribing.",
+
+                "",
+
+                "Thanks!",
+            ]
+                .filter(Boolean)
+                .join("\n");
+
+            const text =
+                isProspect
+                    ? prospectText
+                    : normalLeadText;
 
             const results = [];
 
-            for (const to of toNumbers) {
+            for (
+                const recipient of
+                explicitRecipients
+                ) {
                 try {
-                    const msg = await client.messages.create({
-                        to,
-                        body: text,
-                        from: process.env.TWILIO_TEXAS_NUMBER,
-                    });
+                    const msg =
+                        await client.messages.create({
+                            to: recipient.to,
+                            body: text,
+                            from:
+                            process.env
+                                .TWILIO_TEXAS_NUMBER,
+                        });
+
                     await pool.query(
                         `
-    INSERT INTO lead_alerts_sent (
-        lead_id,
-        company_name,
-        lead_city,
-        lead_phone,
-        delivery_status,
-        twilio_sid,
-        sent_at
-    )
-    VALUES ($1,$2,$3,$4,$5,$6,NOW())
-    `,
+                    INSERT INTO lead_alerts_sent (
+                        lead_id,
+                        company_name,
+                        lead_city,
+                        lead_phone,
+                        delivery_status,
+                        twilio_sid,
+                        sent_at
+                    )
+                    VALUES (
+                        $1,
+                        $2,
+                        $3,
+                        $4,
+                        $5,
+                        $6,
+                        NOW()
+                    )
+                `,
                         [
                             lead.id,
-                            lead.company_name,
+                            recipient.companyName,
                             lead.city,
-                            to,
-                            'sent',
-                            msg.sid
-                        ]
+                            deduped[0] || null,
+                            "sent",
+                            msg.sid,
+                        ],
                     );
 
                     results.push({
-                        company: lead.company_name,
-                        to,
+                        userId: null,
+                        company_name:
+                        recipient.companyName,
+
+                        destination_phone:
+                        recipient.to,
+
+                        lead_phone:
+                            deduped[0] || null,
+
+                        assignment_source:
+                            "professionalnumbertocall",
+
                         sent: true,
-                        sid: msg.sid
+                        sid: msg.sid,
                     });
-
-                } catch (e) {
+                } catch (error) {
                     await pool.query(
                         `
-    INSERT INTO lead_alerts_sent (
-        lead_id,
-        company_name,
-        lead_city,
-        lead_phone,
-        delivery_status,
-        sent_at
-    )
-    VALUES ($1,$2,$3,$4,$5,NOW())
-    `,
+                    INSERT INTO lead_alerts_sent (
+                        lead_id,
+                        company_name,
+                        lead_city,
+                        lead_phone,
+                        delivery_status,
+                        sent_at
+                    )
+                    VALUES (
+                        $1,
+                        $2,
+                        $3,
+                        $4,
+                        $5,
+                        NOW()
+                    )
+                `,
                         [
                             lead.id,
-                            lead.company_name,
+                            recipient.companyName,
                             lead.city,
-                            to,
-                            'failed'
-                        ]
+                            deduped[0] || null,
+                            "failed",
+                        ],
                     );
+
                     results.push({
-                        company: lead.company_name,
-                        to,
+                        userId: null,
+
+                        company_name:
+                        recipient.companyName,
+
+                        destination_phone:
+                        recipient.to,
+
+                        lead_phone:
+                            deduped[0] || null,
+
+                        assignment_source:
+                            "professionalnumbertocall",
+
                         sent: false,
-                        error: e.message
+                        error: error.message,
                     });
                 }
             }
 
             return res.status(200).json({
-                message: "Prospect SMS sent to company",
-                results
+                message:
+                    "Alert processing complete using explicit assignment.",
+
+                matchedUsers: 0,
+
+                explicitRecipients:
+                explicitRecipients.length,
+
+                results,
+            });
+        }
+
+        /*
+         * A prospect must never fall through to normal
+         * industry routing when it has no assigned number.
+         */
+        if (isProspect) {
+            return res.status(200).json({
+                message:
+                    "Prospect has no valid professionalnumbertocall.",
+
+                matchedUsers: 0,
+                results: [],
+                lead,
             });
         }
 

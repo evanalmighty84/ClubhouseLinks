@@ -5,7 +5,7 @@ const emailConfig = require("./emailConfig");
 const leadReportHtml = require("./RooferLeadReportHtml");
 
 const PAYMENT_URL =
-    "https://checkout.clubhouselinks.com/b/eVqcN63Tj6MocYB2Bh0VO1b";
+    "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-6WN605081R303745WNJRYZDA";
 
 
 

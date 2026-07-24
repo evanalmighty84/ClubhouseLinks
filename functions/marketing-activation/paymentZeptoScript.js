@@ -4,7 +4,7 @@ const fs = require("fs");
 const emailConfig = require("./paymentEmailConfig");
 
 const PAYMENT_URL =
-    "https://checkout.clubhouselinks.com/b/aFa8wQ75veeQ9MpcbR0VO1o";
+    "https://checkout.clubhouselinks.com/b/3cI14o2Pf2w8gaN8ZF0VO0K";
 
 const CLUBHOUSE_LOGO_PATH = path.join(__dirname, "clubhouse-logo.png");
 const CLUBHOUSE_DASHBOARD_PATH = path.join(__dirname, "clubhouse.png");
@@ -185,7 +185,7 @@ function buildEmail(config) {
                                                             color:#374151;
                                                         "
                                                     >
-                                                        This is your activation link. Complete the $200 payment
+                                                        This is your activation link. Complete the  payment
                                                         below to activate your Clubhouse Links lead-generation
                                                         service and begin receiving leads.
                                                     </p>

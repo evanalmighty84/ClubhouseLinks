@@ -1,40 +1,44 @@
 module.exports = {
-    recipientEmail: "lowell@deansinsurance.com",
-    recipientName: "Lowell",
-    subject: "Clubhouse Links Lead Generation Activation Payment Link and Activation",
+    recipientEmail: "melfay1@hotmail.com",
+    recipientName: "Melinda",
+    subject: "Clubhouse Links Home Repair and Remodeling Lead Generation Activation",
 
     bodyHtml: `
         <p style="margin:0 0 18px 0;">
-            It was great speaking with you. As discussed, you can expect to
-            receive home and auto insurance opportunities directly through your
-            Clubhouse Links dashboard and by text message multiple times per
-            week whenever matching requests are available.
+            It was great speaking with you over the phone. As discussed, you can
+            expect to receive home repair, remodeling, and general contracting
+            opportunities directly through your Clubhouse Links dashboard and
+            by text message multiple times per week whenever matching homeowner
+            requests are available.
         </p>
 
         <p style="margin:0 0 18px 0;">
             I’ll initially configure your searches around terms such as
             <strong>
-                home insurance, homeowners insurance, auto insurance,
-                car insurance, insurance quotes, new home purchase,
-                first-time homebuyer, insurance renewal, bundled insurance,
-                lower insurance rates, and switching insurance companies
+                general contractor, home repairs, handyman, home remodeling,
+                bathroom remodeling, kitchen remodeling, new construction,
+                interior painting, exterior painting, carpentry, drywall,
+                Sheetrock, plumbing, electrical work, masonry, appliance repair,
+                flooring, damaged walls, ceiling repair, door repair,
+                and renovation contractor
             </strong>.
-            You can also give me additional keywords at any time, and I can
-            tailor the searches around the types of policies and customers that
-            are most valuable to Dean Insurance Group.
+            You can give me additional keywords at any time, and I can tailor
+            the searches around the types of projects that are most valuable to
+            Edward’s Home Repairs &amp; Remodeling.
         </p>
 
         <p style="margin:0 0 18px 0;">
-            These are not ordinary cold-call lists. The system identifies people
-            who have already discussed an insurance need, requested a
-            recommendation, asked about pricing, purchased a vehicle or home,
-            or indicated that they may be ready to compare coverage.
+            These are not ordinary cold-call lists. The system identifies
+            homeowners who have already discussed a repair or remodeling need,
+            requested a contractor recommendation, asked about pricing,
+            described a problem with their home, or indicated that they may be
+            ready to hire someone.
         </p>
 
         <p style="margin:0 0 18px 0;">
             When contact information is available, the system can provide a
             wireless phone number and other useful details so you can follow up
-            while the request is still current.
+            while the homeowner’s request is still current.
         </p>
 
         <p style="margin:0 0 18px 0;">
@@ -63,11 +67,11 @@ module.exports = {
         </p>
 
         <p style="margin:0 0 6px 0;">
-            <strong>Username:</strong> lowell@deansinsurance.com
+            <strong>Username:</strong> melfay1@hotmail.com
         </p>
 
         <p style="margin:0 0 18px 0;">
-            <strong>Temporary password:</strong> DeanInsurance24!
+            <strong>Temporary password:</strong> EdwardsRepairs24!
             <br>
             <span style="color:#4b5563;">
                 The temporary password is case-sensitive and should be entered
@@ -81,26 +85,24 @@ module.exports = {
         </p>
 
         <p style="margin:0 0 18px 0;">
-            I’ll initially target homeowners and drivers throughout the
+            I’ll initially target homeowners throughout
             <strong>
-                Dallas–Fort Worth Metroplex, including Dallas, Fort Worth,
-                Plano, Frisco, McKinney, Allen, Richardson, Garland,
-                Carrollton, Lewisville, Irving, Arlington, Grand Prairie,
-                Grapevine, Southlake, Keller, and nearby communities
+                Wylie, Murphy, Sachse, Garland, Rowlett, Rockwall, Lavon,
+                Lucas, Plano, Allen, and nearby communities
             </strong>.
         </p>
 
         <p style="margin:0 0 18px 0;">
             From the Leads page, you’ll be able to filter opportunities by city.
-            You may occasionally receive strong matches from surrounding DFW
+            You may occasionally receive strong matches from surrounding
             communities as well.
         </p>
 
         <p style="margin:0 0 18px 0;">
             After the first two months, just let me know if you would like to
-            add, remove, or replace any cities, policy types, or search terms.
-            The system can be adjusted around the areas and insurance products
-            producing the best opportunities for you.
+            add, remove, or replace any cities, project types, or search terms.
+            The system can be adjusted around the areas and services producing
+            the best opportunities for Edward’s Home Repairs &amp; Remodeling.
         </p>
 
         <p style="margin:0 0 8px 0;">
@@ -108,11 +110,14 @@ module.exports = {
         </p>
 
         <p style="margin:0 0 18px 0;">
-            Hot Leads are people who have discussed or requested help with home
-            or auto insurance within the last seven days. These opportunities
-            are time-sensitive. When available, you may receive the person’s
-            phone number and other contact details, helping you follow up while
-            they are still actively considering coverage.
+            Hot Leads are homeowners who have discussed or requested help with
+            a repair, remodeling project, plumbing problem, electrical issue,
+            painting project, damaged wall, bathroom renovation, kitchen
+            renovation, or another contracting need within the last seven days.
+            These opportunities are time-sensitive. When available, you may
+            receive the homeowner’s phone number and other contact details,
+            helping you follow up while they are still actively looking for a
+            contractor.
         </p>
 
         <p style="margin:0 0 8px 0;">
@@ -120,20 +125,22 @@ module.exports = {
         </p>
 
         <p style="margin:0 0 18px 0;">
-            Warm Leads are people who previously discussed insurance, requested
-            recommendations, compared pricing, purchased a home or vehicle, or
-            indicated another reason they may need coverage. They may not be
-            ready immediately, but they can still be valuable prospects for
-            follow-up, renewals, policy reviews, and bundled home-and-auto
-            coverage.
+            Warm Leads are homeowners who previously discussed home repairs,
+            remodeling, painting, carpentry, plumbing, electrical work,
+            masonry, drywall, or another related project. They may not be ready
+            immediately, but they can still be valuable prospects for
+            estimates, follow-up, future renovations, and ongoing home
+            improvement work.
         </p>
 
         <p style="margin:0 0 18px 0;">
-            Please let me know which phone number you would like to receive the
-            text-message alerts on. You can also tell me whether you would like
-            me to prioritize home insurance, auto insurance, bundled policies,
-            new homeowners, higher-value homes, or another specific customer
-            type.
+            Please confirm whether
+            <strong>(945) 237-4061</strong>
+            is the phone number you would like to receive the text-message
+            alerts on. You can also tell me whether you would like me to
+            prioritize larger remodeling projects, bathroom renovations,
+            painting, plumbing, electrical work, handyman repairs, or another
+            specific service.
         </p>
 
         <p style="margin:0 0 18px 0;">
