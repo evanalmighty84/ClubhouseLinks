@@ -9,9 +9,84 @@ const PPLX_MODEL = process.env.PPLX_MODEL || 'sonar';
 
 async function callPerplexity(messages) {
     const apiKey = process.env.PERPLEXITY_API_KEY;
+
     if (!apiKey) {
-        throw new Error('PERPLEXITY_API_KEY is not set');
+        throw new Error(
+            'PERPLEXITY_API_KEY is not set'
+        );
     }
+
+    if (
+        !Array.isArray(messages) ||
+        messages.length === 0
+    ) {
+        throw new Error(
+            'Perplexity messages are required'
+        );
+    }
+
+    /*
+     * Prevent sending an empty message to Perplexity.
+     *
+     * A message can contain either:
+     * 1. A nonempty string
+     * 2. An array containing text and image_url objects
+     */
+    const validMessages = messages.filter((message) => {
+        if (!message || !message.role) {
+            return false;
+        }
+
+        if (typeof message.content === 'string') {
+            return message.content.trim().length > 0;
+        }
+
+        if (Array.isArray(message.content)) {
+            return message.content.some((item) => {
+                if (!item) {
+                    return false;
+                }
+
+                if (item.type === 'text') {
+                    return Boolean(
+                        String(item.text || '').trim()
+                    );
+                }
+
+                if (item.type === 'image_url') {
+                    return Boolean(
+                        String(
+                            item.image_url?.url || ''
+                        ).trim()
+                    );
+                }
+
+                return false;
+            });
+        }
+
+        return false;
+    });
+
+    if (validMessages.length === 0) {
+        throw new Error(
+            'Perplexity message content was empty'
+        );
+    }
+
+    console.log('Perplexity moderation request:', {
+        model: PPLX_MODEL,
+        messageCount: validMessages.length,
+        messages: validMessages.map((message) => ({
+            role: message.role,
+            contentTypes:
+                Array.isArray(message.content)
+                    ? message.content.map(
+                        (item) => item?.type
+                    )
+                    : ['text']
+        }))
+    });
 
     const resp = await fetch(PPLX_API_URL, {
         method: 'POST',
@@ -22,7 +97,7 @@ async function callPerplexity(messages) {
         },
         body: JSON.stringify({
             model: PPLX_MODEL,
-            messages,
+            messages: validMessages,
             temperature: 0,
             max_tokens: 1200,
             return_citations: false,
@@ -30,34 +105,195 @@ async function callPerplexity(messages) {
     });
 
     if (!resp.ok) {
-        const body = await resp.text().catch(() => '');
-        throw new Error(`Perplexity API ${resp.status}: ${body.slice(0, 500)}`);
+        const body = await resp
+            .text()
+            .catch(() => '');
+
+        throw new Error(
+            `Perplexity API ${resp.status}: ${body.slice(0, 500)}`
+        );
     }
 
     const data = await resp.json();
-    const content = data?.choices?.[0]?.message?.content;
-    if (!content) {
-        throw new Error('Perplexity API returned no content');
+
+    const content =
+        data?.choices?.[0]?.message?.content;
+
+    if (
+        typeof content !== 'string' ||
+        !content.trim()
+    ) {
+        throw new Error(
+            'Perplexity API returned no content'
+        );
     }
 
-    return content;
+    return content.trim();
 }
 
 function extractJson(text) {
-    const t = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/i, '').trim();
+    const t = String(text || '')
+        .trim()
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/```$/i, '')
+        .trim();
+
     try {
         return JSON.parse(t);
     } catch {}
-    const m = t.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+
+    const m = t.match(
+        /\{[\s\S]*\}|\[[\s\S]*\]/
+    );
+
     if (m) {
         try {
             return JSON.parse(m[0]);
         } catch {}
     }
+
     return null;
 }
 
-async function moderateProjectImage({ service, imageUrl }) {
+async function moderateProjectImage({
+                                        service,
+                                        imageUrl
+                                    }) {
+    const cleanService = String(
+        service || ''
+    ).trim();
+
+    const cleanImageUrl = String(
+        imageUrl || ''
+    ).trim();
+
+    if (!cleanImageUrl) {
+        return {
+            status: 'rejected',
+            reason:
+                'The submitted image was not available for moderation.'
+        };
+    }
+
+    if (!/^https:\/\//i.test(cleanImageUrl)) {
+        return {
+            status: 'rejected',
+            reason:
+                'The submitted image did not have a valid secure image URL.'
+        };
+    }
+
+    const prompt = `
+Review this image submitted as proof of a completed home-service project.
+
+Claimed service category:
+${cleanService || 'Unknown home service'}
+
+Approve the image only when all of the following are true:
+
+1. The image appears to show a real home-service, property, repair, maintenance, construction, landscaping, painting, roofing, plumbing, electrical, pool-service, or remodeling project.
+2. The image is reasonably related to the claimed service category.
+3. The image does not contain nudity, sexual content, graphic violence, gore, hateful content, threatening content, illegal activity, or other offensive material.
+4. The image is not primarily a screenshot, meme, advertisement, document, blank image, unrelated personal photo, or random image.
+5. The image does not prominently expose sensitive personal information.
+
+Return exactly one JSON object.
+
+For an approved image:
+{"status":"approved","reason":null}
+
+For a rejected image:
+{"status":"rejected","reason":"Brief explanation"}
+
+Do not return Markdown, code fences, citations, or any text outside the JSON object.
+    `.trim();
+
+    const messages = [
+        {
+            role: 'user',
+            content: [
+                {
+                    type: 'text',
+                    text: prompt
+                },
+                {
+                    type: 'image_url',
+                    image_url: {
+                        url: cleanImageUrl
+                    }
+                }
+            ]
+        }
+    ];
+
+    try {
+        const responseText =
+            await callPerplexity(messages);
+
+        console.log(
+            'Perplexity raw moderation response:',
+            responseText
+        );
+
+        const parsed =
+            extractJson(responseText);
+
+        if (!parsed || typeof parsed !== 'object') {
+            throw new Error(
+                'Perplexity moderation response was not valid JSON'
+            );
+        }
+
+        const status = String(
+            parsed.status || ''
+        )
+            .trim()
+            .toLowerCase();
+
+        if (
+            status !== 'approved' &&
+            status !== 'rejected'
+        ) {
+            throw new Error(
+                `Perplexity returned an invalid moderation status: ${
+                    status || 'empty'
+                }`
+            );
+        }
+
+        if (status === 'approved') {
+            return {
+                status: 'approved',
+                reason: null
+            };
+        }
+
+        return {
+            status: 'rejected',
+            reason: String(
+                parsed.reason ||
+                'The image did not pass moderation.'
+            ).trim()
+        };
+    } catch (err) {
+        console.error(
+            'moderateProjectImage error:',
+            err
+        );
+
+        /*
+         * Fail closed. The photo is rejected rather than
+         * approved when the moderation API is unavailable.
+         */
+        return {
+            status: 'rejected',
+            reason:
+                'The image could not be safely verified.'
+        };
+    }
+}
+
+ {
     const systemPrompt = `
 You are a strict image moderator for a homeowner project gallery.
 
