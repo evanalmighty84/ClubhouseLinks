@@ -1940,10 +1940,12 @@ exports.submitCompletedProject = async (req, res) => {
          */
         const residentResult = await pool.query(
             `
-                SELECT id
+                SELECT
+                    id,
+                    neighborhood_id
                 FROM hoa_residents
                 WHERE id = $1
-                LIMIT 1
+                    LIMIT 1
             `,
             [residentId]
         );
@@ -1952,6 +1954,27 @@ exports.submitCompletedProject = async (req, res) => {
             return res.status(404).json({
                 success: false,
                 error: "Resident not found."
+            });
+        }
+
+        const resident = residentResult.rows[0];
+
+        const residentNeighborhoodId =
+            Number(resident.neighborhood_id);
+
+        console.log("Completed project resident:", {
+            residentId: resident.id,
+            neighborhoodId: resident.neighborhood_id
+        });
+
+        if (
+            !Number.isInteger(residentNeighborhoodId) ||
+            residentNeighborhoodId <= 0
+        ) {
+            return res.status(400).json({
+                success: false,
+                error:
+                    "Your account is not connected to a neighborhood, so this vendor cannot be submitted."
             });
         }
 
@@ -2128,26 +2151,30 @@ exports.submitCompletedProject = async (req, res) => {
                         `
                             INSERT INTO hoa_vendors
                             (
+                                neighborhood_id,
                                 company_name,
                                 category,
                                 phone,
                                 active
                             )
                             VALUES
-                            (
-                                $1,
-                                $2,
-                                $3,
-                                FALSE
-                            )
-                            RETURNING
-                                id,
-                                company_name,
-                                category,
-                                phone,
-                                active
+                                (
+                                    $1,
+                                    $2,
+                                    $3,
+                                    $4,
+                                    FALSE
+                                )
+                                RETURNING
+                id,
+                neighborhood_id,
+                company_name,
+                category,
+                phone,
+                active
                         `,
                         [
+                            residentNeighborhoodId,
                             cleanVendorName,
                             cleanCategory,
                             cleanVendorPhone
