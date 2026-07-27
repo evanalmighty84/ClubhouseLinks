@@ -293,60 +293,6 @@ Do not return Markdown, code fences, citations, or any text outside the JSON obj
     }
 }
 
- {
-    const systemPrompt = `
-You are a strict image moderator for a homeowner project gallery.
-
-Judge whether the image is:
-1) safe for public viewing,
-2) not offensive,
-3) relevant to the project service type.
-
-Return ONLY valid JSON with:
-{
-  "approved": true/false,
-  "status": "approved" | "rejected" | "needs_review",
-  "reason": "short reason",
-  "tags": ["optional", "labels"]
-}
-
-Rules:
-- Reject nudity, sexual content, graphic violence, hate symbols, extremist content, or anything clearly offensive.
-- Reject images that are obviously unrelated to the service type.
-- If uncertain, return needs_review.
-- Be conservative.
-`.trim();
-
-    const userPrompt = `Service type: ${service || 'unknown'}.
-Check this project image for offensiveness and relevance to the service type.`;
-
-    const content = await callPerplexity([
-        { role: 'system', content: systemPrompt },
-        {
-            role: 'user',
-            content: [
-                { type: 'input_text', text: userPrompt },
-                { type: 'input_image', image_url: imageUrl },
-            ],
-        },
-    ]);
-
-    const parsed = extractJson(content);
-    if (!parsed) {
-        throw new Error('Could not parse Perplexity moderation response');
-    }
-
-    return {
-        approved: Boolean(parsed.approved),
-        status: ['approved', 'rejected', 'needs_review'].includes(parsed.status)
-            ? parsed.status
-            : parsed.approved
-                ? 'approved'
-                : 'needs_review',
-        reason: String(parsed.reason || '').slice(0, 500),
-        tags: Array.isArray(parsed.tags) ? parsed.tags.slice(0, 20) : [],
-    };
-}
 
 const DEFAULT_GENERATED_AREA_RADIUS_MILES = 0.35;
 
