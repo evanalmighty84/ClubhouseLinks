@@ -1633,6 +1633,18 @@ exports.getResidentProfile = async (req, res) => {
 
 exports.submitCompletedProject = async (req, res) => {
     try {
+        console.log("NEW submitCompletedProject handler running");
+
+        console.log("Completed project payload:", {
+            resident_id: req.body?.resident_id,
+            vendor_id: req.body?.vendor_id,
+            vendor_name: req.body?.vendor_name,
+            vendor_phone: req.body?.vendor_phone,
+            category: req.body?.category,
+            has_image_base64: Boolean(req.body?.image_base64),
+            image_base64_length:
+                req.body?.image_base64?.length || 0
+        });
         const {
             residentId,
             vendorId,
