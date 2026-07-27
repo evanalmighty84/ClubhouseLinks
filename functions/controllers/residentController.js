@@ -3,6 +3,115 @@ const pool = require('../db/db');
 const jwt = require("jsonwebtoken");
 const cloudinary = require("cloudinary").v2;
 
+const PPLX_API_URL =
+    process.env.PPLX_API_URL || 'https://api.perplexity.ai/chat/completions';
+const PPLX_MODEL = process.env.PPLX_MODEL || 'sonar';
+
+async function callPerplexity(messages) {
+    const apiKey = process.env.PERPLEXITY_API_KEY;
+    if (!apiKey) {
+        throw new Error('PERPLEXITY_API_KEY is not set');
+    }
+
+    const resp = await fetch(PPLX_API_URL, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+        },
+        body: JSON.stringify({
+            model: PPLX_MODEL,
+            messages,
+            temperature: 0,
+            max_tokens: 1200,
+            return_citations: false,
+        }),
+    });
+
+    if (!resp.ok) {
+        const body = await resp.text().catch(() => '');
+        throw new Error(`Perplexity API ${resp.status}: ${body.slice(0, 500)}`);
+    }
+
+    const data = await resp.json();
+    const content = data?.choices?.[0]?.message?.content;
+    if (!content) {
+        throw new Error('Perplexity API returned no content');
+    }
+
+    return content;
+}
+
+function extractJson(text) {
+    const t = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/i, '').trim();
+    try {
+        return JSON.parse(t);
+    } catch {}
+    const m = t.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+    if (m) {
+        try {
+            return JSON.parse(m[0]);
+        } catch {}
+    }
+    return null;
+}
+
+async function moderateProjectImage({ service, imageUrl }) {
+    const systemPrompt = `
+You are a strict image moderator for a homeowner project gallery.
+
+Judge whether the image is:
+1) safe for public viewing,
+2) not offensive,
+3) relevant to the project service type.
+
+Return ONLY valid JSON with:
+{
+  "approved": true/false,
+  "status": "approved" | "rejected" | "needs_review",
+  "reason": "short reason",
+  "tags": ["optional", "labels"]
+}
+
+Rules:
+- Reject nudity, sexual content, graphic violence, hate symbols, extremist content, or anything clearly offensive.
+- Reject images that are obviously unrelated to the service type.
+- If uncertain, return needs_review.
+- Be conservative.
+`.trim();
+
+    const userPrompt = `Service type: ${service || 'unknown'}.
+Check this project image for offensiveness and relevance to the service type.`;
+
+    const content = await callPerplexity([
+        { role: 'system', content: systemPrompt },
+        {
+            role: 'user',
+            content: [
+                { type: 'input_text', text: userPrompt },
+                { type: 'input_image', image_url: imageUrl },
+            ],
+        },
+    ]);
+
+    const parsed = extractJson(content);
+    if (!parsed) {
+        throw new Error('Could not parse Perplexity moderation response');
+    }
+
+    return {
+        approved: Boolean(parsed.approved),
+        status: ['approved', 'rejected', 'needs_review'].includes(parsed.status)
+            ? parsed.status
+            : parsed.approved
+                ? 'approved'
+                : 'needs_review',
+        reason: String(parsed.reason || '').slice(0, 500),
+        tags: Array.isArray(parsed.tags) ? parsed.tags.slice(0, 20) : [],
+    };
+}
+
 const DEFAULT_GENERATED_AREA_RADIUS_MILES = 0.35;
 
 const twilio = require("twilio");
@@ -1520,160 +1629,76 @@ exports.getResidentProfile = async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 };
+
+
 exports.submitCompletedProject = async (req, res) => {
     try {
         const {
-            resident_id,
-            vendor_id,
+            residentId,
+            vendorId,
             category,
-            image_base64
-        } = req.body || {};
+            finishedPhotoUrl,
+            approvalStatus,
+        } = req.body;
 
-        const residentId = Number(resident_id);
-        const vendorId = Number(vendor_id);
-        const cleanCategory = String(category || "").trim();
-        const cleanImageBase64 = String(image_base64 || "").trim();
-
-        if (
-            !residentId ||
-            Number.isNaN(residentId) ||
-            !vendorId ||
-            Number.isNaN(vendorId) ||
-            !cleanCategory ||
-            !cleanImageBase64
-        ) {
+        if (!residentId || !vendorId || !category || !finishedPhotoUrl) {
             return res.status(400).json({
                 success: false,
-                error: "resident_id, vendor_id, category, and image_base64 are required."
+                error: 'residentId, vendorId, category, and finishedPhotoUrl are required.',
             });
         }
 
-        const residentResult = await pool.query(
-            `
-                SELECT id
-                FROM hoa_residents
-                WHERE id = $1
-                LIMIT 1
-            `,
-            [residentId]
-        );
+        const moderation = await moderateProjectImage({
+            service: category,
+            imageUrl: finishedPhotoUrl,
+        });
 
-        if (!residentResult.rows.length) {
-            return res.status(404).json({
-                success: false,
-                error: "Resident not found."
-            });
-        }
-
-        const vendorResult = await pool.query(
-            `
-                SELECT
-                    id,
-                    company_name,
-                    category
-                FROM hoa_vendors
-                WHERE id = $1
-                  AND active = TRUE
-                LIMIT 1
-            `,
-            [vendorId]
-        );
-
-        if (!vendorResult.rows.length) {
-            return res.status(404).json({
-                success: false,
-                error: "Vendor not found."
-            });
-        }
-
-        const vendor = vendorResult.rows[0];
-
-        /*
-         * image_base64 should be a full data URL:
-         * data:image/jpeg;base64,...
-         */
-        const uploadResult = await cloudinary.uploader.upload(
-            cleanImageBase64,
-            {
-                folder: "clubhouse_completed_projects",
-                resource_type: "image"
-            }
-        );
+        const finalApprovalStatus =
+            moderation.status === 'approved' ? 'approved' : 'rejected';
 
         const result = await pool.query(
             `
-                INSERT INTO hoa_resident_contractors
-                (
-                    resident_id,
-                    vendor_id,
-                    category,
-                    source,
-                    finished_photo_url,
-                    finished_photo_public_id,
-                    photo_approval_status,
-                    photo_submitted_at,
-                    moderation_status,
-                    created_at,
-                    updated_at
-                )
-                VALUES
-                (
-                    $1,
-                    $2,
-                    $3,
-                    'resident_upload',
-                    $4,
-                    $5,
-                    'pending_review',
-                    NOW(),
-                    'not_checked',
-                    NOW(),
-                    NOW()
-                )
-                ON CONFLICT (resident_id, category)
-                DO UPDATE SET
-                    vendor_id = EXCLUDED.vendor_id,
-                    finished_photo_url = EXCLUDED.finished_photo_url,
-                    finished_photo_public_id = EXCLUDED.finished_photo_public_id,
-                    photo_approval_status = 'pending_review',
-                    photo_submitted_at = NOW(),
-                    photo_approved_at = NULL,
-                    photo_rejected_at = NULL,
-                    photo_rejection_reason = NULL,
-                    moderation_status = 'not_checked',
-                    source = 'resident_upload',
-                    updated_at = NOW()
-                RETURNING *
-            `,
+      INSERT INTO hoa_resident_contractors (
+        resident_id,
+        vendor_id,
+        category,
+        finished_photo_url,
+        photo_approval_status,
+        moderation_status,
+        photo_submitted_at,
+        photo_approved_at,
+        photo_rejected_at,
+        photo_rejection_reason
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, now(),
+        CASE WHEN $5 = 'approved' THEN now() ELSE NULL END,
+        CASE WHEN $5 = 'rejected' THEN now() ELSE NULL END,
+        CASE WHEN $5 = 'rejected' THEN $7 ELSE NULL END
+      )
+      RETURNING id
+      `,
             [
                 residentId,
                 vendorId,
-                cleanCategory,
-                uploadResult.secure_url,
-                uploadResult.public_id
+                category,
+                finishedPhotoUrl,
+                approvalStatus || finalApprovalStatus,
+                moderation.status,
+                moderation.reason || null,
             ]
         );
 
-        return res.status(200).json({
+        return res.json({
             success: true,
-            project: {
-                ...result.rows[0],
-                vendor_name: vendor.company_name,
-                service: cleanCategory,
-                image_url: uploadResult.secure_url,
-                approval_status: "pending_review"
-            },
-            message: "Completed project submitted for review."
+            projectId: result.rows[0].id,
+            moderation,
+            photoApprovalStatus: approvalStatus || finalApprovalStatus,
         });
     } catch (err) {
-        console.error(
-            "submitCompletedProject error:",
-            err
-        );
-
+        console.error('submitCompletedProject error:', err);
         return res.status(500).json({
             success: false,
-            error: "Failed to submit completed project."
+            error: 'Failed to submit completed project.',
         });
     }
 };
