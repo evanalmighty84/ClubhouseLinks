@@ -1632,86 +1632,514 @@ exports.getResidentProfile = async (req, res) => {
 
 
 exports.submitCompletedProject = async (req, res) => {
+    let client = null;
+
     try {
-        console.log("NEW submitCompletedProject handler running");
+        console.log(
+            "NEW submitCompletedProject handler running"
+        );
 
         console.log("Completed project payload:", {
-            resident_id: req.body?.resident_id,
-            vendor_id: req.body?.vendor_id,
-            vendor_name: req.body?.vendor_name,
-            vendor_phone: req.body?.vendor_phone,
+            resident_id:
+                req.body?.resident_id ??
+                req.body?.residentId,
+            vendor_id:
+                req.body?.vendor_id ??
+                req.body?.vendorId,
+            vendor_name:
+                req.body?.vendor_name ??
+                req.body?.vendorName,
+            vendor_phone:
+                req.body?.vendor_phone ??
+                req.body?.vendorPhone,
             category: req.body?.category,
-            has_image_base64: Boolean(req.body?.image_base64),
+            has_image_base64: Boolean(
+                req.body?.image_base64
+            ),
             image_base64_length:
-                req.body?.image_base64?.length || 0
+                req.body?.image_base64?.length || 0,
+            finished_photo_url:
+                req.body?.finished_photo_url ??
+                req.body?.finishedPhotoUrl ??
+                null
         });
-        const {
-            residentId,
-            vendorId,
-            category,
-            finishedPhotoUrl,
-            approvalStatus,
-        } = req.body;
 
-        if (!residentId || !vendorId || !category || !finishedPhotoUrl) {
+        const body = req.body || {};
+
+        /*
+         * Support both the Swift app's snake_case fields
+         * and any older camelCase clients.
+         */
+        const residentId = Number(
+            body.resident_id ??
+            body.residentId
+        );
+
+        const requestedVendorId = Number(
+            body.vendor_id ??
+            body.vendorId
+        );
+
+        const cleanVendorName = String(
+            body.vendor_name ??
+            body.vendorName ??
+            ""
+        ).trim();
+
+        const cleanVendorPhone = String(
+            body.vendor_phone ??
+            body.vendorPhone ??
+            ""
+        ).trim();
+
+        const cleanVendorPhoneDigits =
+            cleanVendorPhone.replace(/\D/g, "");
+
+        const cleanCategory = String(
+            body.category || ""
+        ).trim();
+
+        const cleanImageBase64 = String(
+            body.image_base64 || ""
+        ).trim();
+
+        const suppliedFinishedPhotoUrl = String(
+            body.finished_photo_url ??
+            body.finishedPhotoUrl ??
+            ""
+        ).trim();
+
+        const hasExistingVendorId =
+            Number.isInteger(requestedVendorId) &&
+            requestedVendorId > 0;
+
+        const hasManualVendor =
+            cleanVendorName.length > 0 &&
+            cleanVendorPhoneDigits.length > 0;
+
+        const hasValidResidentId =
+            Number.isInteger(residentId) &&
+            residentId > 0;
+
+        const hasProjectImage =
+            cleanImageBase64.length > 0 ||
+            suppliedFinishedPhotoUrl.length > 0;
+
+        console.log("Completed project validation:", {
+            residentId,
+            requestedVendorId,
+            cleanVendorName,
+            cleanVendorPhoneDigits,
+            cleanCategory,
+            hasExistingVendorId,
+            hasManualVendor,
+            hasProjectImage
+        });
+
+        if (
+            !hasValidResidentId ||
+            !cleanCategory ||
+            !hasProjectImage ||
+            (
+                !hasExistingVendorId &&
+                !hasManualVendor
+            )
+        ) {
             return res.status(400).json({
                 success: false,
-                error: 'residentId, vendorId, category, and finishedPhotoUrl are required.',
+                error:
+                    "resident_id, category, an image, and either vendor_id or vendor name and phone are required."
             });
         }
 
-        const moderation = await moderateProjectImage({
-            service: category,
-            imageUrl: finishedPhotoUrl,
+        /*
+         * Confirm that the resident exists before uploading
+         * and moderating the image.
+         */
+        const residentResult = await pool.query(
+            `
+                SELECT id
+                FROM hoa_residents
+                WHERE id = $1
+                LIMIT 1
+            `,
+            [residentId]
+        );
+
+        if (!residentResult.rows.length) {
+            return res.status(404).json({
+                success: false,
+                error: "Resident not found."
+            });
+        }
+
+        /*
+         * Upload the Base64 data URL to Cloudinary.
+         *
+         * Older clients may already provide a finished photo URL,
+         * so this function supports that format as well.
+         */
+        let finishedPhotoUrl =
+            suppliedFinishedPhotoUrl;
+
+        let finishedPhotoPublicId = null;
+
+        if (cleanImageBase64) {
+            const uploadResult =
+                await cloudinary.uploader.upload(
+                    cleanImageBase64,
+                    {
+                        folder:
+                            "clubhouse_completed_projects",
+                        resource_type: "image"
+                    }
+                );
+
+            finishedPhotoUrl =
+                uploadResult.secure_url;
+
+            finishedPhotoPublicId =
+                uploadResult.public_id;
+        }
+
+        if (!finishedPhotoUrl) {
+            return res.status(400).json({
+                success: false,
+                error:
+                    "The completed project image could not be prepared."
+            });
+        }
+
+        /*
+         * Run the uploaded image through the existing
+         * photo-moderation service.
+         */
+        const moderation =
+            await moderateProjectImage({
+                service: cleanCategory,
+                imageUrl: finishedPhotoUrl
+            });
+
+        const moderationStatus = String(
+            moderation?.status || ""
+        )
+            .trim()
+            .toLowerCase();
+
+        /*
+         * Never trust an approval status supplied by the mobile
+         * client. The server's moderation result controls whether
+         * the image is approved or rejected.
+         */
+        const finalApprovalStatus =
+            moderationStatus === "approved"
+                ? "approved"
+                : "rejected";
+
+        const rejectionReason =
+            finalApprovalStatus === "rejected"
+                ? (
+                    moderation?.reason ||
+                    "The submitted image did not pass moderation."
+                )
+                : null;
+
+        console.log("Completed project moderation:", {
+            residentId,
+            category: cleanCategory,
+            moderationStatus,
+            finalApprovalStatus,
+            rejectionReason
         });
 
-        const finalApprovalStatus =
-            moderation.status === 'approved' ? 'approved' : 'rejected';
+        client = await pool.connect();
 
-        const result = await pool.query(
+        await client.query("BEGIN");
+
+        let resolvedVendorId;
+        let vendor;
+
+        /*
+         * Existing qualified vendor selected from the app.
+         */
+        if (hasExistingVendorId) {
+            const vendorResult = await client.query(
+                `
+                    SELECT
+                        id,
+                        company_name,
+                        category,
+                        phone,
+                        active
+                    FROM hoa_vendors
+                    WHERE id = $1
+                      AND active = TRUE
+                    LIMIT 1
+                `,
+                [requestedVendorId]
+            );
+
+            if (!vendorResult.rows.length) {
+                await client.query("ROLLBACK");
+
+                return res.status(404).json({
+                    success: false,
+                    error:
+                        "The selected qualified vendor was not found."
+                });
+            }
+
+            vendor = vendorResult.rows[0];
+            resolvedVendorId = vendor.id;
+        } else {
+            /*
+             * Manually entered vendor.
+             *
+             * Look for an existing record with the same company
+             * name and normalized phone number before inserting
+             * another vendor.
+             */
+            const existingVendorResult =
+                await client.query(
+                    `
+                        SELECT
+                            id,
+                            company_name,
+                            category,
+                            phone,
+                            active
+                        FROM hoa_vendors
+                        WHERE LOWER(TRIM(company_name)) =
+                              LOWER(TRIM($1))
+                          AND REGEXP_REPLACE(
+                                COALESCE(phone, ''),
+                                '[^0-9]',
+                                '',
+                                'g'
+                              ) = $2
+                        ORDER BY
+                            active DESC,
+                            id ASC
+                        LIMIT 1
+                    `,
+                    [
+                        cleanVendorName,
+                        cleanVendorPhoneDigits
+                    ]
+                );
+
+            if (existingVendorResult.rows.length) {
+                vendor =
+                    existingVendorResult.rows[0];
+
+                resolvedVendorId = vendor.id;
+            } else {
+                /*
+                 * A manually submitted vendor is stored as inactive.
+                 *
+                 * This gives it a real vendor ID and connects it to
+                 * the project, but it will not appear as a qualified
+                 * vendor until you review and activate it.
+                 */
+                const createdVendorResult =
+                    await client.query(
+                        `
+                            INSERT INTO hoa_vendors
+                            (
+                                company_name,
+                                category,
+                                phone,
+                                active
+                            )
+                            VALUES
+                            (
+                                $1,
+                                $2,
+                                $3,
+                                FALSE
+                            )
+                            RETURNING
+                                id,
+                                company_name,
+                                category,
+                                phone,
+                                active
+                        `,
+                        [
+                            cleanVendorName,
+                            cleanCategory,
+                            cleanVendorPhone
+                        ]
+                    );
+
+                vendor =
+                    createdVendorResult.rows[0];
+
+                resolvedVendorId = vendor.id;
+            }
+        }
+
+        /*
+         * Save the completed project.
+         *
+         * The existing unique rule allows one project per
+         * resident and category. A new submission for the same
+         * category replaces the previous project information.
+         */
+        const result = await client.query(
             `
-      INSERT INTO hoa_resident_contractors (
-        resident_id,
-        vendor_id,
-        category,
-        finished_photo_url,
-        photo_approval_status,
-        moderation_status,
-        photo_submitted_at,
-        photo_approved_at,
-        photo_rejected_at,
-        photo_rejection_reason
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, now(),
-        CASE WHEN $5 = 'approved' THEN now() ELSE NULL END,
-        CASE WHEN $5 = 'rejected' THEN now() ELSE NULL END,
-        CASE WHEN $5 = 'rejected' THEN $7 ELSE NULL END
-      )
-      RETURNING id
-      `,
+                INSERT INTO hoa_resident_contractors
+                (
+                    resident_id,
+                    vendor_id,
+                    category,
+                    source,
+                    finished_photo_url,
+                    finished_photo_public_id,
+                    photo_approval_status,
+                    moderation_status,
+                    photo_submitted_at,
+                    photo_approved_at,
+                    photo_rejected_at,
+                    photo_rejection_reason,
+                    created_at,
+                    updated_at
+                )
+                VALUES
+                (
+                    $1,
+                    $2,
+                    $3,
+                    'resident_upload',
+                    $4,
+                    $5,
+                    $6,
+                    $7,
+                    NOW(),
+                    CASE
+                        WHEN $6 = 'approved'
+                        THEN NOW()
+                        ELSE NULL
+                    END,
+                    CASE
+                        WHEN $6 = 'rejected'
+                        THEN NOW()
+                        ELSE NULL
+                    END,
+                    CASE
+                        WHEN $6 = 'rejected'
+                        THEN $8
+                        ELSE NULL
+                    END,
+                    NOW(),
+                    NOW()
+                )
+                ON CONFLICT (resident_id, category)
+                DO UPDATE SET
+                    vendor_id =
+                        EXCLUDED.vendor_id,
+                    source =
+                        'resident_upload',
+                    finished_photo_url =
+                        EXCLUDED.finished_photo_url,
+                    finished_photo_public_id =
+                        EXCLUDED.finished_photo_public_id,
+                    photo_approval_status =
+                        EXCLUDED.photo_approval_status,
+                    moderation_status =
+                        EXCLUDED.moderation_status,
+                    photo_submitted_at =
+                        NOW(),
+                    photo_approved_at =
+                        CASE
+                            WHEN EXCLUDED.photo_approval_status =
+                                 'approved'
+                            THEN NOW()
+                            ELSE NULL
+                        END,
+                    photo_rejected_at =
+                        CASE
+                            WHEN EXCLUDED.photo_approval_status =
+                                 'rejected'
+                            THEN NOW()
+                            ELSE NULL
+                        END,
+                    photo_rejection_reason =
+                        CASE
+                            WHEN EXCLUDED.photo_approval_status =
+                                 'rejected'
+                            THEN $8
+                            ELSE NULL
+                        END,
+                    updated_at =
+                        NOW()
+                RETURNING *
+            `,
             [
                 residentId,
-                vendorId,
-                category,
+                resolvedVendorId,
+                cleanCategory,
                 finishedPhotoUrl,
-                approvalStatus || finalApprovalStatus,
-                moderation.status,
-                moderation.reason || null,
+                finishedPhotoPublicId,
+                finalApprovalStatus,
+                moderationStatus || "rejected",
+                rejectionReason
             ]
         );
 
-        return res.json({
+        await client.query("COMMIT");
+
+        return res.status(200).json({
             success: true,
-            projectId: result.rows[0].id,
+            project: {
+                ...result.rows[0],
+                vendor_name:
+                vendor.company_name,
+                vendor_phone:
+                    vendor.phone ||
+                    cleanVendorPhone ||
+                    null,
+                service:
+                cleanCategory,
+                image_url:
+                finishedPhotoUrl,
+                approval_status:
+                finalApprovalStatus
+            },
             moderation,
-            photoApprovalStatus: approvalStatus || finalApprovalStatus,
+            photoApprovalStatus:
+            finalApprovalStatus,
+            message:
+                finalApprovalStatus === "approved"
+                    ? "Completed project submitted successfully."
+                    : "Completed project was submitted but did not pass photo moderation."
         });
     } catch (err) {
-        console.error('submitCompletedProject error:', err);
+        if (client) {
+            try {
+                await client.query("ROLLBACK");
+            } catch (rollbackError) {
+                console.error(
+                    "submitCompletedProject rollback error:",
+                    rollbackError
+                );
+            }
+        }
+
+        console.error(
+            "submitCompletedProject error:",
+            err
+        );
+
         return res.status(500).json({
             success: false,
-            error: 'Failed to submit completed project.',
+            error:
+                "Failed to submit completed project."
         });
+    } finally {
+        if (client) {
+            client.release();
+        }
     }
 };
 exports.getCompletedProjects = async (req, res) => {
