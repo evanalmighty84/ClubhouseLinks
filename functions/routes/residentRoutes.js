@@ -12,6 +12,12 @@ const {
     getVendors,deleteResidentAccount,
     loginResident, getAddress,getAddressAutoComplete,getCompletedProjects,sendPhoneVerification,checkPhoneVerification,submitCompletedProject,updateResidentAddress
 } = require('../controllers/residentController');
+const {
+    submitServiceRequest
+} = require(
+    '../controllers/serviceRequestController'
+);
+
 
 router.post('/validate-invite-code', validateInviteCode);
 router.post('/signup', signupResident);
@@ -45,5 +51,10 @@ router.post(
     "/check-verification",
     checkPhoneVerification
 );
+router.post(
+    '/:residentId/service-requests',
+    submitServiceRequest
+);
+
 
     module.exports = router;
