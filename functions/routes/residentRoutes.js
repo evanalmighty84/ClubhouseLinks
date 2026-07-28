@@ -51,6 +51,7 @@ router.post(
     "/check-verification",
     checkPhoneVerification
 );
+// Vendor service request submission route
 router.post(
     '/:residentId/service-requests',
     submitServiceRequest
