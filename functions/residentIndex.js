@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const hoaResidentRoutes = require('./routes/residentRoutes');
+const hoaVendorRoutes =
+    require('./routes/VendorRoutes');
 
 dotenv.config();
 
@@ -37,6 +39,12 @@ app.use((err, req, res, next) => {
 });
 
 app.use('/api/residents', hoaResidentRoutes);
+
+
+app.use(
+    '/api/vendors',
+    hoaVendorRoutes
+);
 
 app.get('/api/test', (req, res) => {
     res.json({ message: '✅ HOA backend is responding' });
