@@ -4,7 +4,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const hoaResidentRoutes = require('./routes/residentRoutes');
 const hoaVendorRoutes =
-    require('./routes/VendorRoutes');
+    require('./routes/vendorRoutes');
 
 dotenv.config();
 
