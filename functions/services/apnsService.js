@@ -80,9 +80,12 @@ function sendVendorPush({
                             environment = 'production',
                             title,
                             body,
-                            requestId,
+                            requestId = null,
                             vendorId,
-                            badge = 1
+                            badge = 1,
+                            notificationType =
+                            'vendor_service_request',
+                            customData = {}
                         }) {
     return new Promise((resolve) => {
         let client;
@@ -217,13 +220,27 @@ function sendVendorPush({
                     sound: 'default',
                     badge
                 },
-                type:
-                    'vendor_service_request',
-                request_id:
-                    String(requestId),
+
+                ...customData,
+
+                type: notificationType,
+
                 vendor_id:
                     Number(vendorId)
             };
+
+            /*
+             * Service-request notifications have request_id.
+             * FamilyTree lead alerts have lead_id instead.
+             */
+            if (
+                requestId !== null &&
+                requestId !== undefined &&
+                String(requestId).trim()
+            ) {
+                payload.request_id =
+                    String(requestId);
+            }
 
             request.end(
                 JSON.stringify(payload)
