@@ -1941,13 +1941,13 @@ exports.submitCompletedProject = async (req, res) => {
          */
         const residentResult = await pool.query(
             `
-                SELECT
-                    id,
-                    neighborhood_id
-                FROM hoa_residents
-                WHERE id = $1
-                    LIMIT 1
-            `,
+        SELECT
+            id,
+            neighborhood_id
+        FROM hoa_residents
+        WHERE id = $1
+        LIMIT 1
+    `,
             [residentId]
         );
 
@@ -1960,24 +1960,11 @@ exports.submitCompletedProject = async (req, res) => {
 
         const resident = residentResult.rows[0];
 
-        const residentNeighborhoodId =
-            Number(resident.neighborhood_id);
-
         console.log("Completed project resident:", {
             residentId: resident.id,
             neighborhoodId: resident.neighborhood_id
         });
 
-        if (
-            !Number.isInteger(residentNeighborhoodId) ||
-            residentNeighborhoodId <= 0
-        ) {
-            return res.status(400).json({
-                success: false,
-                error:
-                    "Your account is not connected to a neighborhood, so this vendor cannot be submitted."
-            });
-        }
 
         /*
          * Upload the Base64 data URL to Cloudinary.
@@ -2160,10 +2147,10 @@ exports.submitCompletedProject = async (req, res) => {
                             )
                             VALUES
                                 (
+                                    NULL,
                                     $1,
                                     $2,
                                     $3,
-                                    $4,
                                     FALSE
                                 )
                                 RETURNING
@@ -2175,7 +2162,6 @@ exports.submitCompletedProject = async (req, res) => {
                 active
                         `,
                         [
-                            residentNeighborhoodId,
                             cleanVendorName,
                             cleanCategory,
                             cleanVendorPhone
