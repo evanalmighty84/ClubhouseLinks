@@ -824,61 +824,41 @@ exports.getVendorCompletedProjects = async (req, res) => {
                     rc.vendor_id,
 
                     v.company_name AS vendor_name,
+                    v.category AS vendor_category,
 
                     rc.category AS service,
                     rc.finished_photo_url AS image_url,
-
-                    rc.photo_approval_status
-                        AS approval_status,
-
+                    rc.photo_approval_status AS approval_status,
                     rc.moderation_status,
-
                     rc.photo_submitted_at,
                     rc.photo_approved_at,
                     rc.photo_rejected_at,
                     rc.photo_rejection_reason,
 
-                    r.first_name
-                        AS resident_first_name,
-
-                    r.last_name
-                        AS resident_last_name,
-
-                    r.phone
-                        AS resident_phone,
-
-                    r.address
-                        AS resident_address,
-
+                    r.first_name AS resident_first_name,
+                    r.last_name AS resident_last_name,
+                    r.phone AS resident_phone,
+                    r.address AS resident_address,
                     r.display_area_name
                         AS resident_display_area_name
 
                 FROM hoa_resident_contractors rc
 
-                JOIN hoa_vendors v
-                  ON v.id = rc.vendor_id
+                         JOIN hoa_vendors v
+                              ON v.id = rc.vendor_id
 
-                LEFT JOIN hoa_residents r
-                  ON r.id = rc.resident_id
+                         JOIN hoa_residents r
+                              ON r.id = rc.resident_id
 
                 WHERE rc.vendor_id = $1
-
-                  AND rc.finished_photo_url
-                      IS NOT NULL
-
-                  AND NULLIF(
-                        BTRIM(
-                            rc.finished_photo_url
-                        ),
-                        ''
-                      ) IS NOT NULL
+                  AND rc.finished_photo_url IS NOT NULL
 
                 ORDER BY
                     COALESCE(
-                        rc.photo_submitted_at,
-                        rc.updated_at
-                    ) DESC,
-                    rc.id DESC
+                            rc.photo_approved_at,
+                            rc.photo_submitted_at,
+                            rc.updated_at
+                    ) DESC
             `,
             [vendorId]
         );
@@ -896,8 +876,7 @@ exports.getVendorCompletedProjects = async (req, res) => {
 
         return res.status(500).json({
             success: false,
-            error:
-                "Failed to load vendor completed projects."
+            error: "Failed to load vendor completed projects."
         });
     }
 };

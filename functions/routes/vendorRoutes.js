@@ -63,4 +63,9 @@ router.get(
     "/:vendorId/completed-projects",
     getVendorCompletedProjects
 );
+
+router.get(
+    "/:vendorId/completed-projects",
+    getVendorCompletedProjects
+);
 module.exports = router;

@@ -1354,6 +1354,7 @@ exports.updateResidentAddress = async (req, res) => {
     }
 };
 
+
 exports.getVendors = async (req, res) => {
     try {
         const { residentId } = req.params;
