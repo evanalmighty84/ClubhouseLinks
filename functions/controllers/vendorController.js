@@ -485,8 +485,8 @@ exports.getVendorServiceRequests = async (req, res) => {
                     v.company_name AS vendor_company_name,
                     v.category AS vendor_category
                 FROM hoa_service_requests sr
-                JOIN hoa_residents r
-                  ON r.id = sr.resident_id
+                         LEFT JOIN hoa_residents r
+                                   ON r.id = sr.resident_id
                 JOIN hoa_vendors v
                   ON v.id = sr.vendor_id
                 WHERE sr.vendor_id = $1
