@@ -2393,6 +2393,7 @@ exports.getCompletedProjects = async (req, res) => {
     }
 };
 
+
 exports.getAddress = async (req, res) => {
     try {
         const { address, city = "Plano", state = "TX" } = req.body;

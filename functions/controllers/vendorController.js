@@ -802,3 +802,102 @@ exports.updateVendorServiceRequestStatus = async (req, res) => {
         });
     }
 };
+
+exports.getVendorCompletedProjects = async (req, res) => {
+    try {
+        const vendorId = parsePositiveInteger(
+            req.params.vendorId
+        );
+
+        if (!vendorId) {
+            return res.status(400).json({
+                success: false,
+                error: "A valid vendor ID is required."
+            });
+        }
+
+        const result = await pool.query(
+            `
+                SELECT
+                    rc.id,
+                    rc.resident_id,
+                    rc.vendor_id,
+
+                    v.company_name AS vendor_name,
+
+                    rc.category AS service,
+                    rc.finished_photo_url AS image_url,
+
+                    rc.photo_approval_status
+                        AS approval_status,
+
+                    rc.moderation_status,
+
+                    rc.photo_submitted_at,
+                    rc.photo_approved_at,
+                    rc.photo_rejected_at,
+                    rc.photo_rejection_reason,
+
+                    r.first_name
+                        AS resident_first_name,
+
+                    r.last_name
+                        AS resident_last_name,
+
+                    r.phone
+                        AS resident_phone,
+
+                    r.address
+                        AS resident_address,
+
+                    r.display_area_name
+                        AS resident_display_area_name
+
+                FROM hoa_resident_contractors rc
+
+                JOIN hoa_vendors v
+                  ON v.id = rc.vendor_id
+
+                LEFT JOIN hoa_residents r
+                  ON r.id = rc.resident_id
+
+                WHERE rc.vendor_id = $1
+
+                  AND rc.finished_photo_url
+                      IS NOT NULL
+
+                  AND NULLIF(
+                        BTRIM(
+                            rc.finished_photo_url
+                        ),
+                        ''
+                      ) IS NOT NULL
+
+                ORDER BY
+                    COALESCE(
+                        rc.photo_submitted_at,
+                        rc.updated_at
+                    ) DESC,
+                    rc.id DESC
+            `,
+            [vendorId]
+        );
+
+        return res.json({
+            success: true,
+            projects: result.rows,
+            total_count: result.rows.length
+        });
+    } catch (error) {
+        console.error(
+            "getVendorCompletedProjects error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            error:
+                "Failed to load vendor completed projects."
+        });
+    }
+};
