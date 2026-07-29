@@ -446,11 +446,41 @@ exports.getVendorServiceRequests = async (req, res) => {
                     sr.accepted_at,
                     sr.completed_at,
 
-                    r.first_name AS resident_first_name,
-                    r.last_name AS resident_last_name,
-                    r.phone AS resident_phone,
-                    r.address AS resident_address,
-                    r.display_area_name AS resident_display_area_name,
+                    COALESCE(
+                            r.first_name,
+                            sr.lead_name,
+                            'Homeowner'
+                    ) AS resident_first_name,
+
+                    COALESCE(
+                            r.last_name,
+                            ''
+                    ) AS resident_last_name,
+
+                    COALESCE(
+                            r.phone,
+                            sr.lead_phone
+                    ) AS resident_phone,
+
+                    COALESCE(
+                            r.address,
+                            sr.lead_address
+                    ) AS resident_address,
+
+                    COALESCE(
+                            r.display_area_name,
+                            NULLIF(
+                                    CONCAT_WS(
+                                            ', ',
+                                            NULLIF(BTRIM(sr.lead_city), ''),
+                                            NULLIF(BTRIM(sr.lead_state), '')
+                                    ),
+                                    ''
+                            )
+                    ) AS resident_display_area_name,
+
+                    sr.source,
+                    sr.source_lead_id,
 
                     v.company_name AS vendor_company_name,
                     v.category AS vendor_category
@@ -538,22 +568,57 @@ exports.getVendorServiceRequest = async (req, res) => {
                     sr.accepted_at,
                     sr.completed_at,
 
-                    r.first_name AS resident_first_name,
-                    r.last_name AS resident_last_name,
-                    r.phone AS resident_phone,
-                    r.address AS resident_address,
-                    r.display_area_name AS resident_display_area_name,
+                    COALESCE(
+                            r.first_name,
+                            sr.lead_name,
+                            'Homeowner'
+                    ) AS resident_first_name,
+
+                    COALESCE(
+                            r.last_name,
+                            ''
+                    ) AS resident_last_name,
+
+                    COALESCE(
+                            r.phone,
+                            sr.lead_phone
+                    ) AS resident_phone,
+
+                    COALESCE(
+                            r.address,
+                            sr.lead_address
+                    ) AS resident_address,
+
+                    COALESCE(
+                            r.display_area_name,
+                            NULLIF(
+                                    CONCAT_WS(
+                                            ', ',
+                                            NULLIF(BTRIM(sr.lead_city), ''),
+                                            NULLIF(BTRIM(sr.lead_state), '')
+                                    ),
+                                    ''
+                            )
+                    ) AS resident_display_area_name,
+
+                    sr.source,
+                    sr.source_lead_id,
 
                     v.company_name AS vendor_company_name,
                     v.category AS vendor_category
+
                 FROM hoa_service_requests sr
-                JOIN hoa_residents r
-                  ON r.id = sr.resident_id
-                JOIN hoa_vendors v
-                  ON v.id = sr.vendor_id
+
+                         LEFT JOIN hoa_residents r
+                                   ON r.id = sr.resident_id
+
+                         JOIN hoa_vendors v
+                              ON v.id = sr.vendor_id
+
                 WHERE sr.id = $1
                   AND sr.vendor_id = $2
-                LIMIT 1
+
+                    LIMIT 1
             `,
             [
                 requestId,
