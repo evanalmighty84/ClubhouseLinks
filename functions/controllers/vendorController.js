@@ -1,5 +1,5 @@
 const pool = require('../db/db');
-const cloudinary = require("../config/cloudinary");
+const cloudinary = require("cloudinary").v2;
 
 const ALLOWED_REQUEST_STATUSES = new Set([
     'new',
