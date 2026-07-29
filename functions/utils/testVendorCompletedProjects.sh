@@ -4,7 +4,7 @@ set -euo pipefail
 
 API_BASE="https://crm-function-app-5d4de511071d.herokuapp.com/server/resident_function/api"
 
-RESIDENT_ID=241
+RESIDENT_ID=301
 VENDOR_ID=35
 
 SCRIPT_DIR="$(

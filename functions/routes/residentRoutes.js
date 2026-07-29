@@ -9,7 +9,7 @@ const {
     getPendingResidents,
     approveResident,
     getResidentProfile,
-    getVendors,deleteResidentAccount,
+    getVendors,deleteResidentAccount,registerResidentDevice,
     loginResident, getAddress,getAddressAutoComplete,getCompletedProjects,sendPhoneVerification,checkPhoneVerification,submitCompletedProject,updateResidentAddress
 } = require('../controllers/residentController');
 const {
@@ -37,6 +37,10 @@ router.post(
 router.post(
     "/completed-projects",
     submitCompletedProject
+);
+router.post(
+    "/residents/:residentId/devices",
+    registerResidentDevice
 );
 router.patch(
     "/profile/:residentId/address",

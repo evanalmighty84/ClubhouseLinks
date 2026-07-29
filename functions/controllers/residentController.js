@@ -1815,6 +1815,11 @@ exports.getResidentProfile = async (req, res) => {
 
 
 exports.submitCompletedProject = async (req, res) => {
+
+    const defaultVendorLogoUrl =
+        String(
+            process.env.DEFAULT_VENDOR_LOGO_URL || ""
+        ).trim() || null;
     let client = null;
 
     try {
@@ -2143,6 +2148,7 @@ exports.submitCompletedProject = async (req, res) => {
                                 company_name,
                                 category,
                                 phone,
+                                logo_url,
                                 active
                             )
                             VALUES
@@ -2151,6 +2157,7 @@ exports.submitCompletedProject = async (req, res) => {
                                     $1,
                                     $2,
                                     $3,
+                                    $4,
                                     FALSE
                                 )
                                 RETURNING
@@ -2159,12 +2166,14 @@ exports.submitCompletedProject = async (req, res) => {
                 company_name,
                 category,
                 phone,
+                logo_url,
                 active
                         `,
                         [
                             cleanVendorName,
                             cleanCategory,
-                            cleanVendorPhone
+                            cleanVendorPhone,
+                            defaultVendorLogoUrl
                         ]
                     );
 
@@ -2379,7 +2388,123 @@ exports.getCompletedProjects = async (req, res) => {
         });
     }
 };
+exports.registerResidentDevice = async (req, res) => {
+    try {
+        const residentId = Number.parseInt(
+            req.params.residentId,
+            10
+        );
 
+        const deviceToken = String(
+            req.body?.device_token || ""
+        )
+            .trim()
+            .toLowerCase();
+
+        const environment = String(
+            req.body?.environment || "production"
+        )
+            .trim()
+            .toLowerCase();
+
+        if (
+            !Number.isInteger(residentId) ||
+            residentId <= 0
+        ) {
+            return res.status(400).json({
+                success: false,
+                error: "A valid resident ID is required."
+            });
+        }
+
+        if (!deviceToken) {
+            return res.status(400).json({
+                success: false,
+                error: "A device token is required."
+            });
+        }
+
+        if (
+            environment !== "production" &&
+            environment !== "sandbox"
+        ) {
+            return res.status(400).json({
+                success: false,
+                error:
+                    "Environment must be production or sandbox."
+            });
+        }
+
+        const residentResult = await pool.query(
+            `
+                SELECT id
+                FROM hoa_residents
+                WHERE id = $1
+                LIMIT 1
+            `,
+            [residentId]
+        );
+
+        if (!residentResult.rows.length) {
+            return res.status(404).json({
+                success: false,
+                error: "Resident not found."
+            });
+        }
+
+        await pool.query(
+            `
+                INSERT INTO hoa_resident_devices
+                (
+                    resident_id,
+                    device_token,
+                    environment,
+                    active,
+                    created_at,
+                    updated_at
+                )
+                VALUES
+                (
+                    $1,
+                    $2,
+                    $3,
+                    TRUE,
+                    NOW(),
+                    NOW()
+                )
+                ON CONFLICT
+                    (resident_id, device_token)
+                DO UPDATE SET
+                    environment =
+                        EXCLUDED.environment,
+                    active = TRUE,
+                    updated_at = NOW()
+            `,
+            [
+                residentId,
+                deviceToken,
+                environment
+            ]
+        );
+
+        return res.status(201).json({
+            success: true,
+            message:
+                "Resident device registered successfully."
+        });
+    } catch (error) {
+        console.error(
+            "registerResidentDevice error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            error:
+                "Unable to register the resident device."
+        });
+    }
+};
 
 exports.getAddress = async (req, res) => {
     try {

@@ -1,69 +1,62 @@
 module.exports = {
-    recipientEmail: "chris@meranigroup.com",
-    recipientName: "Chris",
-    subject: "Clubhouse Links General Contracting Lead Generation and Activation",
+    recipientEmail: "evanligon7@gmail.com.com",
+    recipientName: "Elizabeth",
+    subject: "Clubhouse Links Insurance Lead Generation Activation",
 
     bodyHtml: `
         <p style="margin:0 0 18px 0;">
-            Chris, it was great meeting you through the Plano Chamber of
-            Commerce. I enjoyed learning more about your business and wanted to
-            follow up with additional information about how Clubhouse Links can
-            help you identify local homeowners who are actively looking for
-            contracting services.
+            Elizabeth, it was great connecting with you. I wanted to follow up
+            with more information about how Clubhouse Links can help the
+            Elizabeth Lopez State Farm Agency identify people who are actively
+            discussing insurance needs and looking for professional guidance.
         </p>
 
         <p style="margin:0 0 18px 0;">
-            General contractors, electricians, and plumbers are very much in
-            the wheelhouse of what homeowners regularly ask for. People are
-            constantly looking for help with repairs, renovations, electrical
-            problems, plumbing issues, additions, and larger improvement
-            projects. Those conversations are exactly what our system is
-            designed to identify.
-        </p>
-
-        <p style="margin:0 0 18px 0;">
-            You can expect to receive general contracting and home-improvement
-            opportunities directly through your Clubhouse Links dashboard and
-            by text message multiple times per week whenever matching homeowner
-            requests are available.
+            You can expect to receive matching insurance opportunities directly
+            through your Clubhouse Links dashboard and by text message whenever
+            relevant requests are available.
         </p>
 
         <p style="margin:0 0 18px 0;">
             I’ll initially configure your searches around terms such as
             <strong>
-                general contractor, remodeling contractor, home renovation,
-                home addition, bathroom remodeling, kitchen remodeling,
-                electrical repair, electrician, plumbing repair, plumber,
-                water leak, damaged drywall, Sheetrock repair, flooring,
-                carpentry, painting, structural repair, foundation repair,
-                handyman, home repairs, and construction estimate
+                life insurance, health insurance, disability insurance,
+                disability income protection, term life insurance,
+                whole life insurance, family life insurance,
+                insurance for a new baby, final expense insurance,
+                income replacement, business insurance, risk management,
+                insurance review, insurance quote, insurance agent,
+                homeowners insurance, auto insurance, bundled insurance,
+                new home purchase, new vehicle purchase, and switching
+                insurance companies
             </strong>.
         </p>
 
         <p style="margin:0 0 18px 0;">
-            We can also add more specialized keywords based on the types of
-            projects you prefer. For example, we can prioritize larger
-            remodeling projects, additions, kitchens, bathrooms, electrical
-            work, plumbing projects, commercial work, or another specific area
-            of your business.
+            We can also adjust the searches around the types of policies and
+            customers that are most valuable to your agency. For example, we
+            can prioritize life insurance, disability coverage, families,
+            business owners, new homeowners, higher-value households,
+            home-and-auto bundles, or another specific customer type.
         </p>
 
         <p style="margin:0 0 18px 0;">
             These are not ordinary cold-call lists. The system identifies
-            homeowners who have already discussed a project, requested a
-            contractor recommendation, asked about pricing, reported a problem,
-            or indicated that they may be ready to hire someone.
+            people who have already discussed an insurance need, requested a
+            recommendation, asked about pricing, experienced a major life
+            change, purchased a home or vehicle, started a business, or
+            indicated that they may be ready to review their coverage.
         </p>
 
         <p style="margin:0 0 18px 0;">
             When contact information is available, the system can provide a
             wireless phone number and other useful details so you can follow up
-            while the homeowner’s request is still current.
+            while the person’s request is still current.
         </p>
 
         <p style="margin:0 0 18px 0;">
-            Once your activation payment is completed, you’ll be able to view
-            your opportunities from the dashboard, message them directly from
+            Once your account is activated, you’ll be able to view your
+            opportunities from the dashboard, message prospects directly from
             the platform, and receive new lead notifications by text message.
         </p>
 
@@ -86,43 +79,25 @@ module.exports = {
             </a>
         </p>
 
-        <p style="margin:0 0 6px 0;">
-            <strong>Username:</strong> CHRIS_EMAIL_HERE
+        <p style="margin:0 0 18px 0;">
+            <strong>Username:</strong> elizabeth@elopezinsurance.com
         </p>
 
         <p style="margin:0 0 18px 0;">
-            <strong>Temporary password:</strong> TEMPORARY_PASSWORD_HERE
-            <br>
-            <span style="color:#4b5563;">
-                The temporary password is case-sensitive and should be entered
-                exactly as shown.
-            </span>
-        </p>
-
-        <p style="margin:0 0 18px 0;">
-            If you ever need to pause your service, log in and go to:
-            <strong>Settings → Account Settings</strong>.
-        </p>
-
-        <p style="margin:0 0 18px 0;">
-            I’ll initially target homeowners throughout
+            I’ll initially focus the searches on people throughout
             <strong>
-                Plano, Allen, Frisco, McKinney, Richardson, Carrollton,
-                Garland, Murphy, Wylie, Dallas, and nearby communities
+                El Paso and surrounding communities
             </strong>.
-        </p>
-
-        <p style="margin:0 0 18px 0;">
-            From the Leads page, you’ll be able to filter opportunities by city.
-            You may occasionally receive strong matches from surrounding
-            Dallas–Fort Worth communities as well.
+            From the Leads page, you’ll be able to filter opportunities by
+            location and lead type.
         </p>
 
         <p style="margin:0 0 18px 0;">
             After the first two months, just let me know if you would like to
-            add, remove, or replace any cities, project types, or search terms.
-            We can adjust the system around the locations and services producing
-            the strongest opportunities for your business.
+            add, remove, or replace any locations, policy types, or search
+            terms. The system can be adjusted around the insurance products and
+            customer types producing the strongest opportunities for your
+            agency.
         </p>
 
         <p style="margin:0 0 8px 0;">
@@ -130,12 +105,18 @@ module.exports = {
         </p>
 
         <p style="margin:0 0 18px 0;">
-            Hot Leads are homeowners who have discussed or requested help with
-            a contracting, electrical, plumbing, remodeling, or home-repair
-            project within the last seven days. These opportunities are
-            time-sensitive. When available, you may receive the homeowner’s
-            phone number and other contact details so you can reach out while
-            they are still actively looking for help.
+            Hot Leads are people who have discussed or requested help with
+            insurance within the last seven days. This may include someone
+            asking for a life insurance recommendation, comparing coverage,
+            purchasing a home or vehicle, starting a business, reviewing
+            disability protection, or experiencing another event that creates
+            an immediate insurance need.
+        </p>
+
+        <p style="margin:0 0 18px 0;">
+            These opportunities are time-sensitive. When available, you may
+            receive the person’s phone number and other contact details, helping
+            you follow up while they are still actively considering coverage.
         </p>
 
         <p style="margin:0 0 8px 0;">
@@ -143,22 +124,28 @@ module.exports = {
         </p>
 
         <p style="margin:0 0 18px 0;">
-            Warm Leads are homeowners who previously discussed a renovation,
-            repair, electrical problem, plumbing issue, addition, or another
-            construction project. They may not be ready immediately, but they
-            can still be valuable prospects for estimates, follow-up, future
-            renovations, and larger projects.
+            Warm Leads are people who previously discussed insurance, requested
+            recommendations, compared pricing, purchased a home or vehicle,
+            started a family or business, or indicated another reason they may
+            need coverage. They may not be ready immediately, but they can
+            still be valuable prospects for policy reviews, renewals,
+            life-insurance planning, disability protection, and bundled
+            coverage.
         </p>
 
         <p style="margin:0 0 18px 0;">
-            Please let me know which phone number you would like to receive the
-            text-message alerts on. You can also tell me which project types you
-            would like me to prioritize when I configure your account.
+            Please confirm whether
+            <strong>(915) 490-4579</strong>
+            is the phone number you would like to receive text-message alerts
+            on. You can also tell me whether you would like me to prioritize
+            life insurance, disability coverage, business owners, families,
+            home-and-auto policies, or another specific opportunity type.
         </p>
 
         <p style="margin:0 0 18px 0;">
-            If you have any questions about the dashboard, cities, keywords, or
-            how to contact the leads, please don’t hesitate to ask.
+            If you have any questions about the dashboard, keywords, lead
+            notifications, or how to contact the opportunities, please don’t
+            hesitate to ask.
         </p>
     `
 };

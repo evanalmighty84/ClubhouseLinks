@@ -206,28 +206,7 @@ function buildEmail(config) {
                                 </tr>
 
                                 <tr>
-                                    <td
-                                        align="center"
-                                        style="
-                                            padding:0 20px 18px;
-                                            background:#ffffff;
-                                        "
-                                    >
-                                        <img
-                                            src="cid:new-lead-preview"
-                                            alt="New homeowner lead preview"
-                                            style="
-                                                display:block;
-                                                width:100%;
-                                                max-width:900px;
-                                                height:auto;
-                                                border:0;
-                                                border-radius:12px;
-                                                box-shadow:
-                                                    0 0 22px rgba(37,244,255,0.16);
-                                            "
-                                        >
-                                    </td>
+                     
                                 </tr>
 
                                 <tr>
@@ -245,7 +224,7 @@ function buildEmail(config) {
                                             background:#ffffff;
                                         "
                                     >
-                                        ${leadReportHtml}
+                                      
 
                                         <table
                                             role="presentation"
