@@ -1,4 +1,5 @@
 const pool = require('../db/db');
+const cloudinary = require("../config/cloudinary");
 
 const ALLOWED_REQUEST_STATUSES = new Set([
     'new',
@@ -135,32 +136,34 @@ exports.loginVendor = async (req, res) => {
  */
 exports.getVendorProfile = async (req, res) => {
     try {
-        const vendorId = parsePositiveInteger(req.params.vendorId);
+        const vendorId = parsePositiveInteger(
+            req.params.vendorId
+        );
 
         if (!vendorId) {
             return res.status(400).json({
                 success: false,
-                error: 'A valid vendor ID is required.'
+                error: "A valid vendor ID is required."
             });
         }
 
         const result = await pool.query(
             `
                 SELECT
-                    ${publicVendorFields('v')},
-                    n.name AS neighborhood_name,
-                    (
-                        SELECT COUNT(*)::integer
-                        FROM hoa_service_requests sr
-                        WHERE sr.vendor_id = v.id
-                          AND sr.status = 'new'
-                    ) AS new_request_count
-                FROM hoa_vendors v
-                LEFT JOIN hoa_neighborhoods n
-                  ON n.id = v.neighborhood_id
-                WHERE v.id = $1
-                  AND v.active = TRUE
-                LIMIT 1
+                    id,
+                    neighborhood_id,
+                    company_name,
+                    category,
+                    contact_name,
+                    phone,
+                    email,
+                    website,
+                    description,
+                    logo_url,
+                    active
+                FROM hoa_vendors
+                WHERE id = $1
+                    LIMIT 1
             `,
             [vendorId]
         );
@@ -168,7 +171,7 @@ exports.getVendorProfile = async (req, res) => {
         if (!result.rows.length) {
             return res.status(404).json({
                 success: false,
-                error: 'Vendor account not found.'
+                error: "Vendor not found."
             });
         }
 
@@ -177,15 +180,143 @@ exports.getVendorProfile = async (req, res) => {
             vendor: result.rows[0]
         });
     } catch (error) {
-        console.error('getVendorProfile error:', error);
+        console.error(
+            "getVendorProfile error:",
+            error
+        );
 
         return res.status(500).json({
             success: false,
-            error: 'Unable to load the vendor profile.'
+            error: "Unable to load vendor profile."
         });
     }
 };
+exports.updateVendorLogo = async (req, res) => {
+    try {
+        const vendorId = parsePositiveInteger(
+            req.params.vendorId
+        );
 
+        const imageBase64 = String(
+            req.body?.image_base64 ??
+            req.body?.imageBase64 ??
+            ""
+        ).trim();
+
+        if (!vendorId) {
+            return res.status(400).json({
+                success: false,
+                error: "A valid vendor ID is required."
+            });
+        }
+
+        if (!imageBase64) {
+            return res.status(400).json({
+                success: false,
+                error: "A company logo image is required."
+            });
+        }
+
+        /*
+         * Prevent extremely large JSON uploads.
+         * The Swift view resizes the logo before sending it.
+         */
+        if (imageBase64.length > 15_000_000) {
+            return res.status(413).json({
+                success: false,
+                error: "The selected logo image is too large."
+            });
+        }
+
+        const vendorResult = await pool.query(
+            `
+                SELECT
+                    id,
+                    company_name,
+                    active
+                FROM hoa_vendors
+                WHERE id = $1
+                LIMIT 1
+            `,
+            [vendorId]
+        );
+
+        if (!vendorResult.rows.length) {
+            return res.status(404).json({
+                success: false,
+                error: "Vendor not found."
+            });
+        }
+
+        /*
+         * A stable public ID means uploading another logo
+         * replaces the old Cloudinary image.
+         */
+        const uploadResult =
+            await cloudinary.uploader.upload(
+                imageBase64,
+                {
+                    folder: "clubhouse_vendor_logos",
+                    public_id: `vendor_${vendorId}`,
+                    overwrite: true,
+                    invalidate: true,
+                    resource_type: "image",
+                    transformation: [
+                        {
+                            width: 1200,
+                            height: 1200,
+                            crop: "limit",
+                            quality: "auto"
+                        }
+                    ]
+                }
+            );
+
+        const updateResult = await pool.query(
+            `
+                UPDATE hoa_vendors
+                SET
+                    logo_url = $1,
+                    logo_public_id = $2
+                WHERE id = $3
+                RETURNING
+                    id,
+                    neighborhood_id,
+                    company_name,
+                    category,
+                    contact_name,
+                    phone,
+                    email,
+                    website,
+                    description,
+                    logo_url,
+                    active
+            `,
+            [
+                uploadResult.secure_url,
+                uploadResult.public_id,
+                vendorId
+            ]
+        );
+
+        return res.json({
+            success: true,
+            vendor: updateResult.rows[0],
+            logo_url: uploadResult.secure_url,
+            message: "Company logo updated successfully."
+        });
+    } catch (error) {
+        console.error(
+            "updateVendorLogo error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            error: "Unable to update the company logo."
+        });
+    }
+};
 /*
  * POST /:vendorId/devices
  *
@@ -852,6 +983,8 @@ exports.getVendorCompletedProjects = async (req, res) => {
 
                 WHERE rc.vendor_id = $1
                   AND rc.finished_photo_url IS NOT NULL
+                  AND rc.photo_approval_status = 'approved'
+                  AND rc.moderation_status = 'approved'
 
                 ORDER BY
                     COALESCE(

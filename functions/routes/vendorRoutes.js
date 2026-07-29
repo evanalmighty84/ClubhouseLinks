@@ -10,7 +10,8 @@ const {
     getVendorServiceRequest,
     markVendorServiceRequestViewed,
     updateVendorServiceRequestStatus,
-    getVendorCompletedProjects
+    getVendorCompletedProjects,
+    updateVendorLogo
 } = require('../controllers/vendorController');
 
 /*
@@ -67,5 +68,9 @@ router.get(
 router.get(
     "/:vendorId/completed-projects",
     getVendorCompletedProjects
+);
+router.patch(
+    "/:vendorId/logo",
+    updateVendorLogo
 );
 module.exports = router;
