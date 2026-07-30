@@ -2426,12 +2426,12 @@ exports.registerResidentDevice = async (req, res) => {
 
         if (
             environment !== "production" &&
-            environment !== "sandbox"
+            environment !== "development"
         ) {
             return res.status(400).json({
                 success: false,
                 error:
-                    "Environment must be production or sandbox."
+                    "Environment must be production or development."
             });
         }
 
