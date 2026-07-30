@@ -39,7 +39,7 @@ router.post(
     submitCompletedProject
 );
 router.post(
-    "/residents/:residentId/devices",
+    "/:residentId/devices",
     registerResidentDevice
 );
 router.patch(
