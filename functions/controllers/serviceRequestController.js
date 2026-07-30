@@ -1,8 +1,14 @@
-const pool = require('../db/db');
+const pool = require("../db/db");
 
 const {
     sendVendorPush
-} = require('../services/apnsService');
+} = require("../services/apnsService");
+
+const {
+    notifyResidentRequestReceived
+} = require(
+    "../services/residentRequestPushService"
+);
 
 function positiveInteger(value) {
     const parsed = Number(value);
@@ -41,24 +47,24 @@ exports.submitServiceRequest = async (
 
     const service =
         String(
-            req.body.service || ''
+            req.body.service || ""
         ).trim();
 
     const subService =
         String(
-            req.body.sub_service || ''
+            req.body.sub_service || ""
         ).trim();
 
     const message =
         String(
-            req.body.message || ''
+            req.body.message || ""
         ).trim();
 
     if (!residentId) {
         return res.status(400).json({
             success: false,
             error:
-                'A valid resident ID is required.'
+                "A valid resident ID is required."
         });
     }
 
@@ -66,21 +72,23 @@ exports.submitServiceRequest = async (
         return res.status(400).json({
             success: false,
             error:
-                'A valid vendor ID is required.'
+                "A valid vendor ID is required."
         });
     }
 
     if (!service) {
         return res.status(400).json({
             success: false,
-            error: 'A service is required.'
+            error:
+                "A service is required."
         });
     }
 
     if (!message) {
         return res.status(400).json({
             success: false,
-            error: 'A message is required.'
+            error:
+                "A message is required."
         });
     }
 
@@ -96,12 +104,16 @@ exports.submitServiceRequest = async (
                         v.id AS vendor_id,
                         v.company_name,
                         v.category
+
                     FROM hoa_residents r
-                    CROSS JOIN hoa_vendors v
+
+                             CROSS JOIN hoa_vendors v
+
                     WHERE r.id = $1
                       AND v.id = $2
                       AND v.active = TRUE
-                    LIMIT 1
+
+                        LIMIT 1
                 `,
                 [
                     residentId,
@@ -113,7 +125,7 @@ exports.submitServiceRequest = async (
             return res.status(404).json({
                 success: false,
                 error:
-                    'The resident or selected vendor could not be found.'
+                    "The resident or selected vendor could not be found."
             });
         }
 
@@ -135,16 +147,16 @@ exports.submitServiceRequest = async (
                         created_at
                     )
                     VALUES
-                    (
-                        $1,
-                        $2,
-                        $3,
-                        NULLIF($4, ''),
-                        $5,
-                        'new',
-                        NOW()
-                    )
-                    RETURNING
+                        (
+                            $1,
+                            $2,
+                            $3,
+                            NULLIF($4, ''),
+                            $5,
+                            'new',
+                            NOW()
+                        )
+                        RETURNING
                         id,
                         resident_id,
                         vendor_id,
@@ -166,6 +178,29 @@ exports.submitServiceRequest = async (
         const serviceRequest =
             insertedResult.rows[0];
 
+        /*
+         * Start the resident confirmation push immediately.
+         * It runs at the same time as the vendor notification work.
+         */
+        const residentPushPromise =
+            notifyResidentRequestReceived(
+                serviceRequest.id
+            )
+                .catch((error) => {
+                    console.error(
+                        "[APNs] Request received " +
+                        "notification failed:",
+                        error
+                    );
+
+                    return {
+                        attempted: 0,
+                        sent: 0,
+                        failed: 1,
+                        results: []
+                    };
+                });
+
         const [
             deviceResult,
             countResult
@@ -176,7 +211,9 @@ exports.submitServiceRequest = async (
                         id,
                         device_token,
                         apns_environment
+
                     FROM hoa_vendor_devices
+
                     WHERE vendor_id = $1
                       AND active = TRUE
                 `,
@@ -187,7 +224,9 @@ exports.submitServiceRequest = async (
                     SELECT
                         COUNT(*)::integer
                             AS new_count
+
                     FROM hoa_service_requests
+
                     WHERE vendor_id = $1
                       AND status = 'new'
                 `,
@@ -204,19 +243,25 @@ exports.submitServiceRequest = async (
 
         const notificationBody =
             subService
-                ? `A resident requested ${subService}. Tap to view the request.`
-                : 'A resident sent a new service request. Tap to view it.';
+                ? `A resident requested ` +
+                `${subService}. Tap to view ` +
+                `the request.`
+                : "A resident sent a new " +
+                "service request. Tap to " +
+                "view it.";
 
-        const pushResults =
+        const vendorPushResults =
             await Promise.all(
                 deviceResult.rows.map(
                     async (device) => {
                         const result =
                             await sendVendorPush({
                                 deviceToken:
-                                device.device_token,
+                                device
+                                    .device_token,
                                 environment:
-                                device.apns_environment,
+                                device
+                                    .apns_environment,
                                 title:
                                 notificationTitle,
                                 body:
@@ -235,9 +280,11 @@ exports.submitServiceRequest = async (
                                 `
                                     UPDATE
                                         hoa_vendor_devices
+
                                     SET
                                         active = FALSE,
                                         updated_at = NOW()
+
                                     WHERE id = $1
                                 `,
                                 [device.id]
@@ -246,7 +293,8 @@ exports.submitServiceRequest = async (
 
                         if (!result.success) {
                             console.error(
-                                'APNs delivery failed:',
+                                "APNs vendor " +
+                                "delivery failed:",
                                 {
                                     vendorId,
                                     deviceId:
@@ -264,34 +312,182 @@ exports.submitServiceRequest = async (
                 )
             );
 
-        const sentCount =
-            pushResults.filter(
+        const vendorSentCount =
+            vendorPushResults.filter(
                 (result) =>
                     result.success
             ).length;
+
+        const residentPushSummary =
+            await residentPushPromise;
 
         return res.status(201).json({
             success: true,
             request_id:
                 String(serviceRequest.id),
-            request: serviceRequest,
+            request:
+            serviceRequest,
+
             notification_sent:
-                sentCount > 0,
+                vendorSentCount > 0,
             notification_sent_count:
-            sentCount,
+            vendorSentCount,
+
+            resident_notification_sent:
+                residentPushSummary.sent > 0,
+            resident_notification_sent_count:
+            residentPushSummary.sent,
+
             message:
-                `Your request was sent to ${account.company_name}.`
+                `Your request was sent to ` +
+                `${account.company_name}.`
         });
     } catch (error) {
         console.error(
-            'submitServiceRequest error:',
+            "submitServiceRequest error:",
             error
         );
 
         return res.status(500).json({
             success: false,
             error:
-                'Unable to submit the service request.'
+                "Unable to submit the service request."
+        });
+    }
+};
+
+/*
+ * GET
+ * /api/residents/:residentId/service-requests
+ *
+ * Returns the resident's newest service requests,
+ * including the current vendor status.
+ */
+exports.getResidentServiceRequests = async (
+    req,
+    res
+) => {
+    const residentId =
+        positiveInteger(
+            req.params.residentId
+        );
+
+    const limit = Math.min(
+        Math.max(
+            Number.parseInt(
+                req.query.limit,
+                10
+            ) || 20,
+            1
+        ),
+        50
+    );
+
+    if (!residentId) {
+        return res.status(400).json({
+            success: false,
+            error:
+                "A valid resident ID is required."
+        });
+    }
+
+    try {
+        const residentResult =
+            await pool.query(
+                `
+                    SELECT id
+                    FROM hoa_residents
+                    WHERE id = $1
+                    LIMIT 1
+                `,
+                [residentId]
+            );
+
+        if (!residentResult.rows.length) {
+            return res.status(404).json({
+                success: false,
+                error:
+                    "Resident not found."
+            });
+        }
+
+        const [
+            requestsResult,
+            countResult
+        ] = await Promise.all([
+            pool.query(
+                `
+                    SELECT
+                        sr.id::text AS id,
+                        sr.resident_id,
+                        sr.vendor_id,
+                        sr.service,
+                        sr.sub_service,
+                        sr.message,
+                        sr.status,
+                        sr.created_at,
+                        sr.viewed_at,
+                        sr.accepted_at,
+                        sr.completed_at,
+
+                        v.company_name
+                            AS vendor_company_name,
+
+                        v.category
+                            AS vendor_category,
+
+                        v.logo_url
+                            AS vendor_logo_url
+
+                    FROM hoa_service_requests sr
+
+                    JOIN hoa_vendors v
+                      ON v.id = sr.vendor_id
+
+                    WHERE sr.resident_id = $1
+
+                    ORDER BY
+                        sr.created_at DESC
+
+                    LIMIT $2
+                `,
+                [
+                    residentId,
+                    limit
+                ]
+            ),
+            pool.query(
+                `
+                    SELECT
+                        COUNT(*)::integer
+                            AS total_count
+
+                    FROM hoa_service_requests
+
+                    WHERE resident_id = $1
+                `,
+                [residentId]
+            )
+        ]);
+
+        return res.json({
+            success: true,
+            requests:
+            requestsResult.rows,
+            total_count:
+                countResult.rows[0]
+                    ?.total_count || 0
+        });
+    } catch (error) {
+        console.error(
+            "getResidentServiceRequests error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            error:
+                "Unable to load service requests."
         });
     }
 };
