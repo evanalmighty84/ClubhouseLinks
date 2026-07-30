@@ -1,5 +1,7 @@
 const pool = require('../db/db');
 const cloudinary = require("cloudinary").v2;
+const crypto = require("crypto");
+const http2 = require("http2");
 
 const ALLOWED_REQUEST_STATUSES = new Set([
     'new',
@@ -35,6 +37,552 @@ function parsePositiveInteger(value) {
     }
 
     return parsed;
+}
+
+
+const APNS_TOKEN_MAX_AGE_SECONDS = 50 * 60;
+
+let cachedApnsJwt = null;
+let cachedApnsJwtIssuedAt = 0;
+
+function toBase64Url(value) {
+    const buffer = Buffer.isBuffer(value)
+        ? value
+        : Buffer.from(String(value));
+
+    return buffer.toString("base64url");
+}
+
+function getApnsPrivateKey() {
+    let privateKey = String(
+        process.env.APNS_PRIVATE_KEY || ""
+    )
+        .replace(/\\n/g, "\n")
+        .trim();
+
+    /*
+     * Some environment-variable tools preserve wrapping quotes.
+     * Remove them without changing the PEM contents.
+     */
+    if (
+        privateKey.startsWith('"') &&
+        privateKey.endsWith('"')
+    ) {
+        privateKey = privateKey.slice(1, -1);
+    }
+
+    return privateKey;
+}
+
+function createApnsJwt() {
+    const teamId = String(
+        process.env.APPLE_TEAM_ID || ""
+    ).trim();
+
+    const keyId = String(
+        process.env.APNS_KEY_ID || ""
+    ).trim();
+
+    const privateKey = getApnsPrivateKey();
+
+    if (!teamId || !keyId || !privateKey) {
+        throw new Error(
+            "Missing APPLE_TEAM_ID, APNS_KEY_ID, or APNS_PRIVATE_KEY."
+        );
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+
+    if (
+        cachedApnsJwt &&
+        now - cachedApnsJwtIssuedAt <
+        APNS_TOKEN_MAX_AGE_SECONDS
+    ) {
+        return cachedApnsJwt;
+    }
+
+    const encodedHeader = toBase64Url(
+        JSON.stringify({
+            alg: "ES256",
+            kid: keyId
+        })
+    );
+
+    const encodedPayload = toBase64Url(
+        JSON.stringify({
+            iss: teamId,
+            iat: now
+        })
+    );
+
+    const unsignedToken =
+        `${encodedHeader}.${encodedPayload}`;
+
+    const signature = crypto.sign(
+        "sha256",
+        Buffer.from(unsignedToken),
+        {
+            key: privateKey,
+            dsaEncoding: "ieee-p1363"
+        }
+    );
+
+    cachedApnsJwt =
+        `${unsignedToken}.${toBase64Url(signature)}`;
+
+    cachedApnsJwtIssuedAt = now;
+
+    return cachedApnsJwt;
+}
+
+function normalizeApnsEnvironment(value) {
+    const normalized = String(
+        value || "production"
+    )
+        .trim()
+        .toLowerCase();
+
+    if (
+        normalized === "development" ||
+        normalized === "sandbox"
+    ) {
+        return "development";
+    }
+
+    return "production";
+}
+
+function sendApnsNotification({
+                                  deviceToken,
+                                  environment,
+                                  title,
+                                  body,
+                                  data = {}
+                              }) {
+    const normalizedToken =
+        normalizeDeviceToken(deviceToken);
+
+    if (!normalizedToken) {
+        return Promise.reject(
+            new Error("An APNs device token is required.")
+        );
+    }
+
+    const bundleId = String(
+        process.env.APNS_BUNDLE_ID ||
+        "com.clubhouselinks.app"
+    ).trim();
+
+    const apnsEnvironment =
+        normalizeApnsEnvironment(environment);
+
+    const host =
+        apnsEnvironment === "development"
+            ? "api.sandbox.push.apple.com"
+            : "api.push.apple.com";
+
+    const jwt = createApnsJwt();
+
+    const payload = {
+        aps: {
+            alert: {
+                title,
+                body
+            },
+            sound: "default"
+        },
+        ...data
+    };
+
+    return new Promise((resolve, reject) => {
+        let settled = false;
+        let responseBody = "";
+        let statusCode = 0;
+        let apnsId = null;
+
+        const client = http2.connect(
+            `https://${host}`
+        );
+
+        const finish = (
+            callback,
+            value
+        ) => {
+            if (settled) {
+                return;
+            }
+
+            settled = true;
+
+            try {
+                client.close();
+            } catch (_) {
+                // Nothing else is required during cleanup.
+            }
+
+            callback(value);
+        };
+
+        client.on("error", (error) => {
+            finish(reject, error);
+        });
+
+        const request = client.request({
+            ":method": "POST",
+            ":path":
+                `/3/device/${normalizedToken}`,
+            authorization: `bearer ${jwt}`,
+            "apns-topic": bundleId,
+            "apns-push-type": "alert",
+            "apns-priority": "10",
+            "content-type": "application/json"
+        });
+
+        request.setEncoding("utf8");
+
+        request.on("response", (headers) => {
+            statusCode =
+                Number(headers[":status"]) || 0;
+
+            apnsId =
+                headers["apns-id"] || null;
+        });
+
+        request.on("data", (chunk) => {
+            responseBody += chunk;
+        });
+
+        request.on("error", (error) => {
+            finish(reject, error);
+        });
+
+        request.on("end", () => {
+            let parsedBody = {};
+
+            if (responseBody) {
+                try {
+                    parsedBody =
+                        JSON.parse(responseBody);
+                } catch (_) {
+                    parsedBody = {
+                        raw: responseBody
+                    };
+                }
+            }
+
+            const response = {
+                success: statusCode === 200,
+                status_code: statusCode,
+                apns_id: apnsId,
+                reason:
+                    parsedBody.reason || null,
+                timestamp:
+                    parsedBody.timestamp || null,
+                environment:
+                apnsEnvironment
+            };
+
+            if (statusCode === 200) {
+                finish(resolve, response);
+                return;
+            }
+
+            const error = new Error(
+                `APNs rejected the notification: ` +
+                `${response.reason || statusCode}.`
+            );
+
+            error.statusCode = statusCode;
+            error.apnsId = apnsId;
+            error.reason =
+                response.reason || null;
+            error.environment =
+                apnsEnvironment;
+
+            finish(reject, error);
+        });
+
+        request.end(
+            JSON.stringify(payload)
+        );
+    });
+}
+
+function residentRequestNotificationCopy({
+                                             status,
+                                             vendorName,
+                                             service
+                                         }) {
+    const safeVendorName =
+        String(vendorName || "Your contractor")
+            .trim() ||
+        "Your contractor";
+
+    const safeService =
+        String(service || "service")
+            .trim()
+            .toLowerCase() ||
+        "service";
+
+    const messages = {
+        viewed: {
+            title: "Request Viewed",
+            body:
+                `${safeVendorName} viewed your ` +
+                `${safeService} request.`
+        },
+        accepted: {
+            title: "Request Accepted",
+            body:
+                `${safeVendorName} accepted your ` +
+                `${safeService} request.`
+        },
+        declined: {
+            title: "Request Declined",
+            body:
+                `${safeVendorName} declined your ` +
+                `${safeService} request.`
+        },
+        completed: {
+            title: "Request Completed",
+            body:
+                `${safeVendorName} marked your ` +
+                `${safeService} request complete.`
+        },
+        cancelled: {
+            title: "Request Cancelled",
+            body:
+                `${safeVendorName} cancelled your ` +
+                `${safeService} request.`
+        }
+    };
+
+    return messages[status] || null;
+}
+
+async function deactivateRejectedResidentDevice(
+    deviceId,
+    reason
+) {
+    const permanentRejectionReasons =
+        new Set([
+            "BadDeviceToken",
+            "DeviceTokenNotForTopic",
+            "Unregistered"
+        ]);
+
+    if (
+        !deviceId ||
+        !permanentRejectionReasons.has(reason)
+    ) {
+        return;
+    }
+
+    await pool.query(
+        `
+            UPDATE hoa_resident_devices
+            SET
+                active = FALSE,
+                updated_at = NOW()
+            WHERE id = $1
+        `,
+        [deviceId]
+    );
+
+    console.warn(
+        `[APNs] Disabled resident device ${deviceId} ` +
+        `after Apple returned ${reason}.`
+    );
+}
+
+async function notifyResidentOfRequestStatus(
+    requestId,
+    requestedStatus
+) {
+    const status = String(
+        requestedStatus || ""
+    )
+        .trim()
+        .toLowerCase();
+
+    const requestResult = await pool.query(
+        `
+            SELECT
+                sr.id,
+                sr.resident_id,
+                sr.vendor_id,
+                sr.service,
+                sr.status,
+
+                v.company_name,
+
+                d.id AS device_id,
+                d.device_token,
+                COALESCE(
+                    NULLIF(
+                        BTRIM(d.environment),
+                        ''
+                    ),
+                    'production'
+                ) AS environment
+
+            FROM hoa_service_requests sr
+
+            JOIN hoa_vendors v
+              ON v.id = sr.vendor_id
+
+            JOIN hoa_resident_devices d
+              ON d.resident_id =
+                    sr.resident_id
+             AND d.active = TRUE
+
+            WHERE sr.id = $1
+              AND sr.resident_id IS NOT NULL
+
+            ORDER BY d.updated_at DESC
+        `,
+        [requestId]
+    );
+
+    console.log(
+        `[APNs] Request ${requestId} found ` +
+        `${requestResult.rows.length} active ` +
+        `resident device(s).`
+    );
+
+    if (!requestResult.rows.length) {
+        return {
+            attempted: 0,
+            sent: 0,
+            failed: 0,
+            message:
+                "No active resident devices were found."
+        };
+    }
+
+    const firstRow =
+        requestResult.rows[0];
+
+    const notification =
+        residentRequestNotificationCopy({
+            status,
+            vendorName:
+            firstRow.company_name,
+            service:
+            firstRow.service
+        });
+
+    if (!notification) {
+        return {
+            attempted: 0,
+            sent: 0,
+            failed: 0,
+            message:
+                `No resident notification is configured for ${status}.`
+        };
+    }
+
+    const summary = {
+        attempted:
+        requestResult.rows.length,
+        sent: 0,
+        failed: 0,
+        results: []
+    };
+
+    for (const row of requestResult.rows) {
+        const tokenStart =
+            String(row.device_token || "")
+                .slice(0, 12);
+
+        console.log(
+            `[APNs] Sending ${status} notification ` +
+            `to resident=${row.resident_id}, ` +
+            `token=${tokenStart}...`
+        );
+
+        try {
+            const result =
+                await sendApnsNotification({
+                    deviceToken:
+                    row.device_token,
+                    environment:
+                    row.environment,
+                    title:
+                    notification.title,
+                    body:
+                    notification.body,
+                    data: {
+                        notification_type:
+                            "resident_service_request_status",
+                        request_id:
+                            String(row.id),
+                        resident_id:
+                            String(row.resident_id),
+                        vendor_id:
+                            String(row.vendor_id),
+                        status
+                    }
+                });
+
+            summary.sent += 1;
+
+            summary.results.push({
+                device_id:
+                row.device_id,
+                success: true,
+                ...result
+            });
+
+            console.log(
+                `[APNs] Apple accepted request ` +
+                `${row.id} notification:`,
+                result
+            );
+        } catch (error) {
+            summary.failed += 1;
+
+            summary.results.push({
+                device_id:
+                row.device_id,
+                success: false,
+                status_code:
+                    error.statusCode || null,
+                reason:
+                    error.reason || null,
+                message:
+                error.message
+            });
+
+            console.error(
+                `[APNs] Apple rejected request ` +
+                `${row.id} notification:`,
+                {
+                    status_code:
+                        error.statusCode || null,
+                    reason:
+                        error.reason || null,
+                    message:
+                    error.message
+                }
+            );
+
+            try {
+                await deactivateRejectedResidentDevice(
+                    row.device_id,
+                    error.reason
+                );
+            } catch (deactivateError) {
+                console.error(
+                    "[APNs] Could not disable rejected " +
+                    "resident device:",
+                    deactivateError
+                );
+            }
+        }
+    }
+
+    return summary;
 }
 
 function publicVendorFields(alias = 'v') {
@@ -618,17 +1166,17 @@ exports.getVendorServiceRequests = async (req, res) => {
                 FROM hoa_service_requests sr
                          LEFT JOIN hoa_residents r
                                    ON r.id = sr.resident_id
-                JOIN hoa_vendors v
-                  ON v.id = sr.vendor_id
+                         JOIN hoa_vendors v
+                              ON v.id = sr.vendor_id
                 WHERE sr.vendor_id = $1
-                  ${statusClause}
+                    ${statusClause}
                 ORDER BY
                     CASE sr.status
-                        WHEN 'new' THEN 0
-                        WHEN 'viewed' THEN 1
-                        WHEN 'accepted' THEN 2
-                        ELSE 3
-                    END,
+                    WHEN 'new' THEN 0
+                    WHEN 'viewed' THEN 1
+                    WHEN 'accepted' THEN 2
+                    ELSE 3
+                END,
                     sr.created_at DESC
                 LIMIT ${limitParameter}
                 OFFSET ${offsetParameter}
@@ -783,30 +1331,65 @@ exports.getVendorServiceRequest = async (req, res) => {
  */
 exports.markVendorServiceRequestViewed = async (req, res) => {
     try {
-        const vendorId = parsePositiveInteger(req.params.vendorId);
-        const requestId = parsePositiveInteger(req.params.requestId);
+        const vendorId =
+            parsePositiveInteger(
+                req.params.vendorId
+            );
+
+        const requestId =
+            parsePositiveInteger(
+                req.params.requestId
+            );
 
         if (!vendorId || !requestId) {
             return res.status(400).json({
                 success: false,
-                error: 'Valid vendor and request IDs are required.'
+                error:
+                    'Valid vendor and request IDs are required.'
             });
         }
 
+        /*
+         * Return the previous viewed timestamp so a resident
+         * receives "Request Viewed" only the first time the
+         * vendor opens the request.
+         */
         const result = await pool.query(
             `
-                UPDATE hoa_service_requests
+                WITH existing AS (
+                    SELECT
+                        id,
+                        status AS previous_status,
+                        viewed_at AS previous_viewed_at
+                    FROM hoa_service_requests
+                    WHERE id = $1
+                      AND vendor_id = $2
+                    FOR UPDATE
+                )
+
+                UPDATE hoa_service_requests sr
                 SET
                     status =
                         CASE
-                            WHEN status = 'new'
+                            WHEN sr.status = 'new'
                                 THEN 'viewed'
-                            ELSE status
+                            ELSE sr.status
                         END,
-                    viewed_at = COALESCE(viewed_at, NOW())
-                WHERE id = $1
-                  AND vendor_id = $2
-                RETURNING *
+
+                    viewed_at =
+                        COALESCE(
+                            sr.viewed_at,
+                            NOW()
+                        )
+
+                FROM existing e
+
+                WHERE sr.id = e.id
+
+                RETURNING
+                    sr.*,
+                    e.previous_status,
+                    e.previous_viewed_at
             `,
             [
                 requestId,
@@ -817,13 +1400,61 @@ exports.markVendorServiceRequestViewed = async (req, res) => {
         if (!result.rows.length) {
             return res.status(404).json({
                 success: false,
-                error: 'Service request not found.'
+                error:
+                    'Service request not found.'
             });
+        }
+
+        const requestRow = {
+            ...result.rows[0]
+        };
+
+        const previousViewedAt =
+            requestRow.previous_viewed_at;
+
+        delete requestRow.previous_status;
+        delete requestRow.previous_viewed_at;
+
+        /*
+         * FTN/imported leads can have resident_id = NULL.
+         * Only app-resident requests have a resident device
+         * that can receive a status notification.
+         */
+        if (
+            requestRow.resident_id &&
+            previousViewedAt == null
+        ) {
+            console.log(
+                `[APNs] Preparing resident notification: ` +
+                `request=${requestId}, status=viewed`
+            );
+
+            try {
+                const pushResult =
+                    await notifyResidentOfRequestStatus(
+                        requestId,
+                        "viewed"
+                    );
+
+                console.log(
+                    "[APNs] Resident viewed notification finished:",
+                    pushResult
+                );
+            } catch (pushError) {
+                /*
+                 * A push failure must not roll back the status
+                 * change or make the vendor screen show an error.
+                 */
+                console.error(
+                    "[APNs] Resident viewed notification failed:",
+                    pushError
+                );
+            }
         }
 
         return res.json({
             success: true,
-            request: result.rows[0]
+            request: requestRow
         });
     } catch (error) {
         console.error(
@@ -833,7 +1464,8 @@ exports.markVendorServiceRequestViewed = async (req, res) => {
 
         return res.status(500).json({
             success: false,
-            error: 'Unable to mark the service request as viewed.'
+            error:
+                'Unable to mark the service request as viewed.'
         });
     }
 };
@@ -848,8 +1480,16 @@ exports.markVendorServiceRequestViewed = async (req, res) => {
  */
 exports.updateVendorServiceRequestStatus = async (req, res) => {
     try {
-        const vendorId = parsePositiveInteger(req.params.vendorId);
-        const requestId = parsePositiveInteger(req.params.requestId);
+        const vendorId =
+            parsePositiveInteger(
+                req.params.vendorId
+            );
+
+        const requestId =
+            parsePositiveInteger(
+                req.params.requestId
+            );
+
         const status =
             String(req.body.status || '')
                 .trim()
@@ -858,7 +1498,8 @@ exports.updateVendorServiceRequestStatus = async (req, res) => {
         if (!vendorId || !requestId) {
             return res.status(400).json({
                 success: false,
-                error: 'Valid vendor and request IDs are required.'
+                error:
+                    'Valid vendor and request IDs are required.'
             });
         }
 
@@ -870,11 +1511,27 @@ exports.updateVendorServiceRequestStatus = async (req, res) => {
             });
         }
 
+        /*
+         * Capture the old status in the same statement so
+         * duplicate PATCH requests do not send duplicate
+         * resident push notifications.
+         */
         const result = await pool.query(
             `
-                UPDATE hoa_service_requests
+                WITH existing AS (
+                    SELECT
+                        id,
+                        status AS previous_status
+                    FROM hoa_service_requests
+                    WHERE id = $1
+                      AND vendor_id = $2
+                    FOR UPDATE
+                )
+
+                UPDATE hoa_service_requests sr
                 SET
                     status = $3,
+
                     viewed_at =
                         CASE
                             WHEN $3 IN (
@@ -883,24 +1540,40 @@ exports.updateVendorServiceRequestStatus = async (req, res) => {
                                 'declined',
                                 'completed'
                             )
-                                THEN COALESCE(viewed_at, NOW())
-                            ELSE viewed_at
+                                THEN COALESCE(
+                                    sr.viewed_at,
+                                    NOW()
+                                )
+                            ELSE sr.viewed_at
                         END,
+
                     accepted_at =
                         CASE
                             WHEN $3 = 'accepted'
-                                THEN COALESCE(accepted_at, NOW())
-                            ELSE accepted_at
+                                THEN COALESCE(
+                                    sr.accepted_at,
+                                    NOW()
+                                )
+                            ELSE sr.accepted_at
                         END,
+
                     completed_at =
                         CASE
                             WHEN $3 = 'completed'
-                                THEN COALESCE(completed_at, NOW())
-                            ELSE completed_at
+                                THEN COALESCE(
+                                    sr.completed_at,
+                                    NOW()
+                                )
+                            ELSE sr.completed_at
                         END
-                WHERE id = $1
-                  AND vendor_id = $2
-                RETURNING *
+
+                FROM existing e
+
+                WHERE sr.id = e.id
+
+                RETURNING
+                    sr.*,
+                    e.previous_status
             `,
             [
                 requestId,
@@ -912,14 +1585,85 @@ exports.updateVendorServiceRequestStatus = async (req, res) => {
         if (!result.rows.length) {
             return res.status(404).json({
                 success: false,
-                error: 'Service request not found.'
+                error:
+                    'Service request not found.'
             });
+        }
+
+        const requestRow = {
+            ...result.rows[0]
+        };
+
+        const previousStatus =
+            String(
+                requestRow.previous_status || ""
+            )
+                .trim()
+                .toLowerCase();
+
+        delete requestRow.previous_status;
+
+        const residentNotificationStatuses =
+            new Set([
+                "viewed",
+                "accepted",
+                "declined",
+                "completed",
+                "cancelled"
+            ]);
+
+        const shouldNotifyResident =
+            Boolean(requestRow.resident_id) &&
+            previousStatus !== status &&
+            residentNotificationStatuses.has(
+                status
+            );
+
+        if (shouldNotifyResident) {
+            console.log(
+                `[APNs] Preparing resident notification: ` +
+                `request=${requestId}, ` +
+                `status=${status}, ` +
+                `previousStatus=${previousStatus}`
+            );
+
+            try {
+                const pushResult =
+                    await notifyResidentOfRequestStatus(
+                        requestId,
+                        status
+                    );
+
+                console.log(
+                    "[APNs] Resident status notification finished:",
+                    pushResult
+                );
+            } catch (pushError) {
+                /*
+                 * The status update remains successful even if
+                 * Apple temporarily rejects or cannot receive
+                 * the notification.
+                 */
+                console.error(
+                    "[APNs] Resident status notification failed:",
+                    pushError
+                );
+            }
+        } else {
+            console.log(
+                `[APNs] Resident notification skipped: ` +
+                `request=${requestId}, ` +
+                `previousStatus=${previousStatus}, ` +
+                `status=${status}, ` +
+                `residentId=${requestRow.resident_id || "none"}`
+            );
         }
 
         return res.json({
             success: true,
-            request: result.rows[0],
-            message: `Service request marked ${status}.`
+            request: requestRow,
+            message:
+                `Service request marked ${status}.`
         });
     } catch (error) {
         console.error(
@@ -929,7 +1673,8 @@ exports.updateVendorServiceRequestStatus = async (req, res) => {
 
         return res.status(500).json({
             success: false,
-            error: 'Unable to update the service request.'
+            error:
+                'Unable to update the service request.'
         });
     }
 };
