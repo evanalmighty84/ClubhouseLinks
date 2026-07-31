@@ -5,7 +5,7 @@ const emailConfig = require("./emailConfig");
 const leadReportHtml = require("./RooferLeadReportHtml");
 
 const PAYMENT_URL =
-    "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-6WN605081R303745WNJRYZDA";
+    "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-45B07068GJ117120GNJRZ23A";
 
 
 
@@ -398,9 +398,7 @@ function buildEmail(config) {
                                                                 </a>
                                                                 <br>
 
-                                                                <span style="color:#4b5563;">
-                                                                    Fellow LeTip Member — Dallas
-                                                                </span>
+                                                            
                                                             </td>
                                                         </tr>
                                                     </table>
@@ -447,11 +445,7 @@ async function sendEmail() {
                     path: CLUBHOUSE_LOGO_PATH,
                     cid: "clubhouse-logo"
                 },
-                {
-                    filename: "lead-preview.png",
-                    path: LEAD_PREVIEW_PATH,
-                    cid: "new-lead-preview"
-                },
+
                 {
                     filename: "headshot.png",
                     path: HEADSHOT_PATH,
