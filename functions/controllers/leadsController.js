@@ -1133,7 +1133,7 @@ exports.sendFamilyTreeAlerts = async (req, res) => {
                             ">
                                 Clubhouse Links
                                 &nbsp;//&nbsp;
-                                FamilyTreeNow Lead ${leadId}
+                               ${leadId}
                             </div>
 
                             <div style="
