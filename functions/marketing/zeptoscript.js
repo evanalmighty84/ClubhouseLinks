@@ -256,14 +256,7 @@ function buildEmail(config) {
                                                         line-height:1.65;
                                                     "
                                                 >
-                                                    <p
-                                                        style="
-                                                            margin:0 0 18px 0;
-                                                            color:#111827;
-                                                        "
-                                                    >
-                                                        Hi ${safeRecipientName},
-                                                    </p>
+                                                 
 
                                                     <div
                                                         style="
