@@ -1361,15 +1361,15 @@ exports.getVendors = async (req, res) => {
 
         const residentResult = await pool.query(
             `
-                SELECT
-                    id,
-                    neighborhood_id,
-                    address,
-                    latitude,
-                    longitude
-                FROM hoa_residents
-                WHERE id = $1
-                    LIMIT 1
+            SELECT
+                id,
+                neighborhood_id,
+                address,
+                latitude,
+                longitude
+            FROM hoa_residents
+            WHERE id = $1
+            LIMIT 1
             `,
             [residentId]
         );
@@ -1382,6 +1382,10 @@ exports.getVendors = async (req, res) => {
 
         let resident = residentResult.rows[0];
 
+        /*
+         * If the resident does not yet have coordinates,
+         * geocode their saved address first.
+         */
         if (
             (!resident.latitude || !resident.longitude) &&
             resident.address
@@ -1394,12 +1398,12 @@ exports.getVendors = async (req, res) => {
             if (coordinates) {
                 await pool.query(
                     `
-                        UPDATE hoa_residents
-                        SET
-                            latitude = $1,
-                            longitude = $2,
-                            updated_at = NOW()
-                        WHERE id = $3
+                    UPDATE hoa_residents
+                    SET
+                        latitude = $1,
+                        longitude = $2,
+                        updated_at = NOW()
+                    WHERE id = $3
                     `,
                     [
                         coordinates.latitude,
@@ -1420,40 +1424,40 @@ exports.getVendors = async (req, res) => {
 
         const vendorsResult = await pool.query(
             `
-                WITH area_residents AS (
-                    SELECT
-                        r.id,
-                        r.first_name,
-                        r.address,
-                        r.neighborhood_id,
-                        r.latitude,
-                        r.longitude,
-                        r.invite_code_used,
+            WITH area_residents AS (
+                SELECT
+                    r.id,
+                    r.first_name,
+                    r.address,
+                    r.neighborhood_id,
+                    r.latitude,
+                    r.longitude,
+                    r.invite_code_used,
 
-                        CASE
-                            WHEN $2::numeric IS NOT NULL
-                    AND $3::numeric IS NOT NULL
-                    AND r.latitude IS NOT NULL
-                    AND r.longitude IS NOT NULL
-                    THEN
-                    3959 * acos(
-                    LEAST(
-                    1,
-                    GREATEST(
-                    -1,
-                    cos(radians($2::numeric)) *
-                    cos(radians(r.latitude::numeric)) *
-                    cos(
-                    radians(r.longitude::numeric) -
-                    radians($3::numeric)
-                    ) +
-                    sin(radians($2::numeric)) *
-                    sin(radians(r.latitude::numeric))
-                    )
-                    )
-                    )
-                    ELSE NULL
-                END AS distance_miles
+                    CASE
+                        WHEN $2::numeric IS NOT NULL
+                         AND $3::numeric IS NOT NULL
+                         AND r.latitude IS NOT NULL
+                         AND r.longitude IS NOT NULL
+                        THEN
+                            3959 * acos(
+                                LEAST(
+                                    1,
+                                    GREATEST(
+                                        -1,
+                                        cos(radians($2::numeric)) *
+                                        cos(radians(r.latitude::numeric)) *
+                                        cos(
+                                            radians(r.longitude::numeric) -
+                                            radians($3::numeric)
+                                        ) +
+                                        sin(radians($2::numeric)) *
+                                        sin(radians(r.latitude::numeric))
+                                    )
+                                )
+                            )
+                        ELSE NULL
+                    END AS distance_miles
 
                 FROM hoa_residents r
 
@@ -1462,226 +1466,369 @@ exports.getVendors = async (req, res) => {
                     AND r.longitude IS NOT NULL
                     AND (
                         (
-                $2::numeric IS NOT NULL
-                AND $3::numeric IS NOT NULL
-                AND (
-                3959 * acos(
-                LEAST(
-                1,
-                GREATEST(
-                -1,
-                cos(radians($2::numeric)) *
-                cos(radians(r.latitude::numeric)) *
-                cos(
-                radians(r.longitude::numeric) -
-                radians($3::numeric)
-                ) +
-                sin(radians($2::numeric)) *
-                sin(radians(r.latitude::numeric))
-                )
-                )
-                )
-                ) <= $4::numeric
-                )
+                            $2::numeric IS NOT NULL
+                            AND $3::numeric IS NOT NULL
+                            AND (
+                                3959 * acos(
+                                    LEAST(
+                                        1,
+                                        GREATEST(
+                                            -1,
+                                            cos(radians($2::numeric)) *
+                                            cos(radians(r.latitude::numeric)) *
+                                            cos(
+                                                radians(r.longitude::numeric) -
+                                                radians($3::numeric)
+                                            ) +
+                                            sin(radians($2::numeric)) *
+                                            sin(radians(r.latitude::numeric))
+                                        )
+                                    )
+                                )
+                            ) <= $4::numeric
+                        )
 
-                OR
+                        OR
 
-                (
-                $1::int IS NOT NULL
-                AND r.neighborhood_id = $1
-                )
-                )
-                ),
+                        (
+                            $1::int IS NOT NULL
+                            AND r.neighborhood_id = $1
+                        )
+                    )
+            ),
 
-                /*
-                 * Build one unique vendor/resident relationship.
-                 *
-                 * A resident counts toward a vendor if:
-                 *
-                 * 1. They submitted a completed project for that vendor
-                 * OR
-                 * 2. They signed up using that vendor's invite code.
-                 *
-                 * UNION removes duplicates automatically, so someone
-                 * who did both is still counted only once.
-                 */
-                vendor_residents AS (
-
+            /*
+             * A resident is associated with a vendor if:
+             *
+             * 1. They submitted work for that vendor
+             * OR
+             * 2. They signed up with that vendor's invite code.
+             *
+             * UNION removes duplicates.
+             */
+            vendor_residents AS (
                 SELECT
-                rc.vendor_id,
-                rc.resident_id
+                    rc.vendor_id,
+                    rc.resident_id
                 FROM hoa_resident_contractors rc
 
                 UNION
 
                 SELECT
-                ic.vendor_id,
-                r.id AS resident_id
+                    ic.vendor_id,
+                    r.id AS resident_id
                 FROM hoa_invite_codes ic
 
                 INNER JOIN hoa_residents r
-                ON UPPER(
-                TRIM(r.invite_code_used)
-                ) = UPPER(
-                TRIM(ic.code)
-                )
+                    ON UPPER(TRIM(r.invite_code_used)) =
+                       UPPER(TRIM(ic.code))
 
                 WHERE
-                ic.vendor_id IS NOT NULL
-                AND ic.active = TRUE
-                ),
+                    ic.vendor_id IS NOT NULL
+                    AND ic.active = TRUE
+            ),
 
-                /*
-                 * Preserve completed-project photo information
-                 * separately from the activity relationship.
-                 */
-                vendor_resident_photos AS (
+            /*
+             * Preserve project-photo information for the existing
+             * signed_up_people response.
+             */
+            vendor_resident_photos AS (
                 SELECT
-                rc.vendor_id,
-                rc.resident_id,
+                    rc.vendor_id,
+                    rc.resident_id,
 
-                MAX(
-                CASE
-                WHEN rc.finished_photo_url IS NOT NULL
-                AND rc.photo_approval_status IN (
-                'approved',
-                'pending_review'
-                )
-                THEN rc.finished_photo_url
-                ELSE NULL
-                END
-                ) AS finished_photo_url,
+                    MAX(
+                        CASE
+                            WHEN rc.finished_photo_url IS NOT NULL
+                             AND rc.photo_approval_status IN (
+                                'approved',
+                                'pending_review'
+                             )
+                            THEN rc.finished_photo_url
+                            ELSE NULL
+                        END
+                    ) AS finished_photo_url,
 
-                MAX(
-                CASE
-                WHEN rc.finished_photo_url IS NOT NULL
-                THEN rc.photo_approval_status
-                ELSE NULL
-                END
-                ) AS photo_approval_status
+                    MAX(
+                        CASE
+                            WHEN rc.finished_photo_url IS NOT NULL
+                            THEN rc.photo_approval_status
+                            ELSE NULL
+                        END
+                    ) AS photo_approval_status
 
                 FROM hoa_resident_contractors rc
 
                 GROUP BY
-                rc.vendor_id,
-                rc.resident_id
-                ),
+                    rc.vendor_id,
+                    rc.resident_id
+            ),
 
-                vendor_stats AS (
+            /*
+             * NEW:
+             *
+             * Get up to 5 completed-project photos for each vendor,
+             * ordered by how close that homeowner is to the resident
+             * currently viewing the app.
+             *
+             * This uses area_residents, so it follows the same local
+             * 7-mile / neighborhood logic as Neighborhood Projects.
+             */
+            nearby_vendor_projects AS (
+            SELECT
+            ranked.vendor_id,
+
+            jsonb_agg(
+            jsonb_build_object(
+            'project_id',
+            ranked.project_id,
+
+            'resident_id',
+            ranked.resident_id,
+
+            'first_name',
+            ranked.first_name,
+
+            'address',
+            ranked.address,
+
+            'distance_miles',
+            ROUND(
+            ranked.distance_miles::numeric,
+            2
+            ),
+
+            'finished_photo_url',
+            ranked.finished_photo_url,
+
+            'photo_approval_status',
+            ranked.photo_approval_status
+            )
+            ORDER BY
+            ranked.distance_miles ASC NULLS LAST,
+            ranked.project_id DESC
+            ) AS nearby_completed_projects
+
+            FROM (
+            SELECT
+            rc.id AS project_id,
+            rc.vendor_id,
+            rc.resident_id,
+
+            r.first_name,
+            r.address,
+
+            CASE
+            WHEN $2::numeric IS NOT NULL
+            AND $3::numeric IS NOT NULL
+            AND r.latitude IS NOT NULL
+            AND r.longitude IS NOT NULL
+            THEN
+            3959 * acos(
+            LEAST(
+            1,
+            GREATEST(
+            -1,
+            cos(radians($2::numeric)) *
+            cos(radians(r.latitude::numeric)) *
+            cos(
+            radians(r.longitude::numeric) -
+            radians($3::numeric)
+            ) +
+            sin(radians($2::numeric)) *
+            sin(radians(r.latitude::numeric))
+            )
+            )
+            )
+            ELSE NULL
+            END AS distance_miles,
+
+            rc.finished_photo_url,
+            rc.photo_approval_status,
+
+            ROW_NUMBER() OVER (
+            PARTITION BY rc.vendor_id
+            ORDER BY
+            CASE
+            WHEN $2::numeric IS NOT NULL
+            AND $3::numeric IS NOT NULL
+            AND r.latitude IS NOT NULL
+            AND r.longitude IS NOT NULL
+            THEN
+            3959 * acos(
+            LEAST(
+            1,
+            GREATEST(
+            -1,
+            cos(radians($2::numeric)) *
+            cos(radians(r.latitude::numeric)) *
+            cos(
+            radians(r.longitude::numeric) -
+            radians($3::numeric)
+            ) +
+            sin(radians($2::numeric)) *
+            sin(radians(r.latitude::numeric))
+            )
+            )
+            )
+            ELSE NULL
+            END ASC NULLS LAST,
+            rc.id DESC
+            ) AS row_num
+
+            FROM hoa_resident_contractors rc
+
+            INNER JOIN hoa_residents r
+            ON r.id = rc.resident_id
+
+            WHERE
+            rc.finished_photo_url IS NOT NULL
+            AND TRIM(rc.finished_photo_url) <> ''
+            AND rc.photo_approval_status IN (
+            'approved',
+            'pending_review'
+            )
+            ) ranked
+
+            WHERE ranked.row_num <= 5
+
+            GROUP BY ranked.vendor_id
+            ),
+
+            vendor_stats AS (
                 SELECT
-                v.id,
-                v.neighborhood_id,
-                v.company_name,
-                v.category,
-                v.categories,
-                v.contact_name,
-                v.phone,
-                v.email,
-                v.website,
-                v.description,
-                v.logo_url,
-                v.active,
+                    v.id,
+                    v.neighborhood_id,
+                    v.company_name,
+                    v.category,
+                    v.categories,
+                    v.contact_name,
+                    v.phone,
+                    v.email,
+                    v.website,
+                    v.description,
+                    v.logo_url,
+                    v.active,
 
-                /*
-                 * TOTAL unique activity for ranking/star count.
-                 *
-                 * This is intentionally not limited to 7 miles.
-                 */
-                COUNT(
-                DISTINCT vr.resident_id
-                )::int AS signup_count,
+                    /*
+                     * Total unique homeowners associated with
+                     * the vendor anywhere.
+                     *
+                     * This remains our star / reputation count.
+                     */
+                    COUNT(
+                        DISTINCT vr.resident_id
+                    )::int AS signup_count,
 
-                /*
-                 * People displayed to this particular resident
-                 * are still limited to area_residents.
-                 */
-                COALESCE(
-                json_agg(
-                DISTINCT jsonb_build_object(
-                'id',
-                ar.id,
+                    /*
+                     * NEW:
+                     * Closest five submitted project photos
+                     * for this specific vendor.
+                     */
+                    COALESCE(
+                        nvp.nearby_completed_projects,
+                        '[]'::jsonb
+                    ) AS nearby_completed_projects,
 
-                'first_name',
-                TRIM(ar.first_name),
+                    /*
+                     * Nearby homeowners associated with this vendor.
+                     */
+                    COALESCE(
+                        json_agg(
+                            DISTINCT jsonb_build_object(
+                                'id',
+                                ar.id,
 
-                'address',
-                ar.address,
+                                'first_name',
+                                TRIM(ar.first_name),
 
-                'distance_miles',
-                ROUND(
-                ar.distance_miles::numeric,
-                2
-                ),
+                                'address',
+                                ar.address,
 
-                'finished_photo_url',
-                vrp.finished_photo_url,
+                                'distance_miles',
+                                ROUND(
+                                    ar.distance_miles::numeric,
+                                    2
+                                ),
 
-                'photo_approval_status',
-                vrp.photo_approval_status
-                )
-                ) FILTER (
-                WHERE ar.id IS NOT NULL
-                ),
-                '[]'::json
-                ) AS signed_up_people
+                                'finished_photo_url',
+                                vrp.finished_photo_url,
+
+                                'photo_approval_status',
+                                vrp.photo_approval_status
+                            )
+                        ) FILTER (
+                            WHERE ar.id IS NOT NULL
+                        ),
+                        '[]'::json
+                    ) AS signed_up_people
 
                 FROM hoa_vendors v
 
                 LEFT JOIN vendor_residents vr
-                ON vr.vendor_id = v.id
+                    ON vr.vendor_id = v.id
 
                 LEFT JOIN area_residents ar
-                ON ar.id = vr.resident_id
+                    ON ar.id = vr.resident_id
 
                 LEFT JOIN vendor_resident_photos vrp
-                ON vrp.vendor_id = v.id
-                AND vrp.resident_id = vr.resident_id
+                    ON vrp.vendor_id = v.id
+                   AND vrp.resident_id = vr.resident_id
+
+                /*
+                 * NEW:
+                 * Attach that vendor's nearby-project carousel data.
+                 */
+                LEFT JOIN nearby_vendor_projects nvp
+                    ON nvp.vendor_id = v.id
 
                 WHERE
-                v.active = TRUE
-                AND (
-                $1::int IS NULL
-                OR v.neighborhood_id = $1
-                OR v.neighborhood_id IS NULL
-                )
+                    v.active = TRUE
+                    AND (
+                        $1::int IS NULL
+                        OR v.neighborhood_id = $1
+                        OR v.neighborhood_id IS NULL
+                    )
 
                 GROUP BY
-                v.id,
-                v.neighborhood_id,
-                v.company_name,
-                v.category,
-                v.categories,
-                v.contact_name,
-                v.phone,
-                v.email,
-                v.website,
-                v.description,
-                v.logo_url,
-                v.active
-                )
+                    v.id,
+                    v.neighborhood_id,
+                    v.company_name,
+                    v.category,
+                    v.categories,
+                    v.contact_name,
+                    v.phone,
+                    v.email,
+                    v.website,
+                    v.description,
+                    v.logo_url,
+                    v.active,
+                    nvp.nearby_completed_projects
+            )
 
-                SELECT
-                    id,
-                    neighborhood_id,
-                    company_name,
-                    category,
-                    categories,
-                    contact_name,
-                    phone,
-                    email,
-                    website,
-                    description,
-                    logo_url,
-                    active,
-                    signup_count,
-                    signed_up_people
+            SELECT
+                id,
+                neighborhood_id,
+                company_name,
+                category,
+                categories,
+                contact_name,
+                phone,
+                email,
+                website,
+                description,
+                logo_url,
+                active,
+                signup_count,
+                nearby_completed_projects,
+                signed_up_people
 
-                FROM vendor_stats
+            FROM vendor_stats
 
-                ORDER BY
-                    signup_count DESC,
-                    category ASC,
-                    id ASC
+            ORDER BY
+                signup_count DESC,
+                category ASC,
+                id ASC
             `,
             [
                 resident.neighborhood_id || null,
