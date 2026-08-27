@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/static/css/main.7a1570ed.css",
-    "main.js": "/static/js/main.e959db47.js",
+    "main.js": "/static/js/main.53cd36be.js",
     "static/media/WideMovieLogo.gif": "/static/media/WideMovieLogo.fb5a2153d857a59ad898.gif",
     "static/media/vecteezy_two-brown-dogs-digging-the-ground-for-hunting-fat-pets_32544191.gif": "/static/media/vecteezy_two-brown-dogs-digging-the-ground-for-hunting-fat-pets_32544191.9a2f7d0191dc928804fa.gif",
     "static/media/Revolutionize Your Pet Grooming Business_ AI-Powered Solutions.mp4": "/static/media/Revolutionize Your Pet Grooming Business_ AI-Powered Solutions.03536c75974482438bf6.mp4",
@@ -107,10 +107,10 @@
     "static/media/softball.webp": "/static/media/softball.b95b6f380168d7a598e9.webp",
     "index.html": "/index.html",
     "main.7a1570ed.css.map": "/static/css/main.7a1570ed.css.map",
-    "main.e959db47.js.map": "/static/js/main.e959db47.js.map"
+    "main.53cd36be.js.map": "/static/js/main.53cd36be.js.map"
   },
   "entrypoints": [
     "static/css/main.7a1570ed.css",
-    "static/js/main.e959db47.js"
+    "static/js/main.53cd36be.js"
   ]
 }
