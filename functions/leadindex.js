@@ -17,7 +17,12 @@ const contactUsRoutes = require("./routes/contactUsRoutes");
 const path = require('path');
 
 // Initialize express app
+// Initialize express app
 const app = express();
+
+// Trust the Heroku reverse proxy so req.ip contains
+// the real visitor IP instead of the Heroku proxy IP
+app.set("trust proxy", 1);
 
 // Load environment variables
 dotenv.config();
