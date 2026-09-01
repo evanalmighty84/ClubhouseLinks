@@ -1351,15 +1351,14 @@ exports.getCompanyLeads = async (req, res) => {
                 f.state,
                 f.lead_type,
                 f.phone,
-                f.email,                     -- 🔥 Add this
-                f.physical_address,          -- (optional, nice to have)
+                f.email,
+                f.physical_address,
                 f.description,
-                COALESCE(n.timestamp, f.scraped_at) AS post_date
+                f.scraped_at
             FROM familytreenow f
-                     LEFT JOIN nextdoor_messages n ON f.lead_id = n.id
             WHERE f.company_name @> ARRAY[$1]
               AND f.lead_sent = TRUE
-            ORDER BY post_date DESC;
+            ORDER BY f.scraped_at DESC;
         `;
 
         const { rows } = await db.query(query, [company_name]);

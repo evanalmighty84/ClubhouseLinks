@@ -64,6 +64,8 @@ const APP_SCREENSHOT_PATH =
 
 const COMMUNITY_EVENT_PATH =
     path.join(__dirname, "community-event.jpg");
+const STREET_FAIR_PATH =
+    path.join(__dirname, "streetfair.png");
 
 // ---------------------------------------------------------
 // TRANSPORT
@@ -106,6 +108,18 @@ if (
         filename: "clubhouse-logo.png",
         path: CLUBHOUSE_LOGO_PATH,
         cid: "clubhouse-logo",
+    });
+}
+if (
+    validateFile(
+        STREET_FAIR_PATH,
+        "Street Fair image"
+    )
+) {
+    attachments.push({
+        filename: "street-fair.png",
+        path: STREET_FAIR_PATH,
+        cid: "street-fair",
     });
 }
 

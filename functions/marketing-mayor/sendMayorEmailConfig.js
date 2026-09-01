@@ -1,221 +1,156 @@
 module.exports = {
-    recipientEmail: "amir.omar@cor.gov",
-    recipientName: "Mayor Omar",
-
-    subject: "Following Up — Richardson Neighborhood Engagement Pilot",
+    recipientEmail: "marny@advwnd.com, Philip.white@sandler.com",
+    recipientName: "Marny and Philip",
+    subject: "Introduction — Marny Webster & Philip White + Gleneagles Follow-Up",
 
     bodyHtml: `
-        <div
-            style="
-                max-width:680px;
-                margin:0 auto;
-                font-family:Arial, Helvetica, sans-serif;
-                color:#000000;
-                line-height:1.6;
-                font-size:16px;
-            "
-        >
+        <p style="margin:0 0 18px 0;color:#000000;">
+            Marny and Philip,
+        </p>
 
-            <!-- Clubhouse Links Logo -->
-            <div
+        <p style="margin:0 0 18px 0;color:#000000;">
+            First, I wanted to thank both of you again for taking the time to
+            join me on our Zoom call. I really enjoyed the conversation and
+            wanted to formally connect the two of you here by email.
+        </p>
+
+        <p style="margin:0 0 18px 0;color:#000000;">
+            Marny, Philip has already been a great resource for me. He has
+            given me a couple of people to reach out to who may be able to help
+            with generating and setting appointments for your company, and I'm
+            beginning those conversations now.
+        </p>
+
+        <p style="margin:0 0 18px 0;color:#000000;">
+            Philip is also an excellent resource when it comes to
+            <strong style="color:#000000;">sales training and sales strategy</strong>.
+            I think having the two of you connected directly could be valuable
+            beyond just the Gleneagles campaign, so I wanted to make sure you
+            both had each other's contact information.
+        </p>
+
+        <p style="margin:0 0 18px 0;color:#000000;">
+            Marny, following up on our phone conversation, I also wanted to
+            resend the Gleneagles information we discussed.
+        </p>
+
+        <p style="margin:0 0 18px 0;color:#000000;">
+            I'm really looking forward to having you join me on
+            <strong style="color:#000000;">
+                October 15 at 8:30 AM at Richardson City Hall
+            </strong>
+            for our meeting with Mayor Omar.
+        </p>
+
+        <p style="margin:0 0 18px 0;color:#000000;">
+            I think the most important thing we can do between now and that meeting
+            is complete the
+            <strong style="color:#000000;">Gleneagles Street Fair campaign</strong>
+            and have real results that we can bring into the conversation with him.
+        </p>
+
+        <p style="margin:0 0 18px 0;color:#000000;">
+            The idea is not just to tell Mayor Omar what Clubhouse Links
+            <em>could</em> do for Richardson neighborhoods. I would much rather
+            be able to show him that we ran the program in a Plano community,
+            homeowners responded to it, residents downloaded the app, and a local
+            contractor was able to receive opportunities through the platform.
+        </p>
+
+        <p style="margin:0 0 18px 0;color:#000000;">
+            That's why I see the Gleneagles campaign as directly connected to our
+            October meeting. If we can demonstrate that the model worked in Plano,
+            then Mayor Omar can see an actual example of the program before we
+            discuss introducing it to the HOA presidents and communities he works
+            with in Richardson.
+        </p>
+
+        <div style="margin:22px 0;text-align:center;">
+            <img
+                src="cid:street-fair"
+                alt="Clubhouse Links Gleneagles Street Fair"
                 style="
-                    text-align:center;
-                    margin:0 0 28px 0;
+                    display:block;
+                    width:100%;
+                    max-width:700px;
+                    height:auto;
+                    margin:0 auto;
+                    border:0;
                 "
-            >
-                <img
-                    src="cid:clubhouse-logo"
-                    alt="Clubhouse Links"
-                    style="
-                        width:180px;
-                        max-width:100%;
-                        height:auto;
-                        display:inline-block;
-                    "
-                >
-            </div>
-
-
-            <p style="margin:0 0 18px 0;color:#000000;">
-                Mayor Omar,
-            </p>
-
-
-            <p style="margin:0 0 18px 0;color:#000000;">
-                It was great meeting you this morning at the HOA Presidents
-                meeting at City Hall. I wanted to follow up while our
-                conversation was still fresh regarding the HOA resident
-                engagement platform my company has built.
-            </p>
-
-
-            <p style="margin:0 0 18px 0;color:#000000;">
-                As I mentioned this morning, I would like to pilot
-                <strong>Clubhouse Links</strong> in Richardson as a way to bring
-                HOA residents, their neighbors, and trusted local businesses
-                together through
-                <strong>in-person community events and a year-round digital platform.</strong>
-                The goal is to strengthen neighborhood relationships while also
-                helping residents build trusted relationships with the businesses
-                serving their homes and community.
-            </p>
-            <p style="margin:0 0 18px 0;color:#000000;">
-    There is also a very practical benefit for both homeowners and HOA leaders.
-    Helping residents find the right provider the first time can prevent the
-    added expense and frustration of paying a second or third company to
-    diagnose, repair, or redo work that was not handled properly the first time.
-    At the HOA level, maintaining a visible network of established local
-    businesses gives presidents and board members a stronger starting point when
-    they need companies for common-area maintenance, repairs, improvements, or
-    new additions — reducing the time and resources spent repeatedly searching
-    for qualified providers.
-</p>
-
-
-            <p style="margin:0 0 18px 0;color:#000000;">
-                <strong>Richardson is our first choice for launching this pilot.</strong>
-                We want to build a community-centered network connecting residents
-                with businesses that are visible, active, and accountable within
-                the local community —
-                <strong>from food trucks to hard hats.</strong>
-            </p>
-
-
-            <p style="margin:0 0 18px 0;color:#000000;">
-                National platforms such as Angi and Thumbtack have shown the
-                demand for connecting homeowners with service professionals but not the engagment nor the expertise.
-                Clubhouse Links takes a more local approach: residents have the
-                opportunity to meet participating businesses face-to-face,
-                see their involvement in the community, and establish familiarity
-                before they ever need to hire them.
-            </p>
-
-
-            <!-- Community Event Image -->
-            <div
-                style="
-                    text-align:center;
-                    margin:28px 0;
-                "
-            >
-                <img
-                    src="cid:community-event"
-                    alt="Neighborhood Community Event"
-                    style="
-                        width:620px;
-                        max-width:100%;
-                        height:auto;
-                        border-radius:14px;
-                        display:block;
-                        margin:0 auto;
-                    "
-                >
-            </div>
-
-
-            <p style="margin:0 0 18px 0;color:#000000;">
-                The pilot would include
-                <strong>quarterly neighborhood events</strong>
-                that bring participating Richardson neighborhoods together with
-                local restaurants, food trucks, home-service companies, and other
-                businesses. Depending on the venue, those events could include
-                live music, family activities, neighborhood gatherings, or even
-                events at local golf clubs with businesses sponsoring individual
-                areas or holes.
-            </p>
-
-
-            <p style="margin:0 0 18px 0;color:#000000;">
-                The events are only one part of the model. The
-                <strong>Clubhouse Links app provides the year-round connection</strong>
-                by giving residents a place to discover local providers, request
-                services, learn about upcoming events, and reconnect with businesses
-                they have already met within their community.
-            </p>
-
-
-            <p style="margin:0 0 18px 0;color:#000000;">
-                I would appreciate the opportunity to sit down with you and show
-                you the proposal for the city of Richardson and it's Hoa board members behind Clubhouse Links, including how
-                vendor participation, sponsorships, neighborhood events, and the
-                app work together to create a sustainable program without placing
-                the full financial burden on the City or participating HOAs.
-            </p>
-
-
-            <!-- App Screenshot -->
-            <div
-                style="
-                    text-align:center;
-                    margin:28px 0;
-                "
-            >
-                <img
-                    src="cid:app-screenshot"
-                    alt="Clubhouse Links App"
-                    style="
-                        width:520px;
-                        max-width:100%;
-                        height:auto;
-                        border-radius:14px;
-                        display:block;
-                        margin:0 auto;
-                    "
-                >
-            </div>
-
-
-            <p style="margin:0 0 18px 0;color:#000000;">
-                I believe starting with a small group of Richardson neighborhoods
-                would give us an opportunity to measure resident participation,
-                event engagement, app adoption, and the value residents receive
-                from developing stronger relationships with trusted local businesses.
-            </p>
-
-
-            <p style="margin:0 0 18px 0;color:#000000;">
-                If you have 20–30 minutes over the next couple of weeks,
-                I would appreciate the opportunity to walk you through what
-                we have built and get your perspective on how the pilot could
-                complement Richardson's existing neighborhood initiatives.
-            </p>
-
-
-            <!-- App Store CTA -->
-            <div
-                style="
-                    text-align:center;
-                    margin:30px 0;
-                "
-            >
-                <a
-                    href="https://apps.apple.com/us/app/clubhouse-links/id6790003233"
-                    style="
-                        display:inline-block;
-                        background:#111111;
-                        color:#ffffff;
-                        text-decoration:none;
-                        font-weight:700;
-                        padding:13px 24px;
-                        border-radius:8px;
-                    "
-                >
-                    View Clubhouse Links on the App Store
-                </a>
-            </div>
-
-
-            <p style="margin:0 0 18px 0;color:#000000;">
-                Thank you again for taking the time to speak with me this morning.
-            </p>
-
-
-            <p style="margin:0;color:#000000;">
-                Best,<br>
-                <strong>Evan Ligon</strong><br>
-                Clubhouse Links
-            </p>
-
+            />
         </div>
-    `,
+
+        <p style="margin:0 0 18px 0;color:#000000;">
+            For the Gleneagles Street Fair, you would be the
+            <strong style="color:#000000;">
+                exclusive Windows, Doors & Siding contractor
+            </strong>
+            for the campaign happening during the last week of September.
+        </p>
+
+        <p style="margin:0 0 18px 0;color:#000000;">
+            The participation cost is
+            <strong style="color:#000000;">$300</strong>,
+            which covers the EDDM postcard campaign and your exclusive placement
+            in the Windows, Doors & Siding category.
+        </p>
+
+        <p style="margin:0 0 18px 0;color:#000000;">
+            The postcards will direct homeowners into the
+            <strong style="color:#000000;">Clubhouse Links app</strong>.
+            When someone downloads the app and chooses your field, the application
+            will alert you so that you know a homeowner from the campaign has
+            expressed interest in Windows, Doors or Siding.
+        </p>
+
+        <p style="margin:0 0 18px 0;color:#000000;">
+            That response is what I want us to be able to measure and bring with us
+            on October 15. The stronger the Gleneagles results are, the stronger
+            our case will be when we sit down with Mayor Omar and talk about
+            expanding the same approach to Richardson HOA communities.
+        </p>
+
+        <p style="margin:0 0 18px 0;color:#000000;">
+            You can take care of the Gleneagles participation here:
+        </p>
+
+        <div style="margin:0 0 26px 0;text-align:center;">
+            <a
+                href="https://www.paypal.com/ncp/payment/A9FZ3UWJAM77L"
+                style="
+                    display:inline-block;
+                    padding:14px 24px;
+                    background-color:#0070ba;
+                    color:#ffffff;
+                    text-decoration:none;
+                    font-weight:bold;
+                    font-size:16px;
+                    border-radius:6px;
+                "
+            >
+                Reserve Your Gleneagles Spot — $300
+            </a>
+        </div>
+
+        <p style="margin:0 0 18px 0;color:#000000;">
+            I especially like having you involved because this gives us the chance
+            to go into the Richardson meeting together with an actual contractor
+            who participated in the campaign and can speak to the experience
+            firsthand.
+        </p>
+
+        <p style="margin:0 0 18px 0;color:#000000;">
+            If the Gleneagles campaign performs the way we expect, our October 15
+            conversation becomes much more than a presentation. We will be able
+            to show Mayor Omar a working example and discuss how we could repeat
+            it for the HOA presidents and neighborhoods he represents.
+        </p>
+
+        <p style="margin:0;color:#000000;">
+            Thanks again to both of you for your time. Philip, I appreciate the
+            introductions and guidance you've already given me, and Marny, I'm
+            excited to get the Gleneagles campaign underway and take those results
+            with us to Richardson on October 15.
+        </p>
+    `
 };
