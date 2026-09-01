@@ -832,7 +832,7 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                                     <td>{lead.state}</td>
                                     <td>{lead.phone || "—"}</td>
                                     <td>{lead.description || "—"}</td>
-                                    <td>{new Date(lead.post_date).toLocaleDateString()}</td>
+                                    <td>{new Date(lead.scraped_at).toLocaleDateString()}</td>
                                 </tr>
                             ))}
                             </tbody>
@@ -1223,7 +1223,7 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                                             <td>{lead.state}</td>
                                             <td>{lead.phone || "—"}</td>
                                             <td>{lead.description || "—"}</td>
-                                            <td>{new Date(lead.post_date).toLocaleDateString()}</td>
+                                            <td>{new Date(lead.scraped_at).toLocaleDateString()}</td>
                                         </tr>
                                     ))}
                                     </tbody>
@@ -1377,7 +1377,7 @@ export default function LeadsSentDashboard({ forceSingleCompany = null }) {
                                     <Col md={6}>
                                         <p>
                                             <strong>Date:</strong>{" "}
-                                            {new Date(selectedEmailLead.post_date).toLocaleDateString()}
+                                            {new Date(selectedEmailLead.scraped_at).toLocaleDateString()}
                                         </p>
                                         <p><strong>Description:</strong> {selectedEmailLead.description}</p>
                                         <p><strong>Phone:</strong> {selectedEmailLead.phone || "—"}</p>
