@@ -1380,43 +1380,87 @@ exports.sendLeadSummaries = async (req, res) => {
         const { company_name } = req.body;
 
         if (!company_name) {
-            return res.status(400).json({ error: "Missing company_name in request body" });
+            return res.status(400).json({
+                error: "Missing company_name in request body"
+            });
         }
 
-        // Unnest the company_name array and filter correctly
+        /*
+         * ---------------------------------------------------------
+         * 1. Find the recipient separately.
+         *
+         * Do NOT join users into the lead query. If multiple user
+         * records exist for one company, that multiplies every lead.
+         * ---------------------------------------------------------
+         */
+        const { rows: recipientRows } = await db.query(
+            `
+                SELECT DISTINCT email
+                FROM users
+                WHERE LOWER(TRIM(company_name)) = LOWER(TRIM($1))
+                  AND email IS NOT NULL
+                  AND TRIM(email) <> '';
+            `,
+            [company_name]
+        );
+
+        if (!recipientRows.length) {
+            return res.json({
+                message: `No email found for ${company_name}`
+            });
+        }
+
+        /*
+         * If more than one DIFFERENT email belongs to this company,
+         * don't silently choose one. That could send the report to
+         * the wrong person.
+         */
+        if (recipientRows.length > 1) {
+            return res.status(409).json({
+                error: `Multiple recipient emails found for ${company_name}`,
+                recipients: recipientRows.map((r) => r.email)
+            });
+        }
+
+        const to = recipientRows[0].email;
+
+        /*
+         * ---------------------------------------------------------
+         * 2. Fetch the actual leads.
+         *
+         * Use scraped_at directly.
+         * No nextdoor_messages join.
+         * No users join.
+         * ---------------------------------------------------------
+         */
         const { rows } = await db.query(
             `
                 SELECT
+                    f.id,
                     f.author,
                     f.lead_type,
                     f.city,
                     f.state,
                     f.phone,
                     f.description,
-                    COALESCE(n.timestamp, f.scraped_at) AS post_date,
-                    u.email AS user_email
-                FROM (
-                         SELECT *, unnest(company_name) AS single_company
-                         FROM familytreenow
-                     ) f
-                         LEFT JOIN nextdoor_messages n
-                                   ON f.lead_id = n.id
-                         LEFT JOIN users u
-                                   ON LOWER(TRIM(f.single_company)) = LOWER(TRIM(u.company_name))
-                WHERE LOWER(TRIM(f.single_company)) = LOWER(TRIM($1))
-                ORDER BY post_date DESC
-                    LIMIT 100;
+                    f.scraped_at
+                FROM familytreenow f
+                WHERE EXISTS (
+                    SELECT 1
+                    FROM unnest(f.company_name) AS company
+                    WHERE LOWER(TRIM(company)) = LOWER(TRIM($1))
+                )
+                  AND f.lead_sent = TRUE
+                ORDER BY f.scraped_at DESC
+                LIMIT 100;
             `,
             [company_name]
         );
 
         if (!rows.length) {
-            return res.json({ message: `No leads found for ${company_name}` });
-        }
-
-        const to = rows[0].user_email;
-        if (!to) {
-            return res.json({ message: `No email found for ${company_name}` });
+            return res.json({
+                message: `No leads found for ${company_name}`
+            });
         }
 
         const tableRows = rows
@@ -1427,17 +1471,37 @@ exports.sendLeadSummaries = async (req, res) => {
                     <td>${l.city || "—"}</td>
                     <td>${l.state || "—"}</td>
                     <td>${l.phone || "—"}</td>
-                    <td>${l.description ? l.description.replace(/\n/g, "<br>") : "—"}</td>
-                    <td>${l.post_date ? new Date(l.post_date).toLocaleString() : "—"}</td>
+                    <td>
+                        ${
+                l.description
+                    ? l.description.replace(/\n/g, "<br>")
+                    : "—"
+            }
+                    </td>
+                    <td>
+                        ${
+                l.scraped_at
+                    ? new Date(l.scraped_at).toLocaleString()
+                    : "—"
+            }
+                    </td>
                 </tr>
             `)
             .join("");
 
         const html = `
             <h2>Lead Summary for ${company_name}</h2>
-            <p>Here are your most recent leads from Clubhouse Links:</p>
 
-            <table border="1" cellspacing="0" cellpadding="8" style="border-collapse: collapse; width: 100%;">
+            <p>
+                Here are your most recent leads from Clubhouse Links:
+            </p>
+
+            <table
+                border="1"
+                cellspacing="0"
+                cellpadding="8"
+                style="border-collapse: collapse; width: 100%;"
+            >
                 <thead style="background-color: #f2f2f2;">
                     <tr>
                         <th>Name</th>
@@ -1449,47 +1513,78 @@ exports.sendLeadSummaries = async (req, res) => {
                         <th>Date</th>
                     </tr>
                 </thead>
-                <tbody>${tableRows}</tbody>
+
+                <tbody>
+                    ${tableRows}
+                </tbody>
             </table>
 
             <p style="margin-top: 16px;">
-                Total Leads: <strong>${rows.length}</strong>
+                Total Leads:
+                <strong>${rows.length}</strong>
             </p>
 
-            <!-- ⭐ NEW SECTION ADDED BELOW ⭐ -->
-<!-- ⭐ UPDATED TUTORIAL SECTION ⭐ -->
+            <h3
+                style="
+                    margin-top: 24px;
+                    text-align: center;
+                    color: #ff0080;
+                "
+            >
+                Click the link below to see how to get the most return
+                on investment from your Clubhouse Links CRM hot leads.
+            </h3>
 
-<h3 style="margin-top: 24px; text-align: center; color:#ff0080;">
-    Click the link below to see how to get the most return on investment from your Clubhouse Links CRM hot leads.
-</h3>
+            <div style="text-align: center; margin-top: 12px;">
+                <img
+                    src="https://res.cloudinary.com/duz4vhtcn/image/upload/v1765155432/phonecall_odl0ou.webp"
+                    alt="Phone Call Tutorial"
+                    style="
+                        max-width: 400px;
+                        width: 100%;
+                        border-radius: 8px;
+                    "
+                >
+            </div>
 
-<div style="text-align:center; margin-top: 12px;">
-    <img src="https://res.cloudinary.com/duz4vhtcn/image/upload/v1765155432/phonecall_odl0ou.webp"
-         alt="Phone Call Tutorial"
-         style="max-width: 400px; width: 100%; border-radius: 8px;">
-</div>
-
-<p style="text-align:center; margin-top: 12px;">
-    <a href="https://www.canva.com/design/DAG6PZLvpUE/Fl6hv33MDHcHOQ8nPeCA9Q/view?utm_content=DAG6PZLvpUE&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=hd30cbe3f30"
-       style="font-size: 18px; color: orange; text-decoration: none; font-weight: bold;">
-        Click here to view the video tutorial
-    </a>
-</p>
-
-<!-- ⭐ END UPDATED SECTION ⭐ -->
-
+            <p style="text-align: center; margin-top: 12px;">
+                <a
+                    href="https://www.canva.com/design/DAG6PZLvpUE/Fl6hv33MDHcHOQ8nPeCA9Q/view?utm_content=DAG6PZLvpUE&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=hd30cbe3f30"
+                    style="
+                        font-size: 18px;
+                        color: orange;
+                        text-decoration: none;
+                        font-weight: bold;
+                    "
+                >
+                    Click here to view the video tutorial
+                </a>
+            </p>
         `;
 
-        await sendEmail(to, `Your Lead Summary Report — ${company_name}`, html);
+        await sendEmail(
+            to,
+            `Your Lead Summary Report — ${company_name}`,
+            html
+        );
 
         res.json({
             success: true,
-            message: `Lead summary sent to ${to} for ${company_name}`
+            recipient: to,
+            lead_count: rows.length,
+            message:
+                `Lead summary sent to ${to} for ${company_name}`
         });
 
     } catch (error) {
-        console.error("❌ Error sending lead summary:", error);
-        res.status(500).json({ error: "Failed to send lead summary" });
+        console.error(
+            "❌ Error sending lead summary:",
+            error
+        );
+
+        res.status(500).json({
+            error: "Failed to send lead summary"
+        });
     }
 };
 
