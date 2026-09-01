@@ -6,6 +6,11 @@ const nodemailer = require("nodemailer");
 
 let zeptoTransporter = null;
 
+const REPORT_RECIPIENT_OVERRIDES = {
+    "guardian construction and design":
+        "Elle@guardiansolutionsconstruction.com",
+};
+
 function getZeptoTransporter() {
     const host = String(
         process.env.ZEPTOMAIL_SMTP_HOST || ""
@@ -1411,18 +1416,68 @@ exports.sendLeadSummaries = async (req, res) => {
         }
 
         /*
-         * If more than one DIFFERENT email belongs to this company,
-         * don't silently choose one. That could send the report to
-         * the wrong person.
+         * ---------------------------------------------------------
+         * Recipient override.
+         *
+         * Some companies have multiple users, but one designated
+         * person should receive the lead summary report.
+         * ---------------------------------------------------------
          */
-        if (recipientRows.length > 1) {
-            return res.status(409).json({
-                error: `Multiple recipient emails found for ${company_name}`,
-                recipients: recipientRows.map((r) => r.email)
-            });
-        }
+        const normalizedCompanyName =
+            String(company_name)
+                .trim()
+                .toLowerCase();
 
-        const to = recipientRows[0].email;
+        const overrideEmail =
+            REPORT_RECIPIENT_OVERRIDES[normalizedCompanyName];
+
+        let to;
+
+        if (overrideEmail) {
+            /*
+             * Confirm that the configured override email still
+             * belongs to this company.
+             */
+            const overrideRecipient =
+                recipientRows.find(
+                    (row) =>
+                        String(row.email || "")
+                            .trim()
+                            .toLowerCase() ===
+                        String(overrideEmail)
+                            .trim()
+                            .toLowerCase()
+                );
+
+            if (!overrideRecipient) {
+                return res.status(409).json({
+                    error:
+                        `Configured report recipient ${overrideEmail} ` +
+                        `was not found for ${company_name}`,
+                    recipients:
+                        recipientRows.map((r) => r.email)
+                });
+            }
+
+            to = overrideRecipient.email;
+
+        } else {
+            /*
+             * If more than one DIFFERENT email belongs to this company,
+             * don't silently choose one. That could send the report to
+             * the wrong person.
+             */
+            if (recipientRows.length > 1) {
+                return res.status(409).json({
+                    error:
+                        `Multiple recipient emails found for ${company_name}`,
+                    recipients:
+                        recipientRows.map((r) => r.email)
+                });
+            }
+
+            to = recipientRows[0].email;
+        }
 
         /*
          * ---------------------------------------------------------
@@ -1466,22 +1521,92 @@ exports.sendLeadSummaries = async (req, res) => {
         const tableRows = rows
             .map((l) => `
                 <tr>
-                    <td>${l.author || "N/A"}</td>
-                    <td>${l.lead_type || "—"}</td>
-                    <td>${l.city || "—"}</td>
-                    <td>${l.state || "—"}</td>
-                    <td>${l.phone || "—"}</td>
-                    <td>
+                    <td
+                        style="
+                            padding: 10px;
+                            border: 1px solid #ff2fa8;
+                            color: #f5f5f5;
+                            vertical-align: top;
+                        "
+                    >
+                        ${l.author || "N/A"}
+                    </td>
+
+                    <td
+                        style="
+                            padding: 10px;
+                            border: 1px solid #ff2fa8;
+                            color: #67e8f9;
+                            vertical-align: top;
+                        "
+                    >
+                        ${l.lead_type || "—"}
+                    </td>
+
+                    <td
+                        style="
+                            padding: 10px;
+                            border: 1px solid #ff2fa8;
+                            color: #f5f5f5;
+                            vertical-align: top;
+                        "
+                    >
+                        ${l.city || "—"}
+                    </td>
+
+                    <td
+                        style="
+                            padding: 10px;
+                            border: 1px solid #ff2fa8;
+                            color: #f5f5f5;
+                            vertical-align: top;
+                        "
+                    >
+                        ${l.state || "—"}
+                    </td>
+
+                    <td
+                        style="
+                            padding: 10px;
+                            border: 1px solid #ff2fa8;
+                            color: #ffb000;
+                            font-weight: bold;
+                            vertical-align: top;
+                        "
+                    >
+                        ${l.phone || "—"}
+                    </td>
+
+                    <td
+                        style="
+                            padding: 10px;
+                            border: 1px solid #ff2fa8;
+                            color: #f5f5f5;
+                            line-height: 1.5;
+                            vertical-align: top;
+                        "
+                    >
                         ${
                 l.description
                     ? l.description.replace(/\n/g, "<br>")
                     : "—"
             }
                     </td>
-                    <td>
+
+                    <td
+                        style="
+                            padding: 10px;
+                            border: 1px solid #ff2fa8;
+                            color: #67e8f9;
+                            white-space: nowrap;
+                            vertical-align: top;
+                        "
+                    >
                         ${
                 l.scraped_at
-                    ? new Date(l.scraped_at).toLocaleString()
+                    ? new Date(
+                        l.scraped_at
+                    ).toLocaleString()
                     : "—"
             }
                     </td>
@@ -1490,76 +1615,319 @@ exports.sendLeadSummaries = async (req, res) => {
             .join("");
 
         const html = `
-            <h2>Lead Summary for ${company_name}</h2>
-
-            <p>
-                Here are your most recent leads from Clubhouse Links:
-            </p>
-
-            <table
-                border="1"
-                cellspacing="0"
-                cellpadding="8"
-                style="border-collapse: collapse; width: 100%;"
-            >
-                <thead style="background-color: #f2f2f2;">
-                    <tr>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>City</th>
-                        <th>State</th>
-                        <th>Phone</th>
-                        <th>Description</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    ${tableRows}
-                </tbody>
-            </table>
-
-            <p style="margin-top: 16px;">
-                Total Leads:
-                <strong>${rows.length}</strong>
-            </p>
-
-            <h3
+            <div
                 style="
-                    margin-top: 24px;
-                    text-align: center;
-                    color: #ff0080;
+                    margin: 0;
+                    padding: 30px 20px;
+                    background-color: #070712;
+                    font-family:
+                        Arial,
+                        Helvetica,
+                        sans-serif;
+                    color: #ffffff;
                 "
             >
-                Click the link below to see how to get the most return
-                on investment from your Clubhouse Links CRM hot leads.
-            </h3>
-
-            <div style="text-align: center; margin-top: 12px;">
-                <img
-                    src="https://res.cloudinary.com/duz4vhtcn/image/upload/v1765155432/phonecall_odl0ou.webp"
-                    alt="Phone Call Tutorial"
+                <div
                     style="
-                        max-width: 400px;
-                        width: 100%;
-                        border-radius: 8px;
+                        max-width: 1200px;
+                        margin: 0 auto;
+                        background-color: #10051c;
+                        border: 2px solid #ff0080;
+                        border-radius: 14px;
+                        overflow: hidden;
+                        box-shadow:
+                            0 0 20px rgba(255, 0, 128, 0.45);
                     "
                 >
+
+                    <div
+                        style="
+                            background-color: #180528;
+                            border-bottom: 3px solid #ff0080;
+                            padding: 28px 24px;
+                            text-align: center;
+                        "
+                    >
+                        <div
+                            style="
+                                color: #67e8f9;
+                                font-size: 13px;
+                                font-weight: bold;
+                                letter-spacing: 3px;
+                                text-transform: uppercase;
+                                margin-bottom: 8px;
+                            "
+                        >
+                            CLUBHOUSE LINKS
+                        </div>
+
+                        <h2
+                            style="
+                                margin: 0;
+                                color: #ff2fa8;
+                                font-size: 28px;
+                                line-height: 1.25;
+                            "
+                        >
+                            Lead Summary for ${company_name}
+                        </h2>
+
+                        <div
+                            style="
+                                width: 90px;
+                                height: 4px;
+                                background-color: #ffb000;
+                                margin: 16px auto 0 auto;
+                                border-radius: 4px;
+                            "
+                        ></div>
+                    </div>
+
+                    <div
+                        style="
+                            padding: 24px;
+                        "
+                    >
+                        <p
+                            style="
+                                color: #e8e8ee;
+                                font-size: 16px;
+                                line-height: 1.6;
+                                margin: 0 0 20px 0;
+                            "
+                        >
+                            Here are your most recent leads from Clubhouse Links:
+                        </p>
+
+                        <div
+                            style="
+                                overflow-x: auto;
+                                border-radius: 8px;
+                            "
+                        >
+                            <table
+                                border="0"
+                                cellspacing="0"
+                                cellpadding="0"
+                                style="
+                                    border-collapse: collapse;
+                                    width: 100%;
+                                    background-color: #0c0c18;
+                                    border: 1px solid #ff2fa8;
+                                "
+                            >
+                                <thead>
+                                    <tr
+                                        style="
+                                            background-color: #260934;
+                                        "
+                                    >
+                                        <th
+                                            style="
+                                                padding: 12px 10px;
+                                                border: 1px solid #ff2fa8;
+                                                color: #ffb000;
+                                                text-align: left;
+                                            "
+                                        >
+                                            Name
+                                        </th>
+
+                                        <th
+                                            style="
+                                                padding: 12px 10px;
+                                                border: 1px solid #ff2fa8;
+                                                color: #ffb000;
+                                                text-align: left;
+                                            "
+                                        >
+                                            Type
+                                        </th>
+
+                                        <th
+                                            style="
+                                                padding: 12px 10px;
+                                                border: 1px solid #ff2fa8;
+                                                color: #ffb000;
+                                                text-align: left;
+                                            "
+                                        >
+                                            City
+                                        </th>
+
+                                        <th
+                                            style="
+                                                padding: 12px 10px;
+                                                border: 1px solid #ff2fa8;
+                                                color: #ffb000;
+                                                text-align: left;
+                                            "
+                                        >
+                                            State
+                                        </th>
+
+                                        <th
+                                            style="
+                                                padding: 12px 10px;
+                                                border: 1px solid #ff2fa8;
+                                                color: #ffb000;
+                                                text-align: left;
+                                            "
+                                        >
+                                            Phone
+                                        </th>
+
+                                        <th
+                                            style="
+                                                padding: 12px 10px;
+                                                border: 1px solid #ff2fa8;
+                                                color: #ffb000;
+                                                text-align: left;
+                                            "
+                                        >
+                                            Description
+                                        </th>
+
+                                        <th
+                                            style="
+                                                padding: 12px 10px;
+                                                border: 1px solid #ff2fa8;
+                                                color: #ffb000;
+                                                text-align: left;
+                                            "
+                                        >
+                                            Date
+                                        </th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    ${tableRows}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div
+                            style="
+                                margin-top: 22px;
+                                padding: 16px;
+                                text-align: center;
+                                background-color: #160820;
+                                border: 1px solid #67e8f9;
+                                border-radius: 8px;
+                            "
+                        >
+                            <span
+                                style="
+                                    color: #d9d9e3;
+                                    font-size: 16px;
+                                "
+                            >
+                                Total Leads:
+                            </span>
+
+                            <strong
+                                style="
+                                    color: #67e8f9;
+                                    font-size: 20px;
+                                    margin-left: 6px;
+                                "
+                            >
+                                ${rows.length}
+                            </strong>
+                        </div>
+
+                        <div
+                            style="
+                                margin-top: 30px;
+                                padding: 24px;
+                                background-color: #12071d;
+                                border: 1px solid #ff0080;
+                                border-radius: 10px;
+                                text-align: center;
+                            "
+                        >
+                            <h3
+                                style="
+                                    margin:
+                                        0
+                                        0
+                                        18px
+                                        0;
+                                    text-align: center;
+                                    color: #ff2fa8;
+                                    font-size: 21px;
+                                    line-height: 1.45;
+                                "
+                            >
+                                Click the link below to see how to get the most return
+                                on investment from your Clubhouse Links CRM hot leads.
+                            </h3>
+
+                            <div
+                                style="
+                                    text-align: center;
+                                    margin-top: 12px;
+                                "
+                            >
+                                <img
+                                    src="https://res.cloudinary.com/duz4vhtcn/image/upload/v1765155432/phonecall_odl0ou.webp"
+                                    alt="Phone Call Tutorial"
+                                    style="
+                                        max-width: 400px;
+                                        width: 100%;
+                                        border-radius: 8px;
+                                        border: 2px solid #67e8f9;
+                                    "
+                                >
+                            </div>
+
+                            <p
+                                style="
+                                    text-align: center;
+                                    margin:
+                                        22px
+                                        0
+                                        4px
+                                        0;
+                                "
+                            >
+                                <a
+                                    href="https://www.canva.com/design/DAG6PZLvpUE/Fl6hv33MDHcHOQ8nPeCA9Q/view?utm_content=DAG6PZLvpUE&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=hd30cbe3f30"
+                                    style="
+                                        display: inline-block;
+                                        padding: 13px 22px;
+                                        font-size: 18px;
+                                        color: #070712;
+                                        background-color: #ffb000;
+                                        text-decoration: none;
+                                        font-weight: bold;
+                                        border-radius: 6px;
+                                        border: 2px solid #ff2fa8;
+                                    "
+                                >
+                                    Click here to view the video tutorial
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div
+                        style="
+                            padding: 18px;
+                            text-align: center;
+                            background-color: #080810;
+                            border-top: 1px solid #ff0080;
+                            color: #888899;
+                            font-size: 12px;
+                            letter-spacing: 1px;
+                        "
+                    >
+                        CLUBHOUSE LINKS • HOT LEAD REPORT
+                    </div>
+
+                </div>
             </div>
-
-            <p style="text-align: center; margin-top: 12px;">
-                <a
-                    href="https://www.canva.com/design/DAG6PZLvpUE/Fl6hv33MDHcHOQ8nPeCA9Q/view?utm_content=DAG6PZLvpUE&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=hd30cbe3f30"
-                    style="
-                        font-size: 18px;
-                        color: orange;
-                        text-decoration: none;
-                        font-weight: bold;
-                    "
-                >
-                    Click here to view the video tutorial
-                </a>
-            </p>
         `;
 
         await sendEmail(
