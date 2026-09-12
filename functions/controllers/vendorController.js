@@ -996,6 +996,322 @@ exports.registerVendorDevice = async (req, res) => {
     }
 };
 
+exports.switchSupportResident = async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        const vendorId =
+            parsePositiveInteger(req.params.vendorId);
+
+        const residentId =
+            parsePositiveInteger(req.body.resident_id);
+
+        const deviceToken =
+            normalizeDeviceToken(req.body.device_token);
+
+        const environment =
+            String(
+                req.body.environment || "production"
+            )
+                .trim()
+                .toLowerCase();
+
+        if (!vendorId) {
+            return res.status(400).json({
+                success: false,
+                error: "A valid vendor ID is required."
+            });
+        }
+
+        if (!residentId) {
+            return res.status(400).json({
+                success: false,
+                error: "A valid resident ID is required."
+            });
+        }
+
+        if (
+            deviceToken.length < 32 ||
+            deviceToken.length > 256 ||
+            !/^[a-f0-9]+$/i.test(deviceToken)
+        ) {
+            return res.status(400).json({
+                success: false,
+                error: "A valid APNs device token is required."
+            });
+        }
+
+        if (
+            !["development", "production"]
+                .includes(environment)
+        ) {
+            return res.status(400).json({
+                success: false,
+                error:
+                    "APNs environment must be development or production."
+            });
+        }
+
+        await client.query("BEGIN");
+
+        /*
+         * The vendor must explicitly have support permission,
+         * AND this APNs token must currently belong to one
+         * of that vendor's active iOS devices.
+         */
+        const supportDeviceResult =
+            await client.query(
+                `
+                    SELECT
+                        v.id,
+                        v.company_name
+                    FROM hoa_vendors v
+                    INNER JOIN hoa_vendor_devices vd
+                        ON vd.vendor_id = v.id
+                    WHERE v.id = $1
+                      AND v.active = TRUE
+                      AND v.can_support_residents = TRUE
+                      AND vd.device_token = $2
+                      AND vd.active = TRUE
+                      AND vd.support_device = TRUE
+                    LIMIT 1
+                `,
+                [
+                    vendorId,
+                    deviceToken
+                ]
+            );
+
+        if (!supportDeviceResult.rows.length) {
+            await client.query("ROLLBACK");
+
+            return res.status(403).json({
+                success: false,
+                error:
+                    "This device is not authorized for resident support mode."
+            });
+        }
+
+        /*
+         * Load the selected resident.
+         *
+         * We return these values to the iPhone so it can
+         * immediately populate ResidentProfileView.
+         */
+        const residentResult =
+            await client.query(
+                `
+                    SELECT
+                        r.id,
+                        r.first_name,
+                        r.last_name,
+                        r.phone,
+                        r.address,
+                        r.neighborhood_id,
+                        n.name AS neighborhood_name
+                    FROM hoa_residents r
+                    LEFT JOIN hoa_neighborhoods n
+                        ON n.id = r.neighborhood_id
+                    WHERE r.id = $1
+                    LIMIT 1
+                `,
+                [residentId]
+            );
+
+        if (!residentResult.rows.length) {
+            await client.query("ROLLBACK");
+
+            return res.status(404).json({
+                success: false,
+                error: "Resident not found."
+            });
+        }
+
+        /*
+         * Remove this physical support device from whichever
+         * resident it was previously troubleshooting.
+         *
+         * IMPORTANT:
+         * We only delete rows specifically marked support.
+         * The resident's real devices are untouched.
+         */
+        await client.query(
+            `
+                DELETE FROM hoa_resident_devices
+                WHERE device_token = $1
+                  AND is_support_device = TRUE
+            `,
+            [deviceToken]
+        );
+
+        /*
+         * Temporarily subscribe this support iPhone to the
+         * newly selected resident.
+         */
+        await client.query(
+            `
+                INSERT INTO hoa_resident_devices
+                (
+                    resident_id,
+                    device_token,
+                    environment,
+                    active,
+                    is_support_device,
+                    support_vendor_id,
+                    created_at,
+                    updated_at
+                )
+                VALUES
+                (
+                    $1,
+                    $2,
+                    $3,
+                    TRUE,
+                    TRUE,
+                    $4,
+                    NOW(),
+                    NOW()
+                )
+                ON CONFLICT
+                    (resident_id, device_token)
+                DO UPDATE SET
+                    environment =
+                        EXCLUDED.environment,
+                    active = TRUE,
+                    is_support_device = TRUE,
+                    support_vendor_id =
+                        EXCLUDED.support_vendor_id,
+                    updated_at = NOW()
+            `,
+            [
+                residentId,
+                deviceToken,
+                environment,
+                vendorId
+            ]
+        );
+
+        await client.query("COMMIT");
+
+        return res.status(200).json({
+            success: true,
+            resident: residentResult.rows[0],
+            message:
+                "Support device switched to resident successfully."
+        });
+
+    } catch (error) {
+        try {
+            await client.query("ROLLBACK");
+        } catch (_) {
+            // Ignore rollback failure.
+        }
+
+        console.error(
+            "switchSupportResident error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            error:
+                "Unable to switch support resident."
+        });
+
+    } finally {
+        client.release();
+    }
+};
+
+exports.clearSupportResident = async (req, res) => {
+    try {
+        const vendorId =
+            parsePositiveInteger(req.params.vendorId);
+
+        const deviceToken =
+            normalizeDeviceToken(req.body.device_token);
+
+        if (!vendorId) {
+            return res.status(400).json({
+                success: false,
+                error: "A valid vendor ID is required."
+            });
+        }
+
+        if (
+            deviceToken.length < 32 ||
+            deviceToken.length > 256 ||
+            !/^[a-f0-9]+$/i.test(deviceToken)
+        ) {
+            return res.status(400).json({
+                success: false,
+                error:
+                    "A valid APNs device token is required."
+            });
+        }
+
+        const authorization =
+            await pool.query(
+                `
+                    SELECT v.id
+                    FROM hoa_vendors v
+                    INNER JOIN hoa_vendor_devices vd
+                        ON vd.vendor_id = v.id
+                    WHERE v.id = $1
+                      AND v.active = TRUE
+                      AND v.can_support_residents = TRUE
+                      AND vd.device_token = $2
+                      AND vd.active = TRUE
+                      AND vd.support_device = TRUE
+                    LIMIT 1
+                `,
+                [
+                    vendorId,
+                    deviceToken
+                ]
+            );
+
+        if (!authorization.rows.length) {
+            return res.status(403).json({
+                success: false,
+                error:
+                    "This device is not authorized for resident support mode."
+            });
+        }
+
+        await pool.query(
+            `
+                DELETE FROM hoa_resident_devices
+                WHERE device_token = $1
+                  AND support_vendor_id = $2
+                  AND is_support_device = TRUE
+            `,
+            [
+                deviceToken,
+                vendorId
+            ]
+        );
+
+        return res.json({
+            success: true,
+            message:
+                "Resident support mode ended successfully."
+        });
+
+    } catch (error) {
+        console.error(
+            "clearSupportResident error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            error:
+                "Unable to end resident support mode."
+        });
+    }
+};
+
 /*
  * DELETE /:vendorId/devices
  *
@@ -1004,6 +1320,135 @@ exports.registerVendorDevice = async (req, res) => {
  *   "device_token": "APNS_DEVICE_TOKEN"
  * }
  */
+
+exports.searchSupportResidents = async (req, res) => {
+    try {
+        const vendorId =
+            parsePositiveInteger(req.params.vendorId);
+
+        const deviceToken =
+            normalizeDeviceToken(req.body.device_token);
+
+        const search =
+            String(req.body.search || "")
+                .trim();
+
+        if (!vendorId) {
+            return res.status(400).json({
+                success: false,
+                error: "A valid vendor ID is required."
+            });
+        }
+
+        if (
+            deviceToken.length < 32 ||
+            deviceToken.length > 256 ||
+            !/^[a-f0-9]+$/i.test(deviceToken)
+        ) {
+            return res.status(400).json({
+                success: false,
+                error:
+                    "A valid APNs device token is required."
+            });
+        }
+
+        /*
+         * Verify that:
+         *
+         * 1. Vendor is allowed to use support mode.
+         * 2. This exact physical device belongs to that vendor.
+         */
+        const authorization =
+            await pool.query(
+                `
+                    SELECT
+                        v.id
+                    FROM hoa_vendors v
+                    INNER JOIN hoa_vendor_devices vd
+                        ON vd.vendor_id = v.id
+                    WHERE v.id = $1
+                      AND v.active = TRUE
+                      AND v.can_support_residents = TRUE
+                      AND vd.device_token = $2
+                      AND vd.active = TRUE
+                      AND vd.support_device = TRUE
+                    LIMIT 1
+                `,
+                [
+                    vendorId,
+                    deviceToken
+                ]
+            );
+
+        if (!authorization.rows.length) {
+            return res.status(403).json({
+                success: false,
+                error:
+                    "This device is not authorized for resident support mode."
+            });
+        }
+
+        /*
+         * Require a small search term rather than dumping
+         * every resident to the device.
+         */
+        if (search.length < 2) {
+            return res.json({
+                success: true,
+                residents: []
+            });
+        }
+
+        const pattern = `%${search}%`;
+
+        const result =
+            await pool.query(
+                `
+                    SELECT
+                        id,
+                        first_name,
+                        last_name,
+                        phone,
+                        address,
+                        neighborhood_id
+                    FROM hoa_residents
+                    WHERE
+                        CAST(id AS TEXT) ILIKE $1
+                        OR COALESCE(first_name, '') ILIKE $1
+                        OR COALESCE(last_name, '') ILIKE $1
+                        OR (
+                            COALESCE(first_name, '') ||
+                            ' ' ||
+                            COALESCE(last_name, '')
+                        ) ILIKE $1
+                        OR COALESCE(phone, '') ILIKE $1
+                        OR COALESCE(address, '') ILIKE $1
+                    ORDER BY
+                        last_name NULLS LAST,
+                        first_name NULLS LAST
+                    LIMIT 50
+                `,
+                [pattern]
+            );
+
+        return res.json({
+            success: true,
+            residents: result.rows
+        });
+
+    } catch (error) {
+        console.error(
+            "searchSupportResidents error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            error:
+                "Unable to search residents."
+        });
+    }
+};
 exports.unregisterVendorDevice = async (req, res) => {
     try {
         const vendorId = parsePositiveInteger(req.params.vendorId);

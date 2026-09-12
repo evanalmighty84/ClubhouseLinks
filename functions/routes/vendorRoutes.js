@@ -11,7 +11,10 @@ const {
     markVendorServiceRequestViewed,
     updateVendorServiceRequestStatus,
     getVendorCompletedProjects,
-    updateVendorLogo
+    updateVendorLogo,
+    switchSupportResident,
+    clearSupportResident,
+    searchSupportResidents
 } = require('../controllers/vendorController');
 
 /*
@@ -33,6 +36,15 @@ router.get(
 router.post(
     '/:vendorId/devices',
     registerVendorDevice
+);
+router.post(
+    "/:vendorId/support-resident",
+    switchSupportResident
+);
+
+router.delete(
+    "/:vendorId/support-resident",
+    clearSupportResident
 );
 
 router.delete(
@@ -60,10 +72,6 @@ router.patch(
     updateVendorServiceRequestStatus
 );
 
-router.get(
-    "/:vendorId/completed-projects",
-    getVendorCompletedProjects
-);
 
 router.get(
     "/:vendorId/completed-projects",

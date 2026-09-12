@@ -24,6 +24,11 @@ const HEADSHOT_PATH = path.join(
     "headshot.png"
 );
 
+const INVESTOR_CONTACTS_PDF_PATH = path.join(
+    __dirname,
+    "suzanne_investor_contacts_neon.pdf"
+);
+
 const SMTP_USER =
     process.env.ZEPTOMAIL_SMTP_USER ||
     process.env.ZEPTOMAIL_SMTP_USERNAME ||
@@ -98,17 +103,18 @@ function validateEmailConfig(config) {
     }
 }
 
-function validateImageFiles() {
-    const imageFiles = [
+function validateAttachmentFiles() {
+    const attachmentFiles = [
         CLUBHOUSE_LOGO_PATH,
         LEAD_PREVIEW_PATH,
-        HEADSHOT_PATH
+        HEADSHOT_PATH,
+        INVESTOR_CONTACTS_PDF_PATH
     ];
 
-    for (const imagePath of imageFiles) {
-        if (!fs.existsSync(imagePath)) {
+    for (const attachmentPath of attachmentFiles) {
+        if (!fs.existsSync(attachmentPath)) {
             throw new Error(
-                `Missing image file: ${imagePath}`
+                `Missing attachment file: ${attachmentPath}`
             );
         }
     }
@@ -288,7 +294,7 @@ function buildEmail(config) {
                                                                     0 0 16px rgba(255,59,212,0.35);
                                                             "
                                                         >
-                                                            Get started for $200/Month
+                                                            Get leads starting at $200/Month
                                                         </a>
                                                     </p>
 
@@ -417,7 +423,7 @@ function buildEmail(config) {
 
 async function sendEmail() {
     try {
-        validateImageFiles();
+        validateAttachmentFiles();
 
         const email = buildEmail(emailConfig);
 
@@ -443,6 +449,12 @@ async function sendEmail() {
                     filename: "headshot.png",
                     path: HEADSHOT_PATH,
                     cid: "evan-headshot"
+                },
+
+                {
+                    filename: "Suzanne-Investor-Development-Contacts.pdf",
+                    path: INVESTOR_CONTACTS_PDF_PATH,
+                    contentType: "application/pdf"
                 }
             ]
         });

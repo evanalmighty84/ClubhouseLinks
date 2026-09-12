@@ -1,74 +1,70 @@
 module.exports = {
-    recipientEmail: "marny@advwnd.com, Philip.white@sandler.com",
-    recipientName: "Marny and Philip",
-    subject: "Introduction — Marny Webster & Philip White + Gleneagles Follow-Up",
+    recipientEmail: "Shaskins@devdandesigns.com",
+    recipientName: "Sarah",
+    companyName: "Sarah Haskins Interior Design",
+    leadCategory: "interior_designer",
+
+    subject: "Clubhouse Links Lead Generation for Sarah Haskins Interior Design",
 
     bodyHtml: `
         <p style="margin:0 0 18px 0;color:#000000;">
-            Marny and Philip,
+            Sarah,
         </p>
 
         <p style="margin:0 0 18px 0;color:#000000;">
-            First, I wanted to thank both of you again for taking the time to
-            join me on our Zoom call. I really enjoyed the conversation and
-            wanted to formally connect the two of you here by email.
+            It was really nice meeting you at the
+            <strong style="color:#000000;">Plano Chamber of Commerce last Friday</strong>.
+            I enjoyed getting the chance to learn a little more about your business
+            and wanted to follow up with some information about
+            <strong style="color:#000000;">Clubhouse Links</strong>
+            and what we're doing with lead generation for local service professionals.
         </p>
 
         <p style="margin:0 0 18px 0;color:#000000;">
-            Marny, Philip has already been a great resource for me. He has
-            given me a couple of people to reach out to who may be able to help
-            with generating and setting appointments for your company, and I'm
-            beginning those conversations now.
+            After learning more about your background, I think the platform could
+            be a particularly strong fit for your business. With more than
+            <strong style="color:#000000;">12 years in the design industry</strong>
+            and your experience working alongside contractors on larger remodel
+            projects, there are several different types of homeowner conversations
+            we can monitor for you.
         </p>
 
         <p style="margin:0 0 18px 0;color:#000000;">
-            Philip is also an excellent resource when it comes to
-            <strong style="color:#000000;">sales training and sales strategy</strong>.
-            I think having the two of you connected directly could be valuable
-            beyond just the Gleneagles campaign, so I wanted to make sure you
-            both had each other's contact information.
+            Clubhouse Links searches local conversations on
+            <strong style="color:#000000;">Nextdoor</strong>
+            for homeowners who are actively talking about projects and problems
+            that match the services our professionals provide.
         </p>
 
         <p style="margin:0 0 18px 0;color:#000000;">
-            Marny, following up on our phone conversation, I also wanted to
-            resend the Gleneagles information we discussed.
-        </p>
-
-        <p style="margin:0 0 18px 0;color:#000000;">
-            I'm really looking forward to having you join me on
+            For your business, we can specifically watch for conversations involving
             <strong style="color:#000000;">
-                October 15 at 8:30 AM at Richardson City Hall
+                interior designers, home remodeling, kitchen and bathroom updates,
+                flooring, hardwood floors, room layouts, paint and color selections,
+                furniture placement, fabrics, finishes, material selections,
+                home renovations, and homeowners asking for help pulling an entire
+                space together.
             </strong>
-            for our meeting with Mayor Omar.
         </p>
 
         <p style="margin:0 0 18px 0;color:#000000;">
-            I think the most important thing we can do between now and that meeting
-            is complete the
-            <strong style="color:#000000;">Gleneagles Street Fair campaign</strong>
-            and have real results that we can bring into the conversation with him.
+            We can also identify homeowners who may not explicitly say,
+            "I need an interior designer," but are clearly at the beginning of
+            a project where your expertise would be valuable.
         </p>
 
         <p style="margin:0 0 18px 0;color:#000000;">
-            The idea is not just to tell Mayor Omar what Clubhouse Links
-            <em>could</em> do for Richardson neighborhoods. I would much rather
-            be able to show him that we ran the program in a Plano community,
-            homeowners responded to it, residents downloaded the app, and a local
-            contractor was able to receive opportunities through the platform.
+            Someone may be asking neighbors for a remodeling contractor,
+            trying to decide between flooring materials, struggling with a room
+            layout, choosing finishes for a renovation, or preparing for a
+            large-scale remodel. Those conversations can indicate a potential
+            design client before they have already committed to another firm.
         </p>
 
-        <p style="margin:0 0 18px 0;color:#000000;">
-            That's why I see the Gleneagles campaign as directly connected to our
-            October meeting. If we can demonstrate that the model worked in Plano,
-            then Mayor Omar can see an actual example of the program before we
-            discuss introducing it to the HOA presidents and communities he works
-            with in Richardson.
-        </p>
-
-        <div style="margin:22px 0;text-align:center;">
+        <div style="margin:24px 0;text-align:center;">
             <img
                 src="cid:street-fair"
-                alt="Clubhouse Links Gleneagles Street Fair"
+                alt="Clubhouse Links Glen Eagles Street Fair"
                 style="
                     display:block;
                     width:100%;
@@ -77,80 +73,177 @@ module.exports = {
                     margin:0 auto;
                     border:0;
                 "
-            />
+            >
         </div>
 
         <p style="margin:0 0 18px 0;color:#000000;">
-            For the Gleneagles Street Fair, you would be the
+            We're also using the upcoming
+            <strong style="color:#000000;">Glen Eagles neighborhood campaign</strong>
+            as a way to put Clubhouse Links directly in front of homeowners and
+            measure the kinds of service requests residents generate when they
+            have an easy way to connect with trusted local professionals.
+        </p>
+
+        <p style="margin:0 0 18px 0;color:#000000;">
+            Interior design is a great category for this because a homeowner may
+            initially come into the platform looking for flooring, painting,
+            remodeling, or another home improvement service and then realize they
+            need professional help making the design decisions that tie the entire
+            project together.
+        </p>
+
+        <p style="margin:0 0 18px 0;color:#000000;">
+            The goal is to identify those homeowners while the project is still
+            current. When we find a relevant opportunity, it can be delivered
+            directly through the
+            <strong style="color:#000000;">Clubhouse Links app</strong>
+            so you can review the homeowner's request and determine whether the
+            project is a good fit.
+        </p>
+
+        <p style="margin:0 0 18px 0;color:#000000;">
+            I also think your experience working closely with contractors creates
+            an additional advantage. A homeowner may initially be talking about
+            a remodel, flooring installation, kitchen renovation, or another
+            construction project, but the project can quickly turn into a need
+            for help with
             <strong style="color:#000000;">
-                exclusive Windows, Doors & Siding contractor
+                layouts, colors, fabrics, finishes, materials, and overall design.
             </strong>
-            for the campaign happening during the last week of September.
         </p>
 
         <p style="margin:0 0 18px 0;color:#000000;">
-            The participation cost is
-            <strong style="color:#000000;">$300</strong>,
-            which covers the EDDM postcard campaign and your exclusive placement
-            in the Windows, Doors & Siding category.
+            We can continue refining the searches around the projects you most
+            want to pursue. If larger remodels and full-service design projects
+            are the priority, we can lean more heavily into those conversations.
+            If certain neighborhoods or project types are producing stronger
+            opportunities, we can adjust the system accordingly.
         </p>
 
         <p style="margin:0 0 18px 0;color:#000000;">
-            The postcards will direct homeowners into the
-            <strong style="color:#000000;">Clubhouse Links app</strong>.
-            When someone downloads the app and chooses your field, the application
-            will alert you so that you know a homeowner from the campaign has
-            expressed interest in Windows, Doors or Siding.
+            I'd really like the opportunity to show you how the Clubhouse Links
+            app works and discuss how we could configure the
+            <strong style="color:#000000;">Interior Designer</strong>
+            lead category around the kinds of clients and projects you're looking for.
         </p>
 
-        <p style="margin:0 0 18px 0;color:#000000;">
-            That response is what I want us to be able to measure and bring with us
-            on October 15. The stronger the Gleneagles results are, the stronger
-            our case will be when we sit down with Mayor Omar and talk about
-            expanding the same approach to Richardson HOA communities.
-        </p>
-
-        <p style="margin:0 0 18px 0;color:#000000;">
-            You can take care of the Gleneagles participation here:
-        </p>
-
-        <div style="margin:0 0 26px 0;text-align:center;">
+        <p style="margin:26px 0;">
             <a
-                href="https://www.paypal.com/ncp/payment/A9FZ3UWJAM77L"
+                href="https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-45B07068GJ117120GNJRZ23A"
+                target="_blank"
+                rel="noopener noreferrer"
                 style="
                     display:inline-block;
-                    padding:14px 24px;
-                    background-color:#0070ba;
+                    padding:13px 22px;
+                    background:#ff3bd4;
                     color:#ffffff;
                     text-decoration:none;
-                    font-weight:bold;
-                    font-size:16px;
-                    border-radius:6px;
+                    font-weight:700;
+                    border:1px solid #25f4ff;
+                    border-radius:7px;
+                    box-shadow:0 0 16px rgba(255,59,212,0.35);
                 "
             >
-                Reserve Your Gleneagles Spot — $300
+                Get Leads Starting at $200/Month
             </a>
-        </div>
-
-        <p style="margin:0 0 18px 0;color:#000000;">
-            I especially like having you involved because this gives us the chance
-            to go into the Richardson meeting together with an actual contractor
-            who participated in the campaign and can speak to the experience
-            firsthand.
         </p>
 
-        <p style="margin:0 0 18px 0;color:#000000;">
-            If the Gleneagles campaign performs the way we expect, our October 15
-            conversation becomes much more than a presentation. We will be able
-            to show Mayor Omar a working example and discuss how we could repeat
-            it for the HOA presidents and neighborhoods he represents.
-        </p>
+        <table
+            role="presentation"
+            cellspacing="0"
+            cellpadding="0"
+            border="0"
+            style="
+                margin-top:30px;
+                border-collapse:collapse;
+            "
+        >
+            <tr>
+                <td
+                    valign="top"
+                    style="padding-right:14px;"
+                >
+                    <img
+                        src="cid:evan-headshot"
+                        alt="Evan Ligon"
+                        width="75"
+                        style="
+                            display:block;
+                            width:75px;
+                            height:75px;
+                            object-fit:cover;
+                            border-radius:50%;
+                            border:2px solid #25f4ff;
+                            box-shadow:0 0 14px rgba(37,244,255,0.28);
+                        "
+                    >
+                </td>
 
-        <p style="margin:0;color:#000000;">
-            Thanks again to both of you for your time. Philip, I appreciate the
-            introductions and guidance you've already given me, and Marny, I'm
-            excited to get the Gleneagles campaign underway and take those results
-            with us to Richardson on October 15.
-        </p>
+                <td
+                    valign="middle"
+                    style="
+                        font-family:
+                            Verdana,
+                            Arial,
+                            Helvetica,
+                            sans-serif;
+                        font-size:14px;
+                        line-height:1.5;
+                        color:#111827;
+                    "
+                >
+                    <strong
+                        style="
+                            color:#111827;
+                            font-size:15px;
+                        "
+                    >
+                        Evan Ligon
+                    </strong>
+                    <br>
+
+                    <span style="color:#111827;">
+                        CEO / Web Developer
+                    </span>
+                    <br>
+
+                    <a
+                        href="https://www.clubhouselinks.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style="
+                            color:#009899;
+                            text-decoration:none;
+                            font-weight:600;
+                        "
+                    >
+                        www.ClubhouseLinks.com
+                    </a>
+                    <br>
+
+                    <a
+                        href="mailto:Evan.Ligon@ClubhouseLinks.com"
+                        style="
+                            color:#009899;
+                            text-decoration:none;
+                        "
+                    >
+                        Evan.Ligon@ClubhouseLinks.com
+                    </a>
+                    <br>
+
+                    <a
+                        href="tel:+12145489175"
+                        style="
+                            color:#009899;
+                            text-decoration:none;
+                            font-weight:700;
+                        "
+                    >
+                        214-548-9175
+                    </a>
+                </td>
+            </tr>
+        </table>
     `
 };
