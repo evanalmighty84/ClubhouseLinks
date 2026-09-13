@@ -38,6 +38,10 @@ router.post(
     registerVendorDevice
 );
 router.post(
+    "/:vendorId/support-residents/search",
+    searchSupportResidents
+);
+router.post(
     "/:vendorId/support-resident",
     switchSupportResident
 );
