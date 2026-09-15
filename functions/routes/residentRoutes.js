@@ -20,7 +20,8 @@ const {
     sendPhoneVerification,
     checkPhoneVerification,
     submitCompletedProject,
-    updateResidentAddress
+    updateResidentAddress,
+    getResidentHomeMode
 } = require(
     "../controllers/residentController"
 );
@@ -107,6 +108,11 @@ router.patch(
     updateResidentAddress
 );
 
+router.get(
+    "/profile/:residentId/home-mode",
+    getResidentHomeMode
+);
+
 router.post(
     "/send-verification",
     sendPhoneVerification
@@ -132,5 +138,8 @@ router.post(
     "/:residentId/service-requests",
     submitServiceRequest
 );
+
+
+
 
 module.exports = router;

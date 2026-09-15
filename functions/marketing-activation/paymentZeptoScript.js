@@ -4,7 +4,7 @@ const fs = require("fs");
 const emailConfig = require("./paymentEmailConfig");
 
 const PAYMENT_URL =
-    "https://checkout.clubhouselinks.com/b/3cI14o2Pf2w8gaN8ZF0VO0K";
+    "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-45B07068GJ117120GNJRZ23A";
 
 const CLUBHOUSE_LOGO_PATH = path.join(__dirname, "clubhouse-logo.png");
 const CLUBHOUSE_DASHBOARD_PATH = path.join(__dirname, "clubhouse.png");
@@ -223,7 +223,7 @@ function buildEmail(config) {
 
                                 <tr>
                                     <td style="padding:18px 20px 24px;color:#111827;font-family:Verdana,Arial,Helvetica,sans-serif;font-size:15px;line-height:1.65;background:#ffffff;">
-                                        <p style="margin:0 0 18px 0;color:#111827;">Hey ${safeRecipientName},</p>
+                                        <p style="margin:0 0 18px 0;color:#111827;">Hey ${safeRecipientName}!</p>
 
                                         <div style="color:#111827;">${config.bodyHtml}</div>
 
@@ -237,10 +237,9 @@ function buildEmail(config) {
                                                     <span style="color:#111827;">CEO / Web Developer</span><br>
                                                     <a href="https://www.clubhouselinks.com" target="_blank" rel="noopener noreferrer" style="color:#009899;text-decoration:none;font-weight:600;">www.ClubhouseLinks.com</a><br>
                                                     <a href="mailto:Evan.Ligon@ClubhouseLinks.com" style="color:#009899;text-decoration:none;">Evan.Ligon@ClubhouseLinks.com</a><br>
-                                                    <a href="mailto:Evanligon7@gmail.com" style="color:#009899;text-decoration:none;">Evanligon7@gmail.com</a><br>
+                            
                                                     <a href="tel:+12145489175" style="color:#009899;text-decoration:none;font-weight:700;">214-548-9175</a><br>
-                                                    <span style="color:#4b5563;">Fellow LeTip Member — Dallas</span>
-                                                </td>
+                                                
                                             </tr>
                                         </table>
                                     </td>

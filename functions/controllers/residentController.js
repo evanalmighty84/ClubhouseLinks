@@ -2896,3 +2896,65 @@ exports.getAddressAutoComplete = async (req, res) => {
     }
 };
 
+exports.getResidentHomeMode = async (req, res) => {
+    try {
+        const residentId = Number.parseInt(
+            req.params.residentId,
+            10
+        );
+
+        if (
+            !Number.isInteger(residentId) ||
+            residentId <= 0
+        ) {
+            return res.status(400).json({
+                success: false,
+                error: "Invalid resident ID."
+            });
+        }
+
+        const result = await pool.query(
+            `
+            SELECT
+                r.id AS resident_id,
+                r.neighborhood_id,
+                n.name AS neighborhood_name,
+                COALESCE(
+                    n.resident_home_mode,
+                    'standard'
+                ) AS resident_home_mode
+            FROM hoa_residents r
+            LEFT JOIN hoa_neighborhoods n
+                ON n.id = r.neighborhood_id
+            WHERE r.id = $1
+            LIMIT 1
+            `,
+            [residentId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: "Resident not found."
+            });
+        }
+
+        return res.json({
+            success: true,
+            ...result.rows[0]
+        });
+
+    } catch (error) {
+        console.error(
+            "getResidentHomeMode error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            error:
+                "Unable to load resident home mode."
+        });
+    }
+};
+
