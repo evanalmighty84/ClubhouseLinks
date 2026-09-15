@@ -2958,3 +2958,131 @@ exports.getResidentHomeMode = async (req, res) => {
     }
 };
 
+exports.getStreetFairVendors = async (req, res) => {
+    try {
+        const residentId = Number.parseInt(
+            req.params.residentId,
+            10
+        );
+
+        if (
+            !Number.isInteger(residentId) ||
+            residentId <= 0
+        ) {
+            return res.status(400).json({
+                success: false,
+                error: "Invalid resident ID."
+            });
+        }
+
+        /*
+         * First determine the resident's neighborhood
+         * and confirm that neighborhood is currently
+         * in street_fair mode.
+         */
+        const neighborhoodResult = await pool.query(
+            `
+            SELECT
+                r.id AS resident_id,
+                r.neighborhood_id,
+                n.name AS neighborhood_name,
+                COALESCE(
+                    n.resident_home_mode,
+                    'standard'
+                ) AS resident_home_mode
+            FROM hoa_residents r
+            JOIN hoa_neighborhoods n
+                ON n.id = r.neighborhood_id
+            WHERE r.id = $1
+            LIMIT 1
+            `,
+            [residentId]
+        );
+
+        if (neighborhoodResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error:
+                    "Resident or neighborhood not found."
+            });
+        }
+
+        const neighborhood =
+            neighborhoodResult.rows[0];
+
+        if (
+            neighborhood.resident_home_mode !==
+            "street_fair"
+        ) {
+            return res.status(403).json({
+                success: false,
+                error:
+                    "This neighborhood is not currently in Street Fair mode."
+            });
+        }
+
+        /*
+         * Only return vendors explicitly associated
+         * with this neighborhood's Street Fair.
+         */
+        const vendorResult = await pool.query(
+            `
+            SELECT
+                v.id,
+                v.company_name,
+                v.category,
+                v.categories,
+                v.contact_name,
+                v.phone,
+                v.email,
+                v.website,
+                v.description,
+                v.logo_url,
+                sfv.sort_order
+            FROM hoa_street_fair_vendors sfv
+
+            JOIN hoa_vendors v
+                ON v.id = sfv.vendor_id
+
+            WHERE sfv.neighborhood_id = $1
+              AND sfv.active = TRUE
+              AND v.active = TRUE
+
+            ORDER BY
+                sfv.sort_order ASC,
+                v.company_name ASC
+            `,
+            [neighborhood.neighborhood_id]
+        );
+
+        return res.json({
+            success: true,
+
+            neighborhood: {
+                id:
+                neighborhood.neighborhood_id,
+
+                name:
+                neighborhood.neighborhood_name,
+
+                resident_home_mode:
+                neighborhood.resident_home_mode
+            },
+
+            vendors: vendorResult.rows
+        });
+
+    } catch (error) {
+        console.error(
+            "getStreetFairVendors error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            error:
+                "Unable to load Street Fair vendors."
+        });
+    }
+};
+

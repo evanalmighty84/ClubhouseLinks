@@ -21,7 +21,8 @@ const {
     checkPhoneVerification,
     submitCompletedProject,
     updateResidentAddress,
-    getResidentHomeMode
+    getResidentHomeMode,
+    getStreetFairVendors
 } = require(
     "../controllers/residentController"
 );
@@ -137,6 +138,10 @@ router.get(
 router.post(
     "/:residentId/service-requests",
     submitServiceRequest
+);
+router.get(
+    "/:residentId/street-fair/vendors",
+    getStreetFairVendors
 );
 
 
