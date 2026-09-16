@@ -1782,14 +1782,38 @@ exports.getVendors = async (req, res) => {
                 LEFT JOIN nearby_vendor_projects nvp
                     ON nvp.vendor_id = v.id
 
-                WHERE
-                    v.active = TRUE
-                    AND (
-                        $1::int IS NULL
-                        OR v.neighborhood_id = $1
-                        OR v.neighborhood_id IS NULL
-                    )
+            WHERE
+            v.active = TRUE
+            AND (
+            /*
+             * Existing behavior:
+             * global vendors or vendors assigned
+             * directly to this resident's neighborhood.
+             */
+            $1::int IS NULL
+            OR v.neighborhood_id = $1
+            OR v.neighborhood_id IS NULL
 
+            /*
+             * Street Fair exception:
+             * the vendor may belong to a different
+             * neighborhood normally, but has been
+             * explicitly invited to this neighborhood's
+             * active Street Fair.
+             */
+            OR EXISTS (
+            SELECT 1
+            FROM hoa_street_fair_vendors sfv
+
+            INNER JOIN hoa_neighborhoods n
+            ON n.id = sfv.neighborhood_id
+
+            WHERE sfv.vendor_id = v.id
+            AND sfv.neighborhood_id = $1
+            AND sfv.active = TRUE
+            AND n.resident_home_mode = 'street_fair'
+            )
+            )
                 GROUP BY
                     v.id,
                     v.neighborhood_id,
