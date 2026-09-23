@@ -2119,6 +2119,400 @@ exports.getResidentProfile = async (req, res) => {
     }
 };
 
+exports.getResidentEvents =
+    async (req, res) => {
+
+        try {
+
+            const residentId =
+                Number(
+                    req.params.residentId
+                );
+
+
+            if (
+                !Number.isInteger(
+                    residentId
+                ) ||
+                residentId <= 0
+            ) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        error:
+                            "Invalid resident ID."
+                    });
+            }
+
+
+            /*
+             * First determine the resident's
+             * actual neighborhood.
+             */
+            const residentResult =
+                await pool.query(
+                    `
+                    SELECT
+                        r.id,
+                        r.neighborhood_id,
+
+                        n.name
+                            AS neighborhood_name,
+
+                        n.city,
+
+                        n.state
+
+                    FROM hoa_residents r
+
+                    INNER JOIN hoa_neighborhoods n
+                        ON n.id =
+                           r.neighborhood_id
+
+                    WHERE r.id = $1
+
+                    LIMIT 1
+                `,
+                    [
+                        residentId
+                    ]
+                );
+
+
+            if (
+                residentResult.rows.length ===
+                0
+            ) {
+
+                return res
+                    .status(404)
+                    .json({
+                        success: false,
+                        error:
+                            "Resident not found."
+                    });
+            }
+
+
+            const resident =
+                residentResult.rows[0];
+
+
+            /*
+             * For now, return published HOA events.
+             *
+             * We will merge hoa_parties into this
+             * same array next.
+             */
+            const eventsResult =
+                await pool.query(
+                    `
+            /*
+             * ==========================================
+             * HOA BOARD EVENTS
+             * ==========================================
+             */
+            SELECT
+                e.id::INTEGER
+                    AS id,
+
+                e.title,
+
+                e.neighborhood_id,
+
+                n.name
+                    AS neighborhood_name,
+
+                n.city,
+
+                n.state,
+
+                e.address,
+
+                e.starts_at,
+
+                e.ends_at,
+
+                e.status,
+
+                COALESCE(
+                    e.signup_label,
+                    'HOA Event'
+                )
+                    AS signup_label,
+
+                e.description,
+
+                e.image_url,
+
+                'hoa_event'::TEXT
+                    AS event_source,
+
+                e.created_by_resident_id,
+
+                e.published_at,
+
+                e.created_at,
+
+                e.updated_at
+
+            FROM hoa_events e
+
+            INNER JOIN hoa_neighborhoods n
+                ON n.id =
+                   e.neighborhood_id
+
+            WHERE
+                e.neighborhood_id = $1
+
+                AND e.status =
+                    'published'
+
+
+            UNION ALL
+
+
+            /*
+             * ==========================================
+             * CLUBHOUSE LINKS HOA PARTIES
+             * ==========================================
+             */
+            SELECT
+                p.id::INTEGER
+                    AS id,
+
+                COALESCE(
+                    NULLIF(
+                        BTRIM(p.title),
+                        ''
+                    ),
+
+                    p.neighborhood ||
+                    ' Community Party'
+                )
+                    AS title,
+
+                p.neighborhood_id,
+
+                n.name
+                    AS neighborhood_name,
+
+                COALESCE(
+                    NULLIF(
+                        BTRIM(p.city),
+                        ''
+                    ),
+                    n.city
+                )
+                    AS city,
+
+                COALESCE(
+                    NULLIF(
+                        BTRIM(p.state),
+                        ''
+                    ),
+                    n.state
+                )
+                    AS state,
+
+                p.address,
+
+                p.starts_at,
+
+                p.ends_at,
+
+                'published'::TEXT
+                    AS status,
+
+                'Clubhouse Links HOA Party'::TEXT
+                    AS signup_label,
+
+                COALESCE(
+                    NULLIF(
+                        BTRIM(
+                            p.description
+                        ),
+                        ''
+                    ),
+
+                    'A Clubhouse Links neighborhood party with residents, local businesses, food, music, and community activities.'
+                )
+                    AS description,
+
+                p.image_url,
+
+                'hoa_party'::TEXT
+                    AS event_source,
+
+                NULL::INTEGER
+                    AS created_by_resident_id,
+
+                p.created_at::TIMESTAMPTZ
+                    AS published_at,
+
+                p.created_at::TIMESTAMPTZ
+                    AS created_at,
+
+                p.created_at::TIMESTAMPTZ
+                    AS updated_at
+
+            FROM hoa_parties p
+
+            INNER JOIN hoa_neighborhoods n
+                ON n.id =
+                   p.neighborhood_id
+
+            WHERE
+                p.neighborhood_id = $1
+
+                /*
+                 * Old parties using only weekend/time
+                 * cannot be reliably placed on the
+                 * Swift calendar until starts_at has
+                 * been backfilled.
+                 */
+                AND p.starts_at
+                    IS NOT NULL
+
+
+            UNION ALL
+
+
+            /*
+             * ==========================================
+             * CLUBHOUSE LINKS STREET FAIRS
+             * ==========================================
+             */
+            SELECT
+                sf.id::INTEGER
+                    AS id,
+
+                sf.title,
+
+                sf.neighborhood_id,
+
+                n.name
+                    AS neighborhood_name,
+
+                n.city,
+
+                n.state,
+
+                sf.address,
+
+                sf.starts_at,
+
+                sf.ends_at,
+
+                sf.status,
+
+                'Clubhouse Links Street Fair'::TEXT
+                    AS signup_label,
+
+                COALESCE(
+                    NULLIF(
+                        BTRIM(
+                            sf.description
+                        ),
+                        ''
+                    ),
+
+                    'Clubhouse Links is bringing trusted local service professionals directly into the neighborhood.'
+                )
+                    AS description,
+
+                sf.image_url,
+
+                'street_fair'::TEXT
+                    AS event_source,
+
+                NULL::INTEGER
+                    AS created_by_resident_id,
+
+                sf.created_at
+                    AS published_at,
+
+                sf.created_at,
+
+                sf.updated_at
+
+            FROM hoa_street_fairs sf
+
+            INNER JOIN hoa_neighborhoods n
+                ON n.id =
+                   sf.neighborhood_id
+
+            WHERE
+                sf.neighborhood_id = $1
+
+                AND sf.status =
+                    'published'
+
+
+            /*
+             * ==========================================
+             * COMBINED CALENDAR
+             * ==========================================
+             */
+            ORDER BY
+                starts_at ASC,
+                id ASC
+        `,
+                    [
+                        resident.neighborhood_id
+                    ]
+                );
+
+
+            return res
+                .status(200)
+                .json({
+
+                    success:
+                        true,
+
+                    neighborhood: {
+
+                        id:
+                        resident
+                            .neighborhood_id,
+
+                        name:
+                        resident
+                            .neighborhood_name,
+
+                        city:
+                        resident.city,
+
+                        state:
+                        resident.state
+                    },
+
+                    events:
+                    eventsResult.rows
+                });
+
+
+        } catch (error) {
+
+            console.error(
+                "[Resident Events] Error:",
+                error
+            );
+
+
+            return res
+                .status(500)
+                .json({
+                    success: false,
+                    error:
+                        "Could not load resident events."
+                });
+        }
+    };
+
 
 exports.submitCompletedProject = async (req, res) => {
 

@@ -22,7 +22,8 @@ const {
     submitCompletedProject,
     updateResidentAddress,
     getResidentHomeMode,
-    getStreetFairVendors
+    getStreetFairVendors,
+    getResidentEvents
 } = require(
     "../controllers/residentController"
 );
@@ -63,7 +64,10 @@ router.get(
     "/profile/:residentId",
     getResidentProfile
 );
-
+router.get(
+    "/events/:residentId",
+    getResidentEvents
+);
 router.get(
     "/vendors/:residentId",
     getVendors

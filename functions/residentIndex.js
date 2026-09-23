@@ -6,6 +6,9 @@ const hoaResidentRoutes = require('./routes/residentRoutes');
 const hoaVendorRoutes =
     require('./routes/vendorRoutes');
 
+const hoaBoardRoutes =
+    require('./routes/hoaBoardMemberRoutes');
+
 dotenv.config();
 
 const app = express();
@@ -45,7 +48,10 @@ app.use(
     '/api/vendors',
     hoaVendorRoutes
 );
-
+app.use(
+    '/api/hoaBoardMembers',
+    hoaBoardRoutes
+);
 app.get('/api/test', (req, res) => {
     res.json({ message: '✅ HOA backend is responding' });
 });

@@ -9,6 +9,285 @@ const {
     require("./apnsService");
 
 
+    require("./apnsService");
+async function notifyHoaEventPublished({
+                                           eventId,
+                                           neighborhoodId,
+                                           neighborhoodName,
+                                           boardResidentId,
+                                           title,
+                                           startsAt
+                                       }) {
+
+    const cleanEventId =
+        Number(eventId);
+
+    const cleanNeighborhoodId =
+        Number(
+            neighborhoodId
+        );
+
+
+    if (
+        !Number.isInteger(
+            cleanEventId
+        ) ||
+        cleanEventId <= 0
+    ) {
+
+        throw new Error(
+            "Invalid eventId."
+        );
+    }
+
+
+    if (
+        !Number.isInteger(
+            cleanNeighborhoodId
+        ) ||
+        cleanNeighborhoodId <= 0
+    ) {
+
+        throw new Error(
+            "Invalid neighborhoodId."
+        );
+    }
+
+
+    /*
+     * Every real active resident device
+     * in this neighborhood.
+     *
+     * Support devices are excluded.
+     */
+    const result =
+        await pool.query(
+            `
+                SELECT DISTINCT ON (
+                    d.device_token
+                )
+
+                    d.id
+                        AS device_id,
+
+                    d.resident_id,
+
+                    d.device_token,
+
+                    COALESCE(
+                        NULLIF(
+                            BTRIM(
+                                d.environment
+                            ),
+                            ''
+                        ),
+                        'production'
+                    )
+                        AS environment
+
+                FROM hoa_resident_devices d
+
+                INNER JOIN hoa_residents r
+                    ON r.id =
+                       d.resident_id
+
+                WHERE
+                    r.neighborhood_id =
+                    $1
+
+                    AND d.active =
+                        TRUE
+
+                    AND d.device_token
+                        IS NOT NULL
+
+                    AND BTRIM(
+                        d.device_token
+                    ) <> ''
+
+                    AND COALESCE(
+                        d.is_support_device,
+                        FALSE
+                    ) = FALSE
+
+                ORDER BY
+                    d.device_token,
+                    d.updated_at DESC
+            `,
+            [
+                cleanNeighborhoodId
+            ]
+        );
+
+
+    const devices =
+        result.rows;
+
+
+    const safeNeighborhoodName =
+        String(
+            neighborhoodName ||
+            "Your Neighborhood"
+        ).trim();
+
+
+    const safeTitle =
+        String(
+            title ||
+            "Neighborhood Event"
+        ).trim();
+
+
+    const notificationTitle =
+        `New Event in ${safeNeighborhoodName}`;
+
+
+    const notificationBody =
+        `Your HOA posted "${safeTitle}". ` +
+        `Tap to view the event details.`;
+
+
+    const summary = {
+        attempted:
+        devices.length,
+
+        sent: 0,
+
+        failed: 0
+    };
+
+
+    for (
+        const device
+        of devices
+        ) {
+
+        try {
+
+            const pushResult =
+                await sendResidentPush({
+
+                    deviceToken:
+                    device.device_token,
+
+                    environment:
+                    device.environment,
+
+                    title:
+                    notificationTitle,
+
+                    body:
+                    notificationBody,
+
+                    residentId:
+                    device.resident_id,
+
+                    notificationType:
+                        "hoa_event_published",
+
+                    customData: {
+
+                        event_id:
+                            String(
+                                cleanEventId
+                            ),
+
+                        neighborhood_id:
+                            String(
+                                cleanNeighborhoodId
+                            )
+                    }
+                });
+
+
+            if (
+                pushResult.success
+            ) {
+
+                summary.sent += 1;
+
+            } else {
+
+                summary.failed += 1;
+
+
+                console.error(
+                    "[HOA Event Push] Failed:",
+                    {
+                        residentId:
+                        device
+                            .resident_id,
+
+                        eventId:
+                        cleanEventId,
+
+                        result:
+                        pushResult
+                    }
+                );
+
+
+                if (
+                    pushResult
+                        .deactivateToken
+                ) {
+
+                    await pool.query(
+                        `
+                            UPDATE
+                                hoa_resident_devices
+
+                            SET
+                                active =
+                                    FALSE,
+
+                                updated_at =
+                                    NOW()
+
+                            WHERE id =
+                                $1
+                        `,
+                        [
+                            device
+                                .device_id
+                        ]
+                    );
+                }
+            }
+
+        } catch (error) {
+
+            summary.failed += 1;
+
+
+            console.error(
+                "[HOA Event Push] Error:",
+                {
+                    residentId:
+                    device
+                        .resident_id,
+
+                    eventId:
+                    cleanEventId,
+
+                    error:
+                    error.message
+                }
+            );
+        }
+    }
+
+
+    console.log(
+        `[HOA Event Push] Event ${cleanEventId}:`,
+        summary
+    );
+
+
+    return summary;
+}
+
+
 async function notifyCommunityJobCompleted({
                                                projectId,
                                                residentId,
@@ -294,5 +573,6 @@ async function notifyCommunityJobCompleted({
 
 
 module.exports = {
+    notifyHoaEventPublished,
     notifyCommunityJobCompleted
 };
