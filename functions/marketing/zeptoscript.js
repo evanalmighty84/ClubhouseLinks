@@ -24,10 +24,12 @@ const HEADSHOT_PATH = path.join(
     "headshot.png"
 );
 
-const INVESTOR_CONTACTS_PDF_PATH = path.join(
-    __dirname,
-    "suzanne_investor_contacts_neon.pdf"
-);
+const MARKETING_PDF_PATH = emailConfig.pdfAttachment
+    ? path.join(
+        __dirname,
+        emailConfig.pdfAttachment
+    )
+    : null;
 
 const SMTP_USER =
     process.env.ZEPTOMAIL_SMTP_USER ||
@@ -106,10 +108,14 @@ function validateEmailConfig(config) {
 function validateAttachmentFiles() {
     const attachmentFiles = [
         CLUBHOUSE_LOGO_PATH,
-        LEAD_PREVIEW_PATH,
-        HEADSHOT_PATH,
-        INVESTOR_CONTACTS_PDF_PATH
+        HEADSHOT_PATH
     ];
+
+    if (MARKETING_PDF_PATH) {
+        attachmentFiles.push(
+            MARKETING_PDF_PATH
+        );
+    }
 
     for (const attachmentPath of attachmentFiles) {
         if (!fs.existsSync(attachmentPath)) {
@@ -451,11 +457,18 @@ async function sendEmail() {
                     cid: "evan-headshot"
                 },
 
-                {
-                    filename: "Suzanne-Investor-Development-Contacts.pdf",
-                    path: INVESTOR_CONTACTS_PDF_PATH,
-                    contentType: "application/pdf"
-                }
+                ...(MARKETING_PDF_PATH
+                    ? [
+                        {
+                            filename:
+                                emailConfig.pdfAttachmentName ||
+                                emailConfig.pdfAttachment,
+
+                            path: MARKETING_PDF_PATH,
+                            contentType: "application/pdf"
+                        }
+                    ]
+                    : [])
             ]
         });
 

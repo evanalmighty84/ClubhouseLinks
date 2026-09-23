@@ -223,11 +223,30 @@ function sendVendorPush({
 
                 ...customData,
 
-                type: notificationType,
+                /*
+                 * Keep "type" for anything older that already uses it.
+                 * notification_type is what VendorPushManager.swift
+                 * now reads.
+                 */
+                type:
+                notificationType,
 
-                vendor_id:
-                    Number(vendorId)
+                notification_type:
+                notificationType
             };
+
+
+            /*
+             * Not every notification belongs to a vendor.
+             */
+            if (
+                vendorId !== null &&
+                vendorId !== undefined &&
+                Number(vendorId) > 0
+            ) {
+                payload.vendor_id =
+                    Number(vendorId);
+            }
 
             /*
              * Service-request notifications have request_id.
@@ -256,6 +275,48 @@ function sendVendorPush({
     });
 }
 
+function sendResidentPush({
+                              deviceToken,
+                              environment = 'production',
+                              title,
+                              body,
+                              residentId = null,
+                              vendorId = null,
+                              badge = 1,
+                              notificationType =
+                              'resident_notification',
+                              customData = {}
+                          }) {
+
+    const residentData = {
+        ...customData
+    };
+
+
+    if (
+        residentId !== null &&
+        residentId !== undefined &&
+        Number(residentId) > 0
+    ) {
+        residentData.resident_id =
+            String(residentId);
+    }
+
+
+    return sendVendorPush({
+        deviceToken,
+        environment,
+        title,
+        body,
+        vendorId,
+        badge,
+        notificationType,
+        customData:
+        residentData
+    });
+}
+
 module.exports = {
-    sendVendorPush
+    sendVendorPush,
+    sendResidentPush
 };

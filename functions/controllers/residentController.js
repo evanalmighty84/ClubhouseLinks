@@ -2,6 +2,10 @@
 const pool = require('../db/db');
 const jwt = require("jsonwebtoken");
 const cloudinary = require("cloudinary").v2;
+const notificationService =
+    require(
+        "../services/notificationService"
+    );
 
 const PPLX_API_URL =
     process.env.PPLX_API_URL || 'https://api.perplexity.ai/chat/completions';
@@ -2596,6 +2600,32 @@ exports.submitCompletedProject = async (req, res) => {
 
         await client.query("COMMIT");
 
+        if (finalApprovalStatus === "approved") {
+
+            try {
+
+                await notificationService
+                    .notifyCommunityJobCompleted({
+                        projectId: result.rows[0].id,
+                        residentId,
+                        neighborhoodId:
+                        residentNeighborhoodId,
+                        vendorId:
+                        resolvedVendorId,
+                        vendorName:
+                        vendor.company_name,
+                        service:
+                        cleanCategory
+                    });
+
+            } catch (notificationError) {
+
+                console.error(
+                    "Community completed-project notification failed:",
+                    notificationError
+                );
+            }
+        }
         return res.status(200).json({
             success: true,
             project: {
