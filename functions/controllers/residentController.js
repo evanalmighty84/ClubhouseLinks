@@ -1391,36 +1391,46 @@ exports.getVendors = async (req, res) => {
          * geocode their saved address first.
          */
         if (
-            (!resident.latitude || !resident.longitude) &&
+            (resident.latitude == null ||
+                resident.longitude == null) &&
             resident.address
-        ) {
-            const coordinates =
-                await geocodeAddressWithAppleMaps(
-                    resident.address
-                );
+        )  {
+            try {
+                const coordinates =
+                    await geocodeAddressWithAppleMaps(
+                        resident.address
+                    );
 
-            if (coordinates) {
-                await pool.query(
-                    `
+                if (coordinates) {
+                    await pool.query(
+                        `
                     UPDATE hoa_residents
                     SET
                         latitude = $1,
                         longitude = $2,
                         updated_at = NOW()
                     WHERE id = $3
-                    `,
-                    [
-                        coordinates.latitude,
-                        coordinates.longitude,
-                        resident.id
-                    ]
-                );
+                `,
+                        [
+                            coordinates.latitude,
+                            coordinates.longitude,
+                            resident.id
+                        ]
+                    );
 
-                resident = {
-                    ...resident,
-                    latitude: coordinates.latitude,
-                    longitude: coordinates.longitude
-                };
+                    resident = {
+                        ...resident,
+                        latitude:
+                        coordinates.latitude,
+                        longitude:
+                        coordinates.longitude
+                    };
+                }
+            } catch (geocodeError) {
+                console.warn(
+                    "getVendors geocoding skipped:",
+                    geocodeError.message
+                );
             }
         }
 
@@ -1465,40 +1475,38 @@ exports.getVendors = async (req, res) => {
 
                 FROM hoa_residents r
 
-                WHERE
-                    r.latitude IS NOT NULL
-                    AND r.longitude IS NOT NULL
-                    AND (
-                        (
-                            $2::numeric IS NOT NULL
-                            AND $3::numeric IS NOT NULL
-                            AND (
-                                3959 * acos(
-                                    LEAST(
-                                        1,
-                                        GREATEST(
-                                            -1,
-                                            cos(radians($2::numeric)) *
-                                            cos(radians(r.latitude::numeric)) *
-                                            cos(
-                                                radians(r.longitude::numeric) -
-                                                radians($3::numeric)
-                                            ) +
-                                            sin(radians($2::numeric)) *
-                                            sin(radians(r.latitude::numeric))
-                                        )
-                                    )
-                                )
-                            ) <= $4::numeric
-                        )
+WHERE
+    (
+            $1::int IS NOT NULL
+            AND r.neighborhood_id = $1
+            )
 
-                        OR
+            OR
 
-                        (
-                            $1::int IS NOT NULL
-                            AND r.neighborhood_id = $1
-                        )
-                    )
+            (
+            $2::numeric IS NOT NULL
+            AND $3::numeric IS NOT NULL
+            AND r.latitude IS NOT NULL
+            AND r.longitude IS NOT NULL
+            AND (
+            3959 * acos(
+            LEAST(
+            1,
+            GREATEST(
+            -1,
+            cos(radians($2::numeric)) *
+            cos(radians(r.latitude::numeric)) *
+            cos(
+            radians(r.longitude::numeric) -
+            radians($3::numeric)
+            ) +
+            sin(radians($2::numeric)) *
+            sin(radians(r.latitude::numeric))
+            )
+            )
+            )
+            ) <= $4::numeric
+            )
             ),
 
             /*
