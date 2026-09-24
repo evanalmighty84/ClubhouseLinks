@@ -3405,6 +3405,1178 @@ exports.getResidentHomeMode = async (req, res) => {
         });
     }
 };
+////////////////////////////////////////////////////////////
+// NEIGHBOR CONTACT REQUESTS
+////////////////////////////////////////////////////////////
+
+
+exports.createNeighborContactRequest =
+    async (req, res) => {
+
+        try {
+
+            const requesterResidentId =
+                Number(
+                    req.params.residentId
+                );
+
+            const targetResidentId =
+                Number(
+                    req.body?.target_resident_id ??
+                    req.body?.targetResidentId
+                );
+
+            const vendorId =
+                Number(
+                    req.body?.vendor_id ??
+                    req.body?.vendorId
+                );
+
+
+            if (
+                !Number.isInteger(
+                    requesterResidentId
+                ) ||
+                requesterResidentId <= 0 ||
+                !Number.isInteger(
+                    targetResidentId
+                ) ||
+                targetResidentId <= 0 ||
+                !Number.isInteger(
+                    vendorId
+                ) ||
+                vendorId <= 0
+            ) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success:
+                            false,
+
+                        error:
+                            "A valid requester, target resident, and vendor are required."
+                    });
+            }
+
+
+            if (
+                requesterResidentId ===
+                targetResidentId
+            ) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success:
+                            false,
+
+                        error:
+                            "You cannot send a contact request to yourself."
+                    });
+            }
+
+
+            /*
+             * Load both residents.
+             *
+             * neighborhood_id is important because
+             * exact addresses are only exposed when
+             * both residents belong to the same HOA.
+             */
+            const residentsResult =
+                await pool.query(
+                    `
+                    SELECT
+                        id,
+                        first_name,
+                        last_name,
+                        phone,
+                        address,
+                        neighborhood_id,
+                        latitude,
+                        longitude
+                    FROM hoa_residents
+                    WHERE id = ANY(
+                        $1::integer[]
+                    )
+                `,
+                    [[
+                        requesterResidentId,
+                        targetResidentId
+                    ]]
+                );
+
+
+            const requester =
+                residentsResult.rows.find(
+                    row =>
+                        Number(row.id) ===
+                        requesterResidentId
+                );
+
+            const target =
+                residentsResult.rows.find(
+                    row =>
+                        Number(row.id) ===
+                        targetResidentId
+                );
+
+
+            if (!requester) {
+
+                return res
+                    .status(404)
+                    .json({
+                        success:
+                            false,
+
+                        error:
+                            "Requesting resident not found."
+                    });
+            }
+
+
+            if (!target) {
+
+                return res
+                    .status(404)
+                    .json({
+                        success:
+                            false,
+
+                        error:
+                            "Neighbor not found."
+                    });
+            }
+
+
+            /*
+             * Confirm the vendor exists.
+             */
+            const vendorResult =
+                await pool.query(
+                    `
+                    SELECT
+                        id,
+                        company_name,
+                        category,
+                        active
+                    FROM hoa_vendors
+                    WHERE id = $1
+                    LIMIT 1
+                `,
+                    [vendorId]
+                );
+
+
+            if (
+                !vendorResult.rows.length
+            ) {
+
+                return res
+                    .status(404)
+                    .json({
+                        success:
+                            false,
+
+                        error:
+                            "Vendor not found."
+                    });
+            }
+
+
+            const vendor =
+                vendorResult.rows[0];
+
+
+            /*
+             * Make sure the target resident really
+             * has a relationship with this vendor.
+             *
+             * A relationship can come from:
+             *
+             * 1. A completed/submitted project
+             * 2. A vendor invite code
+             */
+            const relationshipResult =
+                await pool.query(
+                    `
+                    SELECT TRUE AS valid
+                    WHERE EXISTS
+                    (
+                        SELECT 1
+                        FROM hoa_resident_contractors rc
+                        WHERE
+                            rc.resident_id = $1
+                            AND
+                            rc.vendor_id = $2
+                    )
+                    OR EXISTS
+                    (
+                        SELECT 1
+                        FROM hoa_residents r
+                        INNER JOIN hoa_invite_codes ic
+                            ON
+                            UPPER(
+                                BTRIM(
+                                    r.invite_code_used
+                                )
+                            ) =
+                            UPPER(
+                                BTRIM(
+                                    ic.code
+                                )
+                            )
+                        WHERE
+                            r.id = $1
+                            AND
+                            ic.vendor_id = $2
+                            AND
+                            ic.active = TRUE
+                    )
+                    LIMIT 1
+                `,
+                    [
+                        targetResidentId,
+                        vendorId
+                    ]
+                );
+
+
+            if (
+                !relationshipResult
+                    .rows
+                    .length
+            ) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success:
+                            false,
+
+                        error:
+                            "This neighbor is not associated with that vendor."
+                    });
+            }
+
+
+            const suppliedMessage =
+                String(
+                    req.body?.message ??
+                    ""
+                )
+                    .trim();
+
+
+            const message =
+                suppliedMessage ||
+                `I'd like to ask about your experience with ${vendor.company_name}.`;
+
+
+            let insertResult;
+
+            try {
+
+                insertResult =
+                    await pool.query(
+                        `
+                        INSERT INTO
+                            hoa_neighbor_contact_requests
+                        (
+                            requester_resident_id,
+                            target_resident_id,
+                            vendor_id,
+                            message,
+                            status
+                        )
+                        VALUES
+                        (
+                            $1,
+                            $2,
+                            $3,
+                            $4,
+                            'pending'
+                        )
+                        RETURNING
+                            id::INTEGER AS id,
+                            requester_resident_id,
+                            target_resident_id,
+                            vendor_id,
+                            message,
+                            status,
+                            created_at,
+                            responded_at,
+                            updated_at
+                    `,
+                        [
+                            requesterResidentId,
+                            targetResidentId,
+                            vendorId,
+                            message
+                        ]
+                    );
+
+            } catch (insertError) {
+
+                /*
+                 * The partial unique index we added
+                 * prevents duplicate pending requests
+                 * for the same requester/neighbor/vendor.
+                 */
+                if (
+                    insertError?.code ===
+                    "23505"
+                ) {
+
+                    return res
+                        .status(409)
+                        .json({
+                            success:
+                                false,
+
+                            error:
+                                "A contact request for this neighbor and vendor is already pending."
+                        });
+                }
+
+                throw insertError;
+            }
+
+
+            const request =
+                insertResult.rows[0];
+
+
+            const sameHoa =
+                requester.neighborhood_id &&
+                target.neighborhood_id &&
+                Number(
+                    requester.neighborhood_id
+                ) ===
+                Number(
+                    target.neighborhood_id
+                );
+
+
+            /*
+             * Notification delivery should never
+             * cause a successfully-created request
+             * to fail.
+             */
+            try {
+
+                if (
+                    typeof notificationService
+                        .notifyNeighborContactRequest ===
+                    "function"
+                ) {
+
+                    await notificationService
+                        .notifyNeighborContactRequest({
+                            requestId:
+                            request.id,
+
+                            requesterResidentId:
+                            requesterResidentId,
+
+                            requesterName:
+                            requester.first_name,
+
+                            targetResidentId:
+                            targetResidentId,
+
+                            vendorId:
+                            vendorId,
+
+                            vendorName:
+                            vendor.company_name,
+
+                            message:
+                            message
+                        });
+                }
+
+            } catch (
+                notificationError
+                ) {
+
+                console.error(
+                    "Neighbor contact request notification failed:",
+                    notificationError
+                );
+            }
+
+
+            return res
+                .status(201)
+                .json({
+                    success:
+                        true,
+
+                    request: {
+                        ...request,
+
+                        vendor_name:
+                        vendor.company_name,
+
+                        target_first_name:
+                        target.first_name,
+
+                        same_hoa:
+                            Boolean(
+                                sameHoa
+                            ),
+
+                        /*
+                         * Exact address is allowed
+                         * only inside the same HOA.
+                         */
+                        target_address:
+                            sameHoa
+                                ? target.address
+                                : null,
+
+                        /*
+                         * Phone stays private while
+                         * the request is pending.
+                         */
+                        target_phone:
+                            null
+                    },
+
+                    message:
+                        `Contact request sent to ${target.first_name || "your neighbor"}.`
+                });
+
+        } catch (err) {
+
+            console.error(
+                "createNeighborContactRequest error:",
+                err
+            );
+
+            return res
+                .status(500)
+                .json({
+                    success:
+                        false,
+
+                    error:
+                        "Failed to create neighbor contact request."
+                });
+        }
+    };
+
+
+
+exports.getNeighborContactRequests =
+    async (req, res) => {
+
+        try {
+
+            const residentId =
+                Number(
+                    req.params.residentId
+                );
+
+
+            if (
+                !Number.isInteger(
+                    residentId
+                ) ||
+                residentId <= 0
+            ) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success:
+                            false,
+
+                        error:
+                            "A valid resident ID is required."
+                    });
+            }
+
+
+            const residentResult =
+                await pool.query(
+                    `
+                    SELECT
+                        id,
+                        neighborhood_id
+                    FROM hoa_residents
+                    WHERE id = $1
+                    LIMIT 1
+                `,
+                    [residentId]
+                );
+
+
+            if (
+                !residentResult.rows.length
+            ) {
+
+                return res
+                    .status(404)
+                    .json({
+                        success:
+                            false,
+
+                        error:
+                            "Resident not found."
+                    });
+            }
+
+
+            /*
+             * OUTGOING
+             *
+             * Target phone is only returned after
+             * the target resident accepts.
+             *
+             * Exact address is only returned when
+             * requester and target are in the same HOA.
+             */
+            const outgoingResult =
+                await pool.query(
+                    `
+                    SELECT
+                        ncr.id::INTEGER AS id,
+                        ncr.requester_resident_id,
+                        ncr.target_resident_id,
+                        ncr.vendor_id,
+                        ncr.message,
+                        ncr.status,
+                        ncr.created_at,
+                        ncr.responded_at,
+                        ncr.updated_at,
+
+                        v.company_name
+                            AS vendor_name,
+
+                        v.category
+                            AS vendor_category,
+
+                        v.logo_url
+                            AS vendor_logo_url,
+
+                        target.first_name
+                            AS target_first_name,
+
+                        target.last_name
+                            AS target_last_name,
+
+                        CASE
+                            WHEN
+                                requester.neighborhood_id
+                                IS NOT NULL
+                                AND
+                                requester.neighborhood_id =
+                                target.neighborhood_id
+                            THEN target.address
+                            ELSE NULL
+                        END
+                            AS target_address,
+
+                        CASE
+                            WHEN
+                                requester.neighborhood_id
+                                IS NOT NULL
+                                AND
+                                requester.neighborhood_id =
+                                target.neighborhood_id
+                            THEN TRUE
+                            ELSE FALSE
+                        END
+                            AS same_hoa,
+
+                        CASE
+                            WHEN
+                                ncr.status =
+                                'accepted'
+                            THEN target.phone
+                            ELSE NULL
+                        END
+                            AS target_phone
+
+                    FROM
+                        hoa_neighbor_contact_requests
+                        ncr
+
+                    INNER JOIN
+                        hoa_residents requester
+                        ON
+                        requester.id =
+                        ncr.requester_resident_id
+
+                    INNER JOIN
+                        hoa_residents target
+                        ON
+                        target.id =
+                        ncr.target_resident_id
+
+                    INNER JOIN
+                        hoa_vendors v
+                        ON
+                        v.id =
+                        ncr.vendor_id
+
+                    WHERE
+                        ncr.requester_resident_id =
+                        $1
+
+                    ORDER BY
+                        ncr.created_at DESC
+                `,
+                    [residentId]
+                );
+
+
+            /*
+             * INCOMING
+             *
+             * Once accepted, both neighbors may
+             * see one another's phone number.
+             */
+            const incomingResult =
+                await pool.query(
+                    `
+                    SELECT
+                        ncr.id::INTEGER AS id,
+                        ncr.requester_resident_id,
+                        ncr.target_resident_id,
+                        ncr.vendor_id,
+                        ncr.message,
+                        ncr.status,
+                        ncr.created_at,
+                        ncr.responded_at,
+                        ncr.updated_at,
+
+                        v.company_name
+                            AS vendor_name,
+
+                        v.category
+                            AS vendor_category,
+
+                        v.logo_url
+                            AS vendor_logo_url,
+
+                        requester.first_name
+                            AS requester_first_name,
+
+                        requester.last_name
+                            AS requester_last_name,
+
+                        CASE
+                            WHEN
+                                target.neighborhood_id
+                                IS NOT NULL
+                                AND
+                                target.neighborhood_id =
+                                requester.neighborhood_id
+                            THEN requester.address
+                            ELSE NULL
+                        END
+                            AS requester_address,
+
+                        CASE
+                            WHEN
+                                target.neighborhood_id
+                                IS NOT NULL
+                                AND
+                                target.neighborhood_id =
+                                requester.neighborhood_id
+                            THEN TRUE
+                            ELSE FALSE
+                        END
+                            AS same_hoa,
+
+                        CASE
+                            WHEN
+                                ncr.status =
+                                'accepted'
+                            THEN requester.phone
+                            ELSE NULL
+                        END
+                            AS requester_phone
+
+                    FROM
+                        hoa_neighbor_contact_requests
+                        ncr
+
+                    INNER JOIN
+                        hoa_residents requester
+                        ON
+                        requester.id =
+                        ncr.requester_resident_id
+
+                    INNER JOIN
+                        hoa_residents target
+                        ON
+                        target.id =
+                        ncr.target_resident_id
+
+                    INNER JOIN
+                        hoa_vendors v
+                        ON
+                        v.id =
+                        ncr.vendor_id
+
+                    WHERE
+                        ncr.target_resident_id =
+                        $1
+
+                    ORDER BY
+                        CASE
+                            WHEN ncr.status =
+                                'pending'
+                            THEN 0
+                            ELSE 1
+                        END,
+                        ncr.created_at DESC
+                `,
+                    [residentId]
+                );
+
+
+            return res.json({
+                success:
+                    true,
+
+                incoming:
+                incomingResult.rows,
+
+                outgoing:
+                outgoingResult.rows,
+
+                incoming_count:
+                incomingResult
+                    .rows
+                    .length,
+
+                outgoing_count:
+                outgoingResult
+                    .rows
+                    .length
+            });
+
+        } catch (err) {
+
+            console.error(
+                "getNeighborContactRequests error:",
+                err
+            );
+
+            return res
+                .status(500)
+                .json({
+                    success:
+                        false,
+
+                    error:
+                        "Failed to load neighbor contact requests."
+                });
+        }
+    };
+
+
+
+exports.respondToNeighborContactRequest =
+    async (req, res) => {
+
+        try {
+
+            const residentId =
+                Number(
+                    req.params.residentId
+                );
+
+            const requestId =
+                Number(
+                    req.params.requestId
+                );
+
+            const action =
+                String(
+                    req.body?.action ??
+                    ""
+                )
+                    .trim()
+                    .toLowerCase();
+
+
+            if (
+                !Number.isInteger(
+                    residentId
+                ) ||
+                residentId <= 0 ||
+                !Number.isInteger(
+                    requestId
+                ) ||
+                requestId <= 0
+            ) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success:
+                            false,
+
+                        error:
+                            "A valid resident and request ID are required."
+                    });
+            }
+
+
+            if (
+                action !== "accept" &&
+                action !== "decline"
+            ) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success:
+                            false,
+
+                        error:
+                            "action must be either accept or decline."
+                    });
+            }
+
+
+            /*
+             * Only the TARGET resident can respond.
+             */
+            const existingResult =
+                await pool.query(
+                    `
+                    SELECT
+                        ncr.id::INTEGER AS id,
+                        ncr.requester_resident_id,
+                        ncr.target_resident_id,
+                        ncr.vendor_id,
+                        ncr.message,
+                        ncr.status,
+
+                        requester.first_name
+                            AS requester_first_name,
+
+                        requester.phone
+                            AS requester_phone,
+
+                        requester.address
+                            AS requester_address,
+
+                        requester.neighborhood_id
+                            AS requester_neighborhood_id,
+
+                        target.first_name
+                            AS target_first_name,
+
+                        target.phone
+                            AS target_phone,
+
+                        target.address
+                            AS target_address,
+
+                        target.neighborhood_id
+                            AS target_neighborhood_id,
+
+                        v.company_name
+                            AS vendor_name,
+
+                        v.category
+                            AS vendor_category
+
+                    FROM
+                        hoa_neighbor_contact_requests
+                        ncr
+
+                    INNER JOIN
+                        hoa_residents requester
+                        ON
+                        requester.id =
+                        ncr.requester_resident_id
+
+                    INNER JOIN
+                        hoa_residents target
+                        ON
+                        target.id =
+                        ncr.target_resident_id
+
+                    INNER JOIN
+                        hoa_vendors v
+                        ON
+                        v.id =
+                        ncr.vendor_id
+
+                    WHERE
+                        ncr.id = $1
+                        AND
+                        ncr.target_resident_id =
+                        $2
+
+                    LIMIT 1
+                `,
+                    [
+                        requestId,
+                        residentId
+                    ]
+                );
+
+
+            if (
+                !existingResult.rows.length
+            ) {
+
+                return res
+                    .status(404)
+                    .json({
+                        success:
+                            false,
+
+                        error:
+                            "Contact request not found."
+                    });
+            }
+
+
+            const existing =
+                existingResult.rows[0];
+
+
+            if (
+                existing.status !==
+                "pending"
+            ) {
+
+                return res
+                    .status(409)
+                    .json({
+                        success:
+                            false,
+
+                        error:
+                            `This request has already been ${existing.status}.`
+                    });
+            }
+
+
+            const newStatus =
+                action === "accept"
+                    ? "accepted"
+                    : "declined";
+
+
+            const updateResult =
+                await pool.query(
+                    `
+                    UPDATE
+                        hoa_neighbor_contact_requests
+
+                    SET
+                        status = $1,
+
+                        responded_at =
+                            NOW(),
+
+                        updated_at =
+                            NOW()
+
+                    WHERE
+                        id = $2
+                        AND
+                        target_resident_id =
+                            $3
+                        AND
+                        status = 'pending'
+
+                    RETURNING
+                        id::INTEGER AS id,
+                        requester_resident_id,
+                        target_resident_id,
+                        vendor_id,
+                        message,
+                        status,
+                        created_at,
+                        responded_at,
+                        updated_at
+                `,
+                    [
+                        newStatus,
+                        requestId,
+                        residentId
+                    ]
+                );
+
+
+            if (
+                !updateResult.rows.length
+            ) {
+
+                return res
+                    .status(409)
+                    .json({
+                        success:
+                            false,
+
+                        error:
+                            "The request is no longer pending."
+                    });
+            }
+
+
+            const updated =
+                updateResult.rows[0];
+
+
+            const sameHoa =
+                existing
+                    .requester_neighborhood_id &&
+                existing
+                    .target_neighborhood_id &&
+                Number(
+                    existing
+                        .requester_neighborhood_id
+                ) ===
+                Number(
+                    existing
+                        .target_neighborhood_id
+                );
+
+
+            /*
+             * Tell the requester that the neighbor
+             * accepted or declined.
+             *
+             * As with all push notifications,
+             * notification failure must not undo
+             * the database update.
+             */
+            try {
+
+                if (
+                    typeof notificationService
+                        .notifyNeighborContactRequestResponse ===
+                    "function"
+                ) {
+
+                    await notificationService
+                        .notifyNeighborContactRequestResponse({
+                            requestId:
+                            updated.id,
+
+                            requesterResidentId:
+                            existing
+                                .requester_resident_id,
+
+                            targetResidentId:
+                            existing
+                                .target_resident_id,
+
+                            targetName:
+                            existing
+                                .target_first_name,
+
+                            vendorId:
+                            existing.vendor_id,
+
+                            vendorName:
+                            existing.vendor_name,
+
+                            status:
+                            newStatus
+                        });
+                }
+
+            } catch (
+                notificationError
+                ) {
+
+                console.error(
+                    "Neighbor contact response notification failed:",
+                    notificationError
+                );
+            }
+
+
+            return res.json({
+                success:
+                    true,
+
+                request: {
+                    ...updated,
+
+                    vendor_name:
+                    existing.vendor_name,
+
+                    requester_first_name:
+                    existing
+                        .requester_first_name,
+
+                    target_first_name:
+                    existing
+                        .target_first_name,
+
+                    same_hoa:
+                        Boolean(
+                            sameHoa
+                        ),
+
+                    requester_address:
+                        sameHoa
+                            ? existing
+                                .requester_address
+                            : null,
+
+                    /*
+                     * Once accepted, phone numbers
+                     * become available.
+                     */
+                    requester_phone:
+                        newStatus ===
+                        "accepted"
+                            ? existing
+                                .requester_phone
+                            : null,
+
+                    target_phone:
+                        newStatus ===
+                        "accepted"
+                            ? existing
+                                .target_phone
+                            : null
+                },
+
+                message:
+                    newStatus ===
+                    "accepted"
+                        ? "Neighbor contact request accepted."
+                        : "Neighbor contact request declined."
+            });
+
+        } catch (err) {
+
+            console.error(
+                "respondToNeighborContactRequest error:",
+                err
+            );
+
+            return res
+                .status(500)
+                .json({
+                    success:
+                        false,
+
+                    error:
+                        "Failed to respond to neighbor contact request."
+                });
+        }
+    };
 
 exports.getStreetFairVendors = async (req, res) => {
     try {

@@ -10,6 +10,517 @@ const {
 
 
     require("./apnsService");
+
+////////////////////////////////////////////////////////////
+// NEIGHBOR CONTACT REQUEST NOTIFICATIONS
+////////////////////////////////////////////////////////////
+
+
+async function deactivateNeighborContactDevice(
+    deviceId
+) {
+
+    try {
+
+        await pool.query(
+            `
+                UPDATE hoa_resident_devices
+                SET
+                    active = FALSE,
+                    updated_at = NOW()
+                WHERE id = $1
+            `,
+            [deviceId]
+        );
+
+    } catch (err) {
+
+        console.error(
+            "Failed to deactivate rejected neighbor-contact device:",
+            err
+        );
+    }
+}
+
+
+
+async function getNeighborContactDevices(
+    residentId
+) {
+
+    const result =
+        await pool.query(
+            `
+                SELECT DISTINCT ON (
+                    d.device_token
+                )
+                    d.id
+                        AS device_id,
+
+                    d.resident_id,
+
+                    d.device_token,
+
+                    COALESCE(
+                        NULLIF(
+                            BTRIM(
+                                d.environment
+                            ),
+                            ''
+                        ),
+                        'production'
+                    )
+                        AS environment
+
+                FROM
+                    hoa_resident_devices d
+
+                WHERE
+                    d.resident_id = $1
+
+                    AND
+                    d.active = TRUE
+
+                    AND
+                    d.device_token
+                    IS NOT NULL
+
+                    AND
+                    BTRIM(
+                        d.device_token
+                    ) <> ''
+
+                    /*
+                     * Neighbor-to-neighbor
+                     * communication belongs on
+                     * the resident's real device,
+                     * not a vendor support device.
+                     */
+                    AND
+                    COALESCE(
+                        d.is_support_device,
+                        FALSE
+                    ) = FALSE
+
+                ORDER BY
+                    d.device_token,
+                    d.updated_at DESC
+            `,
+            [residentId]
+        );
+
+    return result.rows;
+}
+
+
+
+async function notifyNeighborContactRequest({
+                                                requestId,
+                                                requesterResidentId,
+                                                requesterName,
+                                                targetResidentId,
+                                                vendorId,
+                                                vendorName,
+                                                message
+                                            }) {
+
+    const cleanRequestId =
+        Number(requestId);
+
+    const cleanTargetResidentId =
+        Number(targetResidentId);
+
+    const cleanRequesterResidentId =
+        Number(requesterResidentId);
+
+    const cleanVendorId =
+        Number(vendorId);
+
+    const safeRequesterName =
+        String(
+            requesterName ||
+            "A neighbor"
+        )
+            .trim();
+
+    const safeVendorName =
+        String(
+            vendorName ||
+            "a local vendor"
+        )
+            .trim();
+
+
+    if (
+        !Number.isInteger(
+            cleanRequestId
+        ) ||
+        cleanRequestId <= 0 ||
+        !Number.isInteger(
+            cleanTargetResidentId
+        ) ||
+        cleanTargetResidentId <= 0
+    ) {
+
+        throw new Error(
+            "A valid requestId and targetResidentId are required."
+        );
+    }
+
+
+    const devices =
+        await getNeighborContactDevices(
+            cleanTargetResidentId
+        );
+
+
+    let attempted = 0;
+    let sent = 0;
+    let failed = 0;
+
+
+    for (const device of devices) {
+
+        attempted += 1;
+
+        try {
+
+            const result =
+                await sendResidentPush({
+                    deviceToken:
+                    device.device_token,
+
+                    environment:
+                    device.environment,
+
+                    title:
+                        "Neighbor Contact Request",
+
+                    body:
+                        `${safeRequesterName} would like to ask you about ${safeVendorName}.`,
+
+                    residentId:
+                    cleanTargetResidentId,
+
+                    vendorId:
+                    cleanVendorId,
+
+                    notificationType:
+                        "neighbor_contact_request",
+
+                    customData: {
+                        contact_request_id:
+                            String(
+                                cleanRequestId
+                            ),
+
+                        requester_resident_id:
+                            String(
+                                cleanRequesterResidentId
+                            ),
+
+                        target_resident_id:
+                            String(
+                                cleanTargetResidentId
+                            ),
+
+                        vendor_id:
+                            String(
+                                cleanVendorId
+                            ),
+
+                        vendor_name:
+                        safeVendorName,
+
+                        message:
+                            String(
+                                message ||
+                                ""
+                            )
+                    }
+                });
+
+
+            if (
+                result?.success
+            ) {
+
+                sent += 1;
+
+            } else {
+
+                failed += 1;
+
+
+                if (
+                    result
+                        ?.deactivateToken
+                ) {
+
+                    await deactivateNeighborContactDevice(
+                        device.device_id
+                    );
+                }
+            }
+
+        } catch (err) {
+
+            failed += 1;
+
+            console.error(
+                "Neighbor contact request push failed:",
+                {
+                    requestId:
+                    cleanRequestId,
+
+                    residentId:
+                    cleanTargetResidentId,
+
+                    deviceId:
+                    device.device_id,
+
+                    error:
+                        err?.message ||
+                        err
+                }
+            );
+        }
+    }
+
+
+    return {
+        attempted,
+        sent,
+        failed
+    };
+}
+
+
+
+async function notifyNeighborContactRequestResponse({
+                                                        requestId,
+                                                        requesterResidentId,
+                                                        targetResidentId,
+                                                        targetName,
+                                                        vendorId,
+                                                        vendorName,
+                                                        status
+                                                    }) {
+
+    const cleanRequestId =
+        Number(requestId);
+
+    const cleanRequesterResidentId =
+        Number(
+            requesterResidentId
+        );
+
+    const cleanTargetResidentId =
+        Number(
+            targetResidentId
+        );
+
+    const cleanVendorId =
+        Number(vendorId);
+
+    const cleanStatus =
+        String(
+            status ||
+            ""
+        )
+            .trim()
+            .toLowerCase();
+
+    const safeTargetName =
+        String(
+            targetName ||
+            "Your neighbor"
+        )
+            .trim();
+
+    const safeVendorName =
+        String(
+            vendorName ||
+            "the vendor"
+        )
+            .trim();
+
+
+    if (
+        !Number.isInteger(
+            cleanRequestId
+        ) ||
+        cleanRequestId <= 0 ||
+        !Number.isInteger(
+            cleanRequesterResidentId
+        ) ||
+        cleanRequesterResidentId <= 0
+    ) {
+
+        throw new Error(
+            "A valid requestId and requesterResidentId are required."
+        );
+    }
+
+
+    if (
+        cleanStatus !==
+        "accepted" &&
+        cleanStatus !==
+        "declined"
+    ) {
+
+        throw new Error(
+            "Neighbor contact response status must be accepted or declined."
+        );
+    }
+
+
+    const devices =
+        await getNeighborContactDevices(
+            cleanRequesterResidentId
+        );
+
+
+    const notificationType =
+        cleanStatus ===
+        "accepted"
+            ? "neighbor_contact_request_accepted"
+            : "neighbor_contact_request_declined";
+
+
+    const title =
+        cleanStatus ===
+        "accepted"
+            ? "Neighbor Request Accepted"
+            : "Neighbor Request Update";
+
+
+    const body =
+        cleanStatus ===
+        "accepted"
+            ?
+            `${safeTargetName} accepted your request about ${safeVendorName}. Tap to view their contact information.`
+            :
+            `${safeTargetName} declined your request about ${safeVendorName}.`;
+
+
+    let attempted = 0;
+    let sent = 0;
+    let failed = 0;
+
+
+    for (const device of devices) {
+
+        attempted += 1;
+
+        try {
+
+            const result =
+                await sendResidentPush({
+                    deviceToken:
+                    device.device_token,
+
+                    environment:
+                    device.environment,
+
+                    title,
+                    body,
+
+                    residentId:
+                    cleanRequesterResidentId,
+
+                    vendorId:
+                    cleanVendorId,
+
+                    notificationType,
+
+                    customData: {
+                        contact_request_id:
+                            String(
+                                cleanRequestId
+                            ),
+
+                        requester_resident_id:
+                            String(
+                                cleanRequesterResidentId
+                            ),
+
+                        target_resident_id:
+                            String(
+                                cleanTargetResidentId
+                            ),
+
+                        vendor_id:
+                            String(
+                                cleanVendorId
+                            ),
+
+                        vendor_name:
+                        safeVendorName,
+
+                        response_status:
+                        cleanStatus
+                    }
+                });
+
+
+            if (
+                result?.success
+            ) {
+
+                sent += 1;
+
+            } else {
+
+                failed += 1;
+
+
+                if (
+                    result
+                        ?.deactivateToken
+                ) {
+
+                    await deactivateNeighborContactDevice(
+                        device.device_id
+                    );
+                }
+            }
+
+        } catch (err) {
+
+            failed += 1;
+
+            console.error(
+                "Neighbor contact response push failed:",
+                {
+                    requestId:
+                    cleanRequestId,
+
+                    residentId:
+                    cleanRequesterResidentId,
+
+                    deviceId:
+                    device.device_id,
+
+                    error:
+                        err?.message ||
+                        err
+                }
+            );
+        }
+    }
+
+
+    return {
+        attempted,
+        sent,
+        failed
+    };
+}
+
+
+
 async function notifyHoaEventPublished({
                                            eventId,
                                            neighborhoodId,
@@ -573,6 +1084,8 @@ async function notifyCommunityJobCompleted({
 
 
 module.exports = {
+    notifyCommunityJobCompleted,
     notifyHoaEventPublished,
-    notifyCommunityJobCompleted
+    notifyNeighborContactRequest,
+    notifyNeighborContactRequestResponse
 };

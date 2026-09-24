@@ -23,7 +23,10 @@ const {
     updateResidentAddress,
     getResidentHomeMode,
     getStreetFairVendors,
-    getResidentEvents
+    getResidentEvents,
+    createNeighborContactRequest,
+    getNeighborContactRequests,
+    respondToNeighborContactRequest
 } = require(
     "../controllers/residentController"
 );
@@ -146,6 +149,38 @@ router.post(
 router.get(
     "/:residentId/street-fair/vendors",
     getStreetFairVendors
+);
+/*
+ * Neighbor-to-neighbor vendor reference requests.
+ *
+ * Example:
+ *
+ * POST
+ * /api/residents/925/neighbor-contact-requests
+ *
+ * GET
+ * /api/residents/925/neighbor-contact-requests
+ *
+ * PATCH
+ * /api/residents/960/neighbor-contact-requests/12/respond
+ */
+
+
+router.post(
+    "/:residentId/neighbor-contact-requests",
+    createNeighborContactRequest
+);
+
+
+router.get(
+    "/:residentId/neighbor-contact-requests",
+    getNeighborContactRequests
+);
+
+
+router.patch(
+    "/:residentId/neighbor-contact-requests/:requestId/respond",
+    respondToNeighborContactRequest
 );
 
 
