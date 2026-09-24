@@ -1594,7 +1594,22 @@ exports.getVendors = async (req, res) => {
             ranked.first_name,
 
             'address',
-            ranked.address,
+            CASE
+            WHEN
+            $1::int IS NOT NULL
+            AND ranked.neighborhood_id = $1::int
+            THEN ranked.address
+            ELSE NULL
+            END,
+
+            'same_hoa',
+            CASE
+            WHEN
+            $1::int IS NOT NULL
+            AND ranked.neighborhood_id = $1::int
+            THEN TRUE
+            ELSE FALSE
+            END,
 
             'distance_miles',
             ROUND(
@@ -1621,6 +1636,7 @@ exports.getVendors = async (req, res) => {
 
             r.first_name,
             r.address,
+            r.neighborhood_id,
 
             CASE
             WHEN $2::numeric IS NOT NULL
@@ -1746,8 +1762,22 @@ exports.getVendors = async (req, res) => {
                                 'first_name',
                                 TRIM(ar.first_name),
 
-                                'address',
-                                ar.address,
+            'address',
+            CASE
+            WHEN
+            $1::int IS NOT NULL
+            AND ar.neighborhood_id = $1::int
+            THEN ar.address
+            ELSE NULL
+            END,
+            'same_hoa',
+            CASE
+            WHEN
+            $1::int IS NOT NULL
+            AND ar.neighborhood_id = $1::int
+            THEN TRUE
+            ELSE FALSE
+            END,
 
                                 'distance_miles',
                                 ROUND(
