@@ -33,6 +33,10 @@ router.post(
     "/chamber-unsubscribe/:token",
     leadsController.unsubscribeChamberEmail
 );
+router.get(
+    "/chamber-signup-sms",
+    leadsController.openChamberSignupSms
+);
 
 // Send tutorial email to one company
 /* router.post(

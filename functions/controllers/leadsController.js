@@ -2775,7 +2775,7 @@ exports.sendChamberLeadDigest =
              */
 
             const smsHref =
-                "sms:+12145489175?body=SIGNUP";
+                `${publicBaseUrl}/chamber-signup-sms`;
 
 
             /*
@@ -3192,8 +3192,9 @@ exports.sendChamberLeadDigest =
 
 <!-- Bottom CTA -->
 
-<tr>
+<!-- Bottom CTA -->
 
+<tr>
 <td
     style="
         padding:24px 28px;
@@ -3202,24 +3203,27 @@ exports.sendChamberLeadDigest =
     "
 >
 
-    <div
+    <a
+        href="${smsHref}"
         style="
+            display:block;
             padding:22px;
             border:1px solid #ff0080;
             border-radius:12px;
             background:#12071d;
+            text-decoration:none;
         "
     >
 
         <strong
             style="
+                display:block;
                 color:#ffffff;
                 font-size:19px;
             "
         >
             Ready to receive local opportunities?
         </strong>
-
 
         <div
             style="
@@ -3249,10 +3253,22 @@ exports.sendChamberLeadDigest =
             </strong>
         </div>
 
-    </div>
+        <div
+            style="
+                margin-top:16px;
+                color:#22d3ee;
+                font-size:13px;
+                font-weight:900;
+                letter-spacing:1px;
+                text-transform:uppercase;
+            "
+        >
+            TAP HERE TO TEXT SIGNUP →
+        </div>
+
+    </a>
 
 </td>
-
 </tr>
 
 
@@ -3613,6 +3629,43 @@ exports.sendChamberLeadDigest =
                     error.message
                 });
         }
+    };
+
+exports.openChamberSignupSms =
+    (req, res) => {
+
+        const userAgent =
+            String(
+                req.get("user-agent") || ""
+            ).toLowerCase();
+
+        /*
+         * iOS uses &body=
+         * Android generally uses ?body=
+         */
+        const smsUrl =
+            /iphone|ipad|ipod/.test(
+                userAgent
+            )
+                ? "sms:+12145489175&body=SIGNUP"
+                : "sms:+12145489175?body=SIGNUP";
+
+
+        res.set(
+            "Cache-Control",
+            "no-store"
+        );
+
+
+        return res
+            .status(302)
+            .set(
+                "Location",
+                smsUrl
+            )
+            .send(
+                "Opening your messaging app..."
+            );
     };
 
 exports.unsubscribeChamberEmail =
