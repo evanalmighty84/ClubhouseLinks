@@ -1,137 +1,148 @@
 module.exports = {
-    recipientEmail: "info@borrichardson.com",
-    recipientName: "PJ",
-    companyName: "Best Option Restoration",
-    leadCategory: "mold",
+    recipientEmail: [
+        {
+            name: "Scott Vowinkle",
+            address: "svowinkle@communityimpact.com"
+        },
+        {
+            name: "Curtis King",
+            address: "curtis.king@ndbt.com"
+        },
+        {
+            name: "Cam Conley",
+            address: "cam@conleyconsultgrp.com"
+        },
+        {
+            name: "Ravi Verma",
+            address: "ravi.verma@orgwhisperers.com"
+        },
+        {
+            name: "Eileen Mastel",
+            address: "eileen.mastel@49financial.com"
+        },
+        {
+            name: "Jennifer Dartez",
+            address: "jennifer.dartez@citylifestyle.com"
+        },
+        {
+            name: "Mary Higbe",
+            address: "mary@inyourpocketevents.com"
+        },
+        {
+            name: "Ashley Dambold",
+            address: "ashley.dambold@hancockwhitney.com"
+        },
+        {
+            name: "Brian Briars",
+            address: "brianbriars@ebby.com"
+        },
+        {
+            name: "Seanna Hiltner",
+            address: "info@northtexasballoons.com"
+        },
+        {
+            name: "Ken Smith",
+            address: "kensmith@hometown-ai.com"
+        },
+        {
+            name: "Debbie Christensen",
+            address: "debbie.aboveparbookkeeping@gmail.com"
+        },
+        {
+            name: "Craig Barrows",
+            address: "craig.barrows@fullypromoted.com"
+        },
+        {
+            name: "Mayra Rodriguez-Santiago",
+            address: "mayra.santiago@wafd.com"
+        },
+        {
+            name: "Janis Jasso",
+            address: "texasdreampool@gmail.com"
+        },
+        {
+            name: "Robert",
+            address: "clientsupport@callwhaledone.com"
+        }
+    ],
 
-    pdfAttachment: "Clubhouse_Links_Top_15_Restoration_Leads.pdf",
-    pdfAttachmentName: "Clubhouse_Links_Top_15_Restoration_Leads.pdf",
+    recipientName: "Plano Chamber Restaurant Group",
 
-    subject: "Best Option Restoration — Mold & Water Damage Lead Generation",
+    subject: "Plano Chamber Restaurant Favorites — Thank You!",
+
+    showCta: false,
+
+    attachments: [
+        {
+            filePath:
+                "Plano_Chamber_Local_Resta_October_09_2026_719f-1.pdf",
+
+            fileName:
+                "Plano_Chamber_Restaurant_Favorites_Part_1.pdf",
+
+            contentType:
+                "application/pdf"
+        },
+        {
+            filePath:
+                "Plano_Chamber_Local_Resta_October_09_2026_719f-2.pdf",
+
+            fileName:
+                "Plano_Chamber_Restaurant_Favorites_Part_2.pdf",
+
+            contentType:
+                "application/pdf"
+        }
+    ],
 
     bodyHtml: `
         <p style="margin:0 0 18px 0;color:#000000;">
-            PJ,
+            Hi Scott, Curtis, Cam, Ravi, Eileen, Jennifer, Mary, Ashley,
+            Brian, Seanna, Ken, Debbie, Craig, Mayra, Janis, and Robert!
         </p>
 
         <p style="margin:0 0 18px 0;color:#000000;">
-            It was great talking with you about
-            <strong style="color:#000000;">Best Option Restoration</strong>
-            and the types of restoration opportunities you're looking to grow.
-            I wanted to send over a better look at how
-            <strong style="color:#000000;">Clubhouse Links</strong>
-            can help specifically with
-            <strong style="color:#000000;">
-                mold, water leaks, water damage, remediation and restoration work.
-            </strong>
+            Thank you all for participating and sharing your favorite local
+            restaurants and menu recommendations. I have attached the completed
+            results so everyone can explore the restaurants and dishes suggested
+            by the group.
         </p>
 
-        <p style="margin:0 0 18px 0;color:#000000;">
-            I've attached a sample of
-            <strong style="color:#000000;">15 homeowner leads</strong>
-            that fit the types of jobs we discussed. These are examples of real
-            local conversations where homeowners are actively dealing with mold,
-            leaks, water intrusion, damaged drywall, remediation, reconstruction
-            and related restoration issues.
-        </p>
-
-        <p style="margin:0 0 18px 0;color:#000000;">
-            The Clubhouse Links app continuously searches local homeowner
-            conversations and identifies people describing problems that match
-            the services your company provides. Instead of only waiting for
-            someone to search for a restoration company directly, we can also
-            identify the underlying situations that commonly turn into
-            restoration work.
-        </p>
-
-        <p style="margin:0 0 18px 0;color:#000000;">
-            For Best Option Restoration, we'll specifically watch for
-            opportunities involving:
-        </p>
-
-        <div
-            style="
-                margin:0 0 22px 0;
-                padding:16px 18px;
-                border:1px solid #dddddd;
-                border-radius:6px;
+        <div style="
+            margin:22px 0;
+            padding:18px;
+            background:#f4f9ff;
+            border:1px solid #d7e8ff;
+            border-radius:10px;
+            color:#000000;
+        ">
+            <p style="
+                margin:0 0 8px 0;
                 color:#000000;
-            "
-        >
-            <strong style="color:#000000;">
-                • Mold inspection and remediation
-            </strong>
-            <br><br>
+                font-weight:700;
+                font-size:16px;
+            ">
+                A Clubhouse Links Restaurant App May Be Coming Soon
+            </p>
 
-            <strong style="color:#000000;">
-                • Water damage and water intrusion
-            </strong>
-            <br><br>
-
-            <strong style="color:#000000;">
-                • Plumbing leaks that have caused property damage
-            </strong>
-            <br><br>
-
-            <strong style="color:#000000;">
-                • Damaged drywall, ceilings, flooring and walls after leaks
-            </strong>
-            <br><br>
-
-            <strong style="color:#000000;">
-                • Homeowners needing remediation followed by reconstruction
-            </strong>
-            <br><br>
-
-            <strong style="color:#000000;">
-                • Homeowners asking for restoration or remediation companies
-            </strong>
+            <p style="margin:0;color:#000000;">
+                Hopefully, the Plano Chamber Question of the Day inspired
+                something great! Ideally, this future app will alert you when
+                you are near a restaurant that someone in your contacts has
+                recommended.
+            </p>
         </div>
 
         <p style="margin:0 0 18px 0;color:#000000;">
-            One of the biggest advantages is that we aren't limited to a homeowner
-            actually typing the words
-            <strong style="color:#000000;">"restoration company."</strong>
-            Someone saying that a pipe leaked into their wall, mold is appearing
-            on the ceiling, their flooring was damaged by water, or they need
-            drywall rebuilt after remediation can all represent legitimate
-            opportunities for Best Option Restoration.
-        </p>
-
-        <p style="margin:0 0 18px 0;color:#000000;">
-            We then work to enrich qualified opportunities with
-            <strong style="color:#000000;">
-                contact information, including phone numbers when available,
-            </strong>
-            so your team has something actionable rather than simply a list of
-            posts to read through.
-        </p>
-
-        <p style="margin:0 0 18px 0;color:#000000;">
-            The service is
-            <strong style="color:#000000;">$200 per month</strong>
-            with a
-            <strong style="color:#000000;">two-month minimum</strong>.
-            That gives us enough time to continuously monitor the market, learn
-            which restoration opportunities are producing the best results for
-            you, and refine the searches around the jobs Best Option Restoration
-            wants most.
-        </p>
-
-        <p style="margin:0 0 18px 0;color:#000000;">
-            If you'd like to move forward, you can use the
-            <strong style="color:#000000;">
-                Get leads starting at $200/Month
-            </strong>
-            option below. Once activated, I'll get Best Option Restoration set up
-            for the mold, water leak and water-damage searches and we can begin
-            refining the lead flow from there.
+            The goal is to turn everyone’s recommendations into a useful,
+            community-powered restaurant guide that we can continue adding to
+            and enjoying together.
         </p>
 
         <p style="margin:0;color:#000000;">
-            Take a look through the attached lead sample when you get a chance.
-            I think it gives a pretty good picture of the kinds of homeowner
-            situations we can consistently put in front of Best Option Restoration.
+            I hope the attached list helps you discover a few new local
+            favorites from your colleagues. Thank you again for taking the
+            time to contribute!
         </p>
     `
 };

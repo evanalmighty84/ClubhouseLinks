@@ -899,13 +899,14 @@ exports.signupResident = async (req, res) => {
                     ic.code,
                     ic.code_type,
                     ic.neighborhood_id,
+                    ic.grants_board_access,
                     n.name AS neighborhood_name
                 FROM hoa_invite_codes ic
-                LEFT JOIN hoa_neighborhoods n
-                    ON n.id = ic.neighborhood_id
+                         LEFT JOIN hoa_neighborhoods n
+                                   ON n.id = ic.neighborhood_id
                 WHERE UPPER(ic.code) = $1
                   AND ic.active = TRUE
-                LIMIT 1
+                    LIMIT 1
             `,
             [cleanInviteCode]
         );
@@ -947,6 +948,8 @@ exports.signupResident = async (req, res) => {
 
         const neighborhoodId =
             invite?.neighborhood_id || null;
+        const grantsBoardAccess =
+            invite?.grants_board_access === true;
 
         const approvalStatus = "approved";
 
@@ -1078,8 +1081,8 @@ exports.signupResident = async (req, res) => {
                                         ELSE approved_at
                                         END,
                                 access_level = $5::text,
-                                invite_code_used =
-                                    COALESCE(
+                invite_code_used =
+                    COALESCE(
                                 $6::text,
                                 invite_code_used
                                 ),
@@ -1092,9 +1095,19 @@ exports.signupResident = async (req, res) => {
                                 longitude = $9::numeric,
                                 generated_area_id = $10::integer,
                                 display_area_name = $11::text,
-                                updated_at = NOW()
-                            WHERE id = $12
-                                RETURNING *
+
+                                board_of_directors =
+                                CASE
+                                WHEN $12::boolean = TRUE
+                                THEN TRUE
+                                ELSE board_of_directors
+                            END,
+
+                updated_at = NOW()
+
+            WHERE id = $13
+
+                            RETURNING *
                         `,
                         [
                             cleanFirstName,
@@ -1108,6 +1121,9 @@ exports.signupResident = async (req, res) => {
                             longitude,
                             generatedAreaId,
                             displayAreaName,
+
+                            grantsBoardAccess,
+
                             existingResident.id
                         ]
                     );
@@ -1139,7 +1155,8 @@ exports.signupResident = async (req, res) => {
                                 latitude,
                                 longitude,
                                 generated_area_id,
-                                display_area_name
+                                display_area_name,
+                                board_of_directors
                             )
                             VALUES
                                 (
@@ -1161,7 +1178,8 @@ exports.signupResident = async (req, res) => {
                                     $10,
                                     $11,
                                     $12,
-                                    $13
+                                    $13,
+                                    $14
                                 )
                                 RETURNING *
                         `,
@@ -1178,7 +1196,9 @@ exports.signupResident = async (req, res) => {
                             latitude,
                             longitude,
                             generatedAreaId,
-                            displayAreaName
+                            displayAreaName,
+
+                            grantsBoardAccess
                         ]
                     );
 

@@ -19,6 +19,21 @@ router.get(
     leadsController.getCompanyLeads
 );
 
+router.post(
+    "/send-chamber-lead-digest",
+    leadsController.sendChamberLeadDigest
+);
+
+router.get(
+    "/chamber-unsubscribe/:token",
+    leadsController.unsubscribeChamberEmail
+);
+
+router.post(
+    "/chamber-unsubscribe/:token",
+    leadsController.unsubscribeChamberEmail
+);
+
 // Send tutorial email to one company
 /* router.post(
     "/send-tutorial/:userId",

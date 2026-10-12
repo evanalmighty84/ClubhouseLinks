@@ -2,21 +2,46 @@ const nodemailer = require("nodemailer");
 const path = require("path");
 const fs = require("fs");
 const emailConfig = require("./emailConfig");
-const leadReportHtml = require("./RooferLeadReportHtml");
 
-const PAYMENT_URL =
-    "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-45B07068GJ117120GNJRZ23A";
+/*
+|--------------------------------------------------------------------------
+| OPTIONAL CTA SETTINGS
+|--------------------------------------------------------------------------
+|
+| Individual email configs can use:
+|
+|     showCta: false
+|
+| Or they can select a button with:
+|
+|     ctaType: "sponsor"
+|     ctaType: "lead-gen"
+|
+*/
 
+const DEFAULT_CTA_TYPE = "sponsor";
 
+const CTA_OPTIONS = {
+    sponsor: {
+        url: "https://www.paypal.com/donate?campaign_id=PM5CT5BHJ42SJ",
+        text: "Become a Sponsor"
+    },
+
+    "lead-gen": {
+        url: "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-45B07068GJ117120GNJRZ23A",
+        text: "Get leads starting at $200/Month"
+    }
+};
+
+/*
+|--------------------------------------------------------------------------
+| FILE PATHS
+|--------------------------------------------------------------------------
+*/
 
 const CLUBHOUSE_LOGO_PATH = path.join(
     __dirname,
     "clubhouse-logo.png"
-);
-
-const LEAD_PREVIEW_PATH = path.join(
-    __dirname,
-    "lead-preview.png"
 );
 
 const HEADSHOT_PATH = path.join(
@@ -24,12 +49,16 @@ const HEADSHOT_PATH = path.join(
     "headshot.png"
 );
 
-const MARKETING_PDF_PATH = emailConfig.pdfAttachment
-    ? path.join(
-        __dirname,
-        emailConfig.pdfAttachment
-    )
-    : null;
+const CROWLEY_PARK_SPONSOR_TICKET_PATH = path.join(
+    __dirname,
+    "crowley-park-sponsor-ticket.png"
+);
+
+/*
+|--------------------------------------------------------------------------
+| SMTP CONFIG
+|--------------------------------------------------------------------------
+*/
 
 const SMTP_USER =
     process.env.ZEPTOMAIL_SMTP_USER ||
@@ -73,11 +102,18 @@ const transport = nodemailer.createTransport({
     host: SMTP_HOST,
     port: SMTP_PORT,
     secure: SMTP_PORT === 465,
+
     auth: {
         user: SMTP_USER,
         pass: SMTP_PASS
     }
 });
+
+/*
+|--------------------------------------------------------------------------
+| HELPERS
+|--------------------------------------------------------------------------
+*/
 
 function escapeHtml(value = "") {
     return String(value)
@@ -105,15 +141,43 @@ function validateEmailConfig(config) {
     }
 }
 
-function validateAttachmentFiles() {
+function resolveAttachmentPath(filePath) {
+    if (path.isAbsolute(filePath)) {
+        return filePath;
+    }
+
+    return path.join(__dirname, filePath);
+}
+
+function usesCrowleyParkSponsorTicket(config) {
+    return String(config.bodyHtml || "").includes(
+        "cid:crowley-park-sponsor-ticket"
+    );
+}
+
+function validateAttachmentFiles(config) {
     const attachmentFiles = [
         CLUBHOUSE_LOGO_PATH,
         HEADSHOT_PATH
     ];
 
-    if (MARKETING_PDF_PATH) {
+    if (usesCrowleyParkSponsorTicket(config)) {
         attachmentFiles.push(
-            MARKETING_PDF_PATH
+            CROWLEY_PARK_SPONSOR_TICKET_PATH
+        );
+    }
+
+    for (const attachment of config.attachments || []) {
+        if (!attachment.filePath) {
+            throw new Error(
+                "An email attachment is missing filePath."
+            );
+        }
+
+        attachmentFiles.push(
+            resolveAttachmentPath(
+                attachment.filePath
+            )
         );
     }
 
@@ -126,20 +190,92 @@ function validateAttachmentFiles() {
     }
 }
 
+/*
+|--------------------------------------------------------------------------
+| CTA
+|--------------------------------------------------------------------------
+*/
+
+function getCta(config) {
+    if (config.showCta === false) {
+        return null;
+    }
+
+    const ctaType =
+        config.ctaType ||
+        DEFAULT_CTA_TYPE;
+
+    const cta = CTA_OPTIONS[ctaType];
+
+    if (!cta) {
+        throw new Error(
+            `Unknown CTA type: ${ctaType}`
+        );
+    }
+
+    return cta;
+}
+
+function buildCtaHtml(config) {
+    const cta = getCta(config);
+
+    if (!cta) {
+        return "";
+    }
+
+    return `
+        <table
+            role="presentation"
+            cellspacing="0"
+            cellpadding="0"
+            border="0"
+            align="center"
+            style="margin:28px auto;"
+        >
+            <tr>
+                <td
+                    align="center"
+                    style="
+                        border-radius:8px;
+                        background:#ff3bd4;
+                        border:1px solid #25f4ff;
+                        box-shadow:0 0 16px rgba(255,59,212,0.35);
+                    "
+                >
+                    <a
+                        href="${escapeHtml(cta.url)}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style="
+                            display:inline-block;
+                            padding:15px 34px;
+                            color:#ffffff;
+                            text-decoration:none;
+                            font-family:Verdana,Arial,Helvetica,sans-serif;
+                            font-size:16px;
+                            font-weight:700;
+                            line-height:1.2;
+                        "
+                    >
+                        ${escapeHtml(cta.text)}
+                    </a>
+                </td>
+            </tr>
+        </table>
+    `;
+}
+
+/*
+|--------------------------------------------------------------------------
+| BUILD EMAIL
+|--------------------------------------------------------------------------
+*/
+
 function buildEmail(config) {
     validateEmailConfig(config);
 
-    const safeRecipientName = escapeHtml(
-        config.recipientName
-    );
-
-    const safeSubject = escapeHtml(
-        config.subject
-    );
-
-    const safePaymentUrl = escapeHtml(
-        PAYMENT_URL
-    );
+    const safeSubject = escapeHtml(config.subject);
+    const ctaHtml = buildCtaHtml(config);
 
     const html = `
         <!DOCTYPE html>
@@ -218,26 +354,16 @@ function buildEmail(config) {
                                 </tr>
 
                                 <tr>
-                     
-                                </tr>
-
-                                <tr>
                                     <td
                                         style="
                                             padding:0;
-                                            font-family:
-                                                Verdana,
-                                                Arial,
-                                                Helvetica,
-                                                sans-serif;
+                                            font-family:Verdana,Arial,Helvetica,sans-serif;
                                             font-size:15px;
                                             line-height:1.65;
                                             color:#111827;
                                             background:#ffffff;
                                         "
                                     >
-                                      
-
                                         <table
                                             role="presentation"
                                             width="100%"
@@ -251,7 +377,6 @@ function buildEmail(config) {
                                                 border-spacing:0;
                                                 background:#ffffff;
                                                 border:0;
-                                                border-radius:0;
                                             "
                                         >
                                             <tr>
@@ -259,50 +384,16 @@ function buildEmail(config) {
                                                     style="
                                                         padding:18px 20px 24px;
                                                         color:#111827;
-                                                        font-family:
-                                                            Verdana,
-                                                            Arial,
-                                                            Helvetica,
-                                                            sans-serif;
+                                                        font-family:Verdana,Arial,Helvetica,sans-serif;
                                                         font-size:15px;
                                                         line-height:1.65;
                                                     "
                                                 >
-                                                 
-
-                                                    <div
-                                                        style="
-                                                            color:#111827;
-                                                        "
-                                                    >
+                                                    <div style="color:#111827;">
                                                         ${config.bodyHtml}
                                                     </div>
 
-                                                    <p
-                                                        style="
-                                                            margin:26px 0;
-                                                        "
-                                                    >
-                                                        <a
-                                                            href="${safePaymentUrl}"
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            style="
-                                                                display:inline-block;
-                                                                padding:13px 22px;
-                                                                background:#ff3bd4;
-                                                                color:#ffffff;
-                                                                text-decoration:none;
-                                                                font-weight:700;
-                                                                border:1px solid #25f4ff;
-                                                                border-radius:7px;
-                                                                box-shadow:
-                                                                    0 0 16px rgba(255,59,212,0.35);
-                                                            "
-                                                        >
-                                                            Get leads starting at $200/Month
-                                                        </a>
-                                                    </p>
+                                                    ${ctaHtml}
 
                                                     <table
                                                         role="presentation"
@@ -317,14 +408,13 @@ function buildEmail(config) {
                                                         <tr>
                                                             <td
                                                                 valign="top"
-                                                                style="
-                                                                    padding-right:14px;
-                                                                "
+                                                                style="padding-right:14px;"
                                                             >
                                                                 <img
                                                                     src="cid:evan-headshot"
                                                                     alt="Evan Ligon"
                                                                     width="75"
+                                                                    height="75"
                                                                     style="
                                                                         display:block;
                                                                         width:75px;
@@ -332,8 +422,7 @@ function buildEmail(config) {
                                                                         object-fit:cover;
                                                                         border-radius:50%;
                                                                         border:2px solid #25f4ff;
-                                                                        box-shadow:
-                                                                            0 0 14px rgba(37,244,255,0.28);
+                                                                        box-shadow:0 0 14px rgba(37,244,255,0.28);
                                                                     "
                                                                 >
                                                             </td>
@@ -341,11 +430,7 @@ function buildEmail(config) {
                                                             <td
                                                                 valign="middle"
                                                                 style="
-                                                                    font-family:
-                                                                        Verdana,
-                                                                        Arial,
-                                                                        Helvetica,
-                                                                        sans-serif;
+                                                                    font-family:Verdana,Arial,Helvetica,sans-serif;
                                                                     font-size:14px;
                                                                     line-height:1.5;
                                                                     color:#111827;
@@ -401,9 +486,6 @@ function buildEmail(config) {
                                                                 >
                                                                     214-548-9175
                                                                 </a>
-                                                                <br>
-
-                                                            
                                                             </td>
                                                         </tr>
                                                     </table>
@@ -427,9 +509,69 @@ function buildEmail(config) {
     };
 }
 
+/*
+|--------------------------------------------------------------------------
+| ATTACHMENTS
+|--------------------------------------------------------------------------
+*/
+
+function buildAttachments(config) {
+    const attachments = [
+        {
+            filename: "clubhouse-logo.png",
+            path: CLUBHOUSE_LOGO_PATH,
+            cid: "clubhouse-logo",
+            contentDisposition: "inline"
+        },
+        {
+            filename: "headshot.png",
+            path: HEADSHOT_PATH,
+            cid: "evan-headshot",
+            contentDisposition: "inline"
+        }
+    ];
+
+    if (usesCrowleyParkSponsorTicket(config)) {
+        attachments.push({
+            filename: "crowley-park-sponsor-ticket.png",
+            path: CROWLEY_PARK_SPONSOR_TICKET_PATH,
+            cid: "crowley-park-sponsor-ticket",
+            contentDisposition: "inline"
+        });
+    }
+
+    for (const attachment of config.attachments || []) {
+        attachments.push({
+            filename:
+                attachment.fileName ||
+                path.basename(attachment.filePath),
+
+            path:
+                resolveAttachmentPath(
+                    attachment.filePath
+                ),
+
+            contentType:
+                attachment.contentType ||
+                "application/octet-stream",
+
+            contentDisposition: "attachment"
+        });
+    }
+
+    return attachments;
+}
+
+/*
+|--------------------------------------------------------------------------
+| SEND EMAIL
+|--------------------------------------------------------------------------
+*/
+
 async function sendEmail() {
     try {
-        validateAttachmentFiles();
+        validateEmailConfig(emailConfig);
+        validateAttachmentFiles(emailConfig);
 
         const email = buildEmail(emailConfig);
 
@@ -444,32 +586,7 @@ async function sendEmail() {
             to: email.to,
             subject: email.subject,
             html: email.html,
-            attachments: [
-                {
-                    filename: "clubhouse-logo.png",
-                    path: CLUBHOUSE_LOGO_PATH,
-                    cid: "clubhouse-logo"
-                },
-
-                {
-                    filename: "headshot.png",
-                    path: HEADSHOT_PATH,
-                    cid: "evan-headshot"
-                },
-
-                ...(MARKETING_PDF_PATH
-                    ? [
-                        {
-                            filename:
-                                emailConfig.pdfAttachmentName ||
-                                emailConfig.pdfAttachment,
-
-                            path: MARKETING_PDF_PATH,
-                            contentType: "application/pdf"
-                        }
-                    ]
-                    : [])
-            ]
+            attachments: buildAttachments(emailConfig)
         });
 
         console.log(

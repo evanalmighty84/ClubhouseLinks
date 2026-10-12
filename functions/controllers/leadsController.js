@@ -87,6 +87,134 @@ function getZeptoTransporter() {
     return zeptoTransporter;
 }
 
+const CHAMBER_DIGEST_SIZE = 10;
+
+function chamberSecretMatches(provided) {
+    const configured =
+        String(
+            process.env.CHAMBER_ALERT_SECRET ||
+            ""
+        );
+
+    provided =
+        String(provided || "");
+
+    if (
+        !configured ||
+        configured.length !== provided.length
+    ) {
+        return false;
+    }
+
+    return crypto.timingSafeEqual(
+        Buffer.from(
+            configured,
+            "utf8"
+        ),
+        Buffer.from(
+            provided,
+            "utf8"
+        )
+    );
+}
+
+
+function escapeChamberHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+function formatChamberIndustry(value) {
+    return String(value || "")
+        .trim()
+        .replace(/_/g, " ")
+        .replace(
+            /\b\w/g,
+            (character) =>
+                character.toUpperCase()
+        );
+}
+
+
+async function getOrCreateChamberUnsubscribe(
+    email
+) {
+    const existing =
+        await db.query(
+            `
+                SELECT
+                    token,
+                    unsubscribed_at
+
+                FROM chamber_email_unsubscribes
+
+                WHERE
+                    LOWER(BTRIM(email)) =
+                    LOWER(BTRIM($1))
+
+                LIMIT 1;
+            `,
+            [email]
+        );
+
+    if (existing.rows.length) {
+        return existing.rows[0];
+    }
+
+    try {
+        const inserted =
+            await db.query(
+                `
+                    INSERT INTO chamber_email_unsubscribes (
+                        email
+                    )
+                    VALUES ($1)
+
+                    RETURNING
+                        token,
+                        unsubscribed_at;
+                `,
+                [email]
+            );
+
+        return inserted.rows[0];
+
+    } catch (error) {
+        /*
+         * Another process may have inserted
+         * the same normalized email.
+         */
+        if (error.code !== "23505") {
+            throw error;
+        }
+
+        const retry =
+            await db.query(
+                `
+                    SELECT
+                        token,
+                        unsubscribed_at
+
+                    FROM chamber_email_unsubscribes
+
+                    WHERE
+                        LOWER(BTRIM(email)) =
+                        LOWER(BTRIM($1))
+
+                    LIMIT 1;
+                `,
+                [email]
+            );
+
+        return retry.rows[0];
+    }
+}
+
 
 /**
  * POST /api/leads/send-familytree-alerts
@@ -1955,6 +2083,1154 @@ exports.sendLeadSummaries = async (req, res) => {
         });
     }
 };
+
+exports.sendChamberLeadDigest =
+    async (req, res) => {
+        let batchId = null;
+        let emailSent = false;
+
+        try {
+            /*
+             * ---------------------------------------------------------
+             * Authenticate Railway
+             * ---------------------------------------------------------
+             */
+
+            if (
+                !chamberSecretMatches(
+                    req.get(
+                        "x-chamber-alert-secret"
+                    )
+                )
+            ) {
+                return res.status(401).json({
+                    success: false,
+                    error: "Unauthorized"
+                });
+            }
+
+
+            /*
+             * ---------------------------------------------------------
+             * Validate payload
+             * ---------------------------------------------------------
+             */
+
+            const chamberRecordId =
+                Number(
+                    req.body?.chamber_record_id
+                );
+
+            const industry =
+                String(
+                    req.body?.industry || ""
+                )
+                    .trim()
+                    .toLowerCase()
+                    .replace(/\s+/g, "_")
+                    .replace(/-/g, "_");
+
+            const requestedLeadIds =
+                Array.isArray(
+                    req.body?.lead_ids
+                )
+                    ? [
+                        ...new Set(
+                            req.body.lead_ids.map(
+                                (id) =>
+                                    Number(id)
+                            )
+                        )
+                    ]
+                    : [];
+
+            if (
+                !Number.isInteger(
+                    chamberRecordId
+                ) ||
+                chamberRecordId <= 0
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    error:
+                        "Valid chamber_record_id required"
+                });
+            }
+
+            if (!industry) {
+                return res.status(400).json({
+                    success: false,
+                    error:
+                        "industry is required"
+                });
+            }
+
+            if (
+                requestedLeadIds.length !==
+                CHAMBER_DIGEST_SIZE ||
+                !requestedLeadIds.every(
+                    (id) =>
+                        Number.isSafeInteger(id) &&
+                        id > 0
+                )
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    error:
+                        "Exactly 10 unique lead_ids are required"
+                });
+            }
+
+
+            /*
+             * ---------------------------------------------------------
+             * Load Chamber recipient
+             * ---------------------------------------------------------
+             */
+
+            const chamberResult =
+                await db.query(
+                    `
+                    SELECT
+                        id,
+                        name,
+                        company_name,
+                        email,
+                        city,
+                        lead_industries
+
+                    FROM chamber_of_commerce
+
+                    WHERE id = $1
+
+                      AND NULLIF(
+                            BTRIM(email),
+                            ''
+                          ) IS NOT NULL
+
+                    LIMIT 1;
+                `,
+                    [chamberRecordId]
+                );
+
+            if (!chamberResult.rows.length) {
+                return res.status(404).json({
+                    success: false,
+                    error:
+                        "Chamber recipient not found"
+                });
+            }
+
+            const recipient =
+                chamberResult.rows[0];
+
+            const allowedIndustries =
+                Array.isArray(
+                    recipient.lead_industries
+                )
+                    ? recipient.lead_industries.map(
+                        (value) =>
+                            String(value)
+                                .trim()
+                                .toLowerCase()
+                    )
+                    : [];
+
+            if (
+                !allowedIndustries.includes(
+                    industry
+                )
+            ) {
+                return res.status(409).json({
+                    success: false,
+                    error:
+                        "Industry is not assigned to this Chamber business"
+                });
+            }
+
+            const recipientEmail =
+                String(
+                    recipient.email
+                ).trim();
+
+
+            /*
+             * ---------------------------------------------------------
+             * Unsubscribe status / token
+             * ---------------------------------------------------------
+             */
+
+            const unsubscribeRecord =
+                await getOrCreateChamberUnsubscribe(
+                    recipientEmail
+                );
+
+            if (
+                unsubscribeRecord
+                    ?.unsubscribed_at
+            ) {
+                return res.status(410).json({
+                    success: false,
+                    skipped: true,
+                    reason:
+                        "recipient_unsubscribed"
+                });
+            }
+
+
+            /*
+             * ---------------------------------------------------------
+             * Re-validate all ten leads on backend
+             * ---------------------------------------------------------
+             */
+
+            const maxAgeDays =
+                Number.parseInt(
+                    process.env
+                        .CHAMBER_LEAD_MAX_AGE_DAYS ||
+                    "30",
+                    10
+                );
+
+            const leadResult =
+                await db.query(
+                    `
+                    SELECT
+                        f.id,
+                        f.author,
+                        f.city,
+                        f.state,
+                        f.description,
+                        f.lead_type,
+                        f.scraped_at
+
+                    FROM familytreenow f
+
+                    WHERE
+                        f.id =
+                        ANY($1::int[])
+
+                      AND $2 =
+                          ANY(
+                              COALESCE(
+                                  f.lead_type,
+                                  ARRAY[]::text[]
+                              )
+                          )
+
+                      AND NULLIF(
+                            BTRIM(
+                                f.description
+                            ),
+                            ''
+                          ) IS NOT NULL
+
+                      AND (
+                            $4::int <= 0
+
+                            OR f.scraped_at >=
+                               NOW() -
+                               (
+                                   $4::int *
+                                   INTERVAL '1 day'
+                               )
+                      )
+
+                      AND NOT EXISTS (
+                            SELECT 1
+
+                            FROM chamber_lead_email_log log
+
+                            WHERE
+                                log.lead_id =
+                                f.id
+
+                              AND LOWER(
+                                    BTRIM(
+                                        log.recipient_email
+                                    )
+                                  ) =
+                                  LOWER(
+                                    BTRIM($3)
+                                  )
+                      )
+
+                    ORDER BY
+                        f.scraped_at ASC,
+                        f.id ASC;
+                `,
+                    [
+                        requestedLeadIds,
+                        industry,
+                        recipientEmail,
+                        maxAgeDays
+                    ]
+                );
+
+            const leads =
+                leadResult.rows;
+
+            if (
+                leads.length !==
+                CHAMBER_DIGEST_SIZE
+            ) {
+                return res.status(409).json({
+                    success: false,
+                    error:
+                        "All 10 leads are no longer eligible or unsent",
+                    eligible_count:
+                    leads.length
+                });
+            }
+
+
+            /*
+             * ---------------------------------------------------------
+             * Reserve the 10 leads before sending.
+             *
+             * Prevents concurrent runs from emailing the same batch.
+             * ---------------------------------------------------------
+             */
+
+            batchId =
+                crypto.randomUUID();
+
+            const reservationClient =
+                await db.connect();
+
+            try {
+                await reservationClient.query(
+                    "BEGIN"
+                );
+
+                for (const lead of leads) {
+                    const reservation =
+                        await reservationClient.query(
+                            `
+                            INSERT INTO
+                                chamber_lead_email_log
+                            (
+                                lead_id,
+                                chamber_source,
+                                chamber_record_id,
+                                recipient_email,
+                                company_name,
+                                lead_type,
+                                industry,
+                                batch_id,
+                                status,
+                                sent_at
+                            )
+
+                            VALUES
+                            (
+                                $1,
+                                'chamber_of_commerce',
+                                $2,
+                                $3,
+                                $4,
+                                $5::text[],
+                                $6,
+                                $7::uuid,
+                                'pending',
+                                NOW()
+                            )
+
+                            ON CONFLICT
+                                DO NOTHING
+
+                            RETURNING id;
+                        `,
+                            [
+                                lead.id,
+                                recipient.id,
+                                recipientEmail,
+                                recipient.company_name,
+                                lead.lead_type,
+                                industry,
+                                batchId
+                            ]
+                        );
+
+                    if (
+                        reservation.rowCount !== 1
+                    ) {
+                        throw new Error(
+                            `Lead ${lead.id} was already reserved or sent`
+                        );
+                    }
+                }
+
+                await reservationClient.query(
+                    "COMMIT"
+                );
+
+            } catch (error) {
+                await reservationClient.query(
+                    "ROLLBACK"
+                );
+
+                throw error;
+
+            } finally {
+                reservationClient.release();
+            }
+
+
+            /*
+             * ---------------------------------------------------------
+             * Build unsubscribe URL
+             * ---------------------------------------------------------
+             */
+
+            const publicBaseUrl =
+                String(
+                    process.env
+                        .CHAMBER_PUBLIC_BASE_URL ||
+                    ""
+                )
+                    .trim()
+                    .replace(/\/+$/, "");
+
+            if (!publicBaseUrl) {
+                throw new Error(
+                    "CHAMBER_PUBLIC_BASE_URL is not configured"
+                );
+            }
+
+            const unsubscribeUrl =
+                `${publicBaseUrl}` +
+                `/api/leads/chamber-unsubscribe/` +
+                `${unsubscribeRecord.token}`;
+
+
+            /*
+             * ---------------------------------------------------------
+             * Neo-punk email
+             * ---------------------------------------------------------
+             */
+
+            const industryLabel =
+                formatChamberIndustry(
+                    industry
+                );
+
+            const companyName =
+                String(
+                    recipient.company_name ||
+                    recipient.name ||
+                    "Local Business"
+                ).trim();
+
+            const contactName =
+                String(
+                    recipient.name || ""
+                ).trim();
+
+            const greeting =
+                contactName
+                    ? `Hi ${contactName},`
+                    : `Hello ${companyName},`;
+
+            const subject =
+                `10 New ${industryLabel} Opportunities in DFW`;
+
+            const smsHref =
+                "sms:+12145489175?body=SIGNUP";
+
+
+            const leadCards =
+                leads
+                    .map(
+                        (lead, index) => {
+                            const author =
+                                String(
+                                    lead.author ||
+                                    "Local homeowner"
+                                ).trim();
+
+                            const city =
+                                [
+                                    lead.city,
+                                    lead.state
+                                ]
+                                    .filter(Boolean)
+                                    .join(", ") ||
+                                "DFW";
+
+                            const description =
+                                escapeChamberHtml(
+                                    lead.description
+                                ).replace(
+                                    /\r?\n/g,
+                                    "<br>"
+                                );
+
+                            const date =
+                                lead.scraped_at
+                                    ? new Date(
+                                        lead.scraped_at
+                                    )
+                                        .toLocaleDateString(
+                                            "en-US"
+                                        )
+                                    : "";
+
+                            return `
+                            <div
+                                style="
+                                    margin:0 0 16px;
+                                    padding:18px;
+                                    background:#0d1020;
+                                    border:1px solid #29324d;
+                                    border-left:4px solid #22d3ee;
+                                    border-radius:12px;
+                                "
+                            >
+                                <div
+                                    style="
+                                        color:#ff4db8;
+                                        font-size:12px;
+                                        font-weight:900;
+                                        letter-spacing:1.5px;
+                                        text-transform:uppercase;
+                                    "
+                                >
+                                    Opportunity ${index + 1}
+                                </div>
+
+                                <div
+                                    style="
+                                        margin-top:7px;
+                                        color:#ffffff;
+                                        font-size:18px;
+                                        font-weight:900;
+                                    "
+                                >
+                                    ${escapeChamberHtml(author)}
+                                </div>
+
+                                <div
+                                    style="
+                                        margin-top:4px;
+                                        color:#22d3ee;
+                                        font-size:14px;
+                                        font-weight:800;
+                                    "
+                                >
+                                    ${escapeChamberHtml(city)}
+                                    ${
+                                date
+                                    ? ` • ${escapeChamberHtml(date)}`
+                                    : ""
+                            }
+                                </div>
+
+                                <div
+                                    style="
+                                        margin-top:13px;
+                                        color:#dbe4ee;
+                                        font-size:15px;
+                                        line-height:1.65;
+                                    "
+                                >
+                                    ${description}
+                                </div>
+                            </div>
+                        `;
+                        }
+                    )
+                    .join("");
+
+            const emailHtml = `
+<!doctype html>
+<html lang="en">
+
+<body
+    style="
+        margin:0;
+        padding:0;
+        background:#050510;
+    "
+>
+<table
+    role="presentation"
+    width="100%"
+    cellspacing="0"
+    cellpadding="0"
+    border="0"
+    style="
+        width:100%;
+        background:#050510;
+    "
+>
+<tr>
+<td
+    align="center"
+    style="padding:28px 14px;"
+>
+
+<table
+    role="presentation"
+    width="680"
+    cellspacing="0"
+    cellpadding="0"
+    border="0"
+    style="
+        width:100%;
+        max-width:680px;
+        background:#090914;
+        border:1px solid #22d3ee;
+        border-radius:18px;
+    "
+>
+
+<tr>
+<td
+    style="
+        padding:30px;
+        text-align:center;
+        border-bottom:2px solid #ff0080;
+    "
+>
+    <div
+        style="
+            color:#22d3ee;
+            font-family:Arial,sans-serif;
+            font-size:12px;
+            font-weight:900;
+            letter-spacing:2px;
+        "
+    >
+        CLUBHOUSE LINKS // LOCAL OPPORTUNITIES
+    </div>
+
+    <h1
+        style="
+            margin:14px 0 0;
+            color:#ffffff;
+            font-family:Arial,sans-serif;
+            font-size:30px;
+        "
+    >
+        10 New ${escapeChamberHtml(industryLabel)}
+        Opportunities
+    </h1>
+
+    <div
+        style="
+            margin-top:8px;
+            color:#ff4db8;
+            font-family:Arial,sans-serif;
+            font-size:17px;
+            font-weight:800;
+        "
+    >
+        Dallas–Fort Worth
+    </div>
+</td>
+</tr>
+
+
+<tr>
+<td
+    style="
+        padding:26px 28px 10px;
+        color:#e2e8f0;
+        font-family:Arial,sans-serif;
+        font-size:16px;
+        line-height:1.7;
+    "
+>
+    <p>
+        ${escapeChamberHtml(greeting)}
+    </p>
+
+    <p>
+        We identified these recent local
+        <strong style="color:#22d3ee;">
+            ${escapeChamberHtml(industryLabel)}
+        </strong>
+        opportunities that may be relevant to
+        <strong style="color:#ff4db8;">
+            ${escapeChamberHtml(companyName)}
+        </strong>.
+    </p>
+</td>
+</tr>
+
+
+<tr>
+<td
+    style="
+        padding:10px 28px 26px;
+    "
+>
+    <div
+        style="
+            padding:22px;
+            text-align:center;
+            background:#111126;
+            border:1px solid #22d3ee;
+            border-radius:14px;
+        "
+    >
+        <div
+            style="
+                color:#ffffff;
+                font-family:Arial,sans-serif;
+                font-size:20px;
+                font-weight:900;
+            "
+        >
+            Want leads like these sent directly
+            to your business?
+        </div>
+
+        <div
+            style="
+                margin-top:10px;
+                color:#cbd5e1;
+                font-family:Arial,sans-serif;
+                font-size:17px;
+            "
+        >
+            Text
+            <strong style="color:#22d3ee;">
+                SIGNUP
+            </strong>
+            to
+            <strong style="color:#ff4db8;">
+                214-548-9175
+            </strong>
+        </div>
+
+        <a
+            href="${smsHref}"
+            style="
+                display:inline-block;
+                margin-top:18px;
+                padding:13px 24px;
+                background:#22d3ee;
+                color:#050510;
+                border-radius:8px;
+                font-family:Arial,sans-serif;
+                font-weight:900;
+                text-decoration:none;
+            "
+        >
+            TEXT SIGNUP NOW
+        </a>
+    </div>
+</td>
+</tr>
+
+
+<tr>
+<td
+    style="
+        padding:0 28px;
+        font-family:Arial,sans-serif;
+    "
+>
+    ${leadCards}
+</td>
+</tr>
+
+
+<tr>
+<td
+    style="
+        padding:24px 28px;
+        text-align:center;
+        font-family:Arial,sans-serif;
+    "
+>
+    <div
+        style="
+            padding:22px;
+            border:1px solid #ff0080;
+            border-radius:12px;
+            background:#12071d;
+        "
+    >
+        <strong
+            style="
+                color:#ffffff;
+                font-size:19px;
+            "
+        >
+            Ready to receive local opportunities?
+        </strong>
+
+        <div
+            style="
+                margin-top:9px;
+                color:#cbd5e1;
+                font-size:16px;
+            "
+        >
+            Text
+            <strong style="color:#22d3ee;">
+                SIGNUP
+            </strong>
+            to
+            <strong style="color:#ff4db8;">
+                214-548-9175
+            </strong>
+        </div>
+    </div>
+</td>
+</tr>
+
+
+<tr>
+<td
+    style="
+        padding:22px 28px 30px;
+        text-align:center;
+        border-top:1px solid #29324d;
+        color:#64748b;
+        font-family:Arial,sans-serif;
+        font-size:11px;
+        line-height:1.7;
+    "
+>
+    You're receiving this message because
+    ${escapeChamberHtml(companyName)}
+    appears in a local Chamber of Commerce
+    business directory.
+
+    <br><br>
+
+
+
+    <a
+        href="${unsubscribeUrl}"
+        style="
+            color:#22d3ee;
+            text-decoration:underline;
+        "
+    >
+        Unsubscribe from future lead opportunities
+    </a>
+</td>
+</tr>
+
+</table>
+
+</td>
+</tr>
+</table>
+
+</body>
+</html>
+        `;
+
+
+            const emailText = [
+                `10 New ${industryLabel} Opportunities in DFW`,
+                "",
+                greeting,
+                "",
+                ...leads.flatMap(
+                    (lead, index) => [
+                        `Opportunity ${index + 1}`,
+                        `${lead.author || "Local homeowner"} — ` +
+                        `${[lead.city, lead.state].filter(Boolean).join(", ")}`,
+                        String(
+                            lead.description || ""
+                        ),
+                        ""
+                    ]
+                ),
+                "Want leads like these sent directly to your business?",
+                "Text SIGNUP to 214-548-9175",
+                "",
+                `Unsubscribe: ${unsubscribeUrl}`,
+            ].join("\n");
+
+
+            /*
+             * ---------------------------------------------------------
+             * Send
+             * ---------------------------------------------------------
+             */
+
+            const transporter =
+                getZeptoTransporter();
+
+            const fromName =
+                String(
+                    process.env
+                        .ZEPTOMAIL_FROM_NAME ||
+                    "Clubhouse Links"
+                ).trim();
+
+            const fromEmail =
+                String(
+                    process.env
+                        .ZEPTOMAIL_FROM_EMAIL ||
+                    ""
+                ).trim();
+
+            let emailResult;
+
+            try {
+                emailResult =
+                    await transporter.sendMail({
+                        from: {
+                            name: fromName,
+                            address: fromEmail
+                        },
+
+                        to:
+                        recipientEmail,
+
+                        subject,
+
+                        text:
+                        emailText,
+
+                        html:
+                        emailHtml,
+
+                        headers: {
+                            "List-Unsubscribe":
+                                `<${unsubscribeUrl}>`,
+
+                            "List-Unsubscribe-Post":
+                                "List-Unsubscribe=One-Click"
+                        }
+                    });
+
+                emailSent = true;
+
+            } catch (error) {
+                /*
+                 * Send failed. Remove reservation so
+                 * these leads can be attempted again.
+                 */
+                await db.query(
+                    `
+                    DELETE FROM chamber_lead_email_log
+
+                    WHERE batch_id = $1::uuid
+                      AND status = 'pending';
+                `,
+                    [batchId]
+                );
+
+                throw error;
+            }
+
+
+            /*
+             * ---------------------------------------------------------
+             * Mark reservation sent
+             * ---------------------------------------------------------
+             */
+
+            await db.query(
+                `
+                UPDATE chamber_lead_email_log
+
+                SET
+                    status = 'sent',
+                    provider_message_id = $2,
+                    sent_at = NOW()
+
+                WHERE batch_id = $1::uuid;
+            `,
+                [
+                    batchId,
+                    emailResult?.messageId ||
+                    null
+                ]
+            );
+
+
+            return res.status(200).json({
+                success: true,
+
+                batch_id:
+                batchId,
+
+                chamber_record_id:
+                recipient.id,
+
+                recipient_email:
+                recipientEmail,
+
+                company_name:
+                companyName,
+
+                industry,
+
+                lead_count:
+                leads.length,
+
+                lead_ids:
+                    leads.map(
+                        (lead) =>
+                            lead.id
+                    ),
+
+                message_id:
+                    emailResult?.messageId ||
+                    null,
+
+                emails_sent: 1
+            });
+
+        } catch (error) {
+            console.error(
+                "❌ Chamber digest error:",
+                error
+            );
+
+            /*
+             * If email already went out, leave pending
+             * reservations intact rather than risk a
+             * duplicate email on the next run.
+             */
+            if (
+                batchId &&
+                !emailSent
+            ) {
+                await db.query(
+                    `
+                    DELETE FROM chamber_lead_email_log
+
+                    WHERE batch_id = $1::uuid
+                      AND status = 'pending';
+                `,
+                    [batchId]
+                ).catch(
+                    () => {}
+                );
+            }
+
+            return res.status(500).json({
+                success: false,
+                error:
+                    "Failed to send Chamber lead digest",
+                details:
+                error.message
+            });
+        }
+    };
+
+exports.unsubscribeChamberEmail =
+    async (req, res) => {
+        try {
+            const token =
+                String(
+                    req.params?.token || ""
+                ).trim();
+
+            if (!token) {
+                return res.status(400).send(
+                    "Invalid unsubscribe link."
+                );
+            }
+
+            const result =
+                await db.query(
+                    `
+                    UPDATE chamber_email_unsubscribes
+
+                    SET
+                        unsubscribed_at =
+                            COALESCE(
+                                unsubscribed_at,
+                                NOW()
+                            )
+
+                    WHERE token::text = $1
+
+                    RETURNING
+                        email,
+                        unsubscribed_at;
+                `,
+                    [token]
+                );
+
+            if (!result.rows.length) {
+                return res.status(404).send(
+                    "Unsubscribe link not found."
+                );
+            }
+
+            /*
+             * One-click List-Unsubscribe request.
+             */
+            if (req.method === "POST") {
+                return res.status(200).json({
+                    success: true
+                });
+            }
+
+            return res.status(200).send(`
+            <!doctype html>
+
+            <html>
+            <body
+                style="
+                    margin:0;
+                    background:#050510;
+                    color:#fff;
+                    font-family:Arial,sans-serif;
+                    text-align:center;
+                    padding:60px 20px;
+                "
+            >
+                <div
+                    style="
+                        max-width:600px;
+                        margin:0 auto;
+                        padding:32px;
+                        border:1px solid #22d3ee;
+                        border-radius:16px;
+                        background:#090914;
+                    "
+                >
+                    <h1
+                        style="
+                            color:#22d3ee;
+                        "
+                    >
+                        Unsubscribed
+                    </h1>
+
+                    <p
+                        style="
+                            color:#cbd5e1;
+                            line-height:1.7;
+                        "
+                    >
+                        You will no longer receive
+                        Chamber lead-opportunity emails
+                        from Clubhouse Links.
+                    </p>
+                </div>
+            </body>
+            </html>
+        `);
+
+        } catch (error) {
+            console.error(
+                "❌ Chamber unsubscribe error:",
+                error
+            );
+
+            return res.status(500).send(
+                "Unable to process unsubscribe request."
+            );
+        }
+    };
+
+
 
 
 
