@@ -2084,51 +2084,120 @@ exports.sendLeadSummaries = async (req, res) => {
     }
 };
 
+/*
+ * --------------------------------------------------------------------------
+ * Chamber lead-type helper
+ *
+ * familytreenow.lead_type is TEXT, for example:
+ *
+ *   "painter"
+ *   "general_contractor,painter"
+ *   "garage,handyman,electrician,painter"
+ *
+ * chamber_lead_email_log.lead_type is TEXT[].
+ *
+ * This converts the FamilyTree text value into a real JS array
+ * before PostgreSQL receives it as $5::text[].
+ * --------------------------------------------------------------------------
+ */
+
+function normalizeChamberLeadTypeArray(value) {
+    if (Array.isArray(value)) {
+        return [
+            ...new Set(
+                value
+                    .map((item) =>
+                        String(item || "")
+                            .trim()
+                            .toLowerCase()
+                            .replace(/\s+/g, "_")
+                            .replace(/-/g, "_")
+                    )
+                    .filter(Boolean)
+            )
+        ];
+    }
+
+    return [
+        ...new Set(
+            String(value || "")
+                .replace(/^\{|\}$/g, "")
+                .split(",")
+                .map((item) =>
+                    item
+                        .trim()
+                        .toLowerCase()
+                        .replace(/\s+/g, "_")
+                        .replace(/-/g, "_")
+                )
+                .filter(Boolean)
+        )
+    ];
+}
+
+
+/*
+ * --------------------------------------------------------------------------
+ * POST /api/leads/send-chamber-lead-digest
+ * --------------------------------------------------------------------------
+ */
+
 exports.sendChamberLeadDigest =
     async (req, res) => {
+
         let batchId = null;
         let emailSent = false;
 
         try {
+
             /*
-             * ---------------------------------------------------------
-             * Authenticate Railway
-             * ---------------------------------------------------------
+             * --------------------------------------------------------------
+             * 1. Authenticate request from Railway / FTN
+             * --------------------------------------------------------------
              */
+
+            const providedSecret =
+                req.get(
+                    "x-chamber-alert-secret"
+                );
 
             if (
                 !chamberSecretMatches(
-                    req.get(
-                        "x-chamber-alert-secret"
-                    )
+                    providedSecret
                 )
             ) {
-                return res.status(401).json({
-                    success: false,
-                    error: "Unauthorized"
-                });
+                return res
+                    .status(401)
+                    .json({
+                        success: false,
+                        error: "Unauthorized"
+                    });
             }
 
 
             /*
-             * ---------------------------------------------------------
-             * Validate payload
-             * ---------------------------------------------------------
+             * --------------------------------------------------------------
+             * 2. Validate request payload
+             * --------------------------------------------------------------
              */
 
             const chamberRecordId =
                 Number(
-                    req.body?.chamber_record_id
+                    req.body
+                        ?.chamber_record_id
                 );
+
 
             const industry =
                 String(
-                    req.body?.industry || ""
+                    req.body?.industry ||
+                    ""
                 )
                     .trim()
                     .toLowerCase()
                     .replace(/\s+/g, "_")
                     .replace(/-/g, "_");
+
 
             const requestedLeadIds =
                 Array.isArray(
@@ -2136,34 +2205,43 @@ exports.sendChamberLeadDigest =
                 )
                     ? [
                         ...new Set(
-                            req.body.lead_ids.map(
-                                (id) =>
-                                    Number(id)
-                            )
+                            req.body
+                                .lead_ids
+                                .map(
+                                    (id) =>
+                                        Number(id)
+                                )
                         )
                     ]
                     : [];
 
+
             if (
-                !Number.isInteger(
+                !Number.isSafeInteger(
                     chamberRecordId
                 ) ||
                 chamberRecordId <= 0
             ) {
-                return res.status(400).json({
-                    success: false,
-                    error:
-                        "Valid chamber_record_id required"
-                });
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        error:
+                            "Valid chamber_record_id required"
+                    });
             }
 
+
             if (!industry) {
-                return res.status(400).json({
-                    success: false,
-                    error:
-                        "industry is required"
-                });
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        error:
+                            "industry is required"
+                    });
             }
+
 
             if (
                 requestedLeadIds.length !==
@@ -2174,90 +2252,129 @@ exports.sendChamberLeadDigest =
                         id > 0
                 )
             ) {
-                return res.status(400).json({
-                    success: false,
-                    error:
-                        "Exactly 10 unique lead_ids are required"
-                });
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        error:
+                            "Exactly 10 unique lead_ids are required"
+                    });
             }
 
 
             /*
-             * ---------------------------------------------------------
-             * Load Chamber recipient
-             * ---------------------------------------------------------
+             * --------------------------------------------------------------
+             * 3. Load the Chamber business
+             * --------------------------------------------------------------
              */
 
             const chamberResult =
                 await db.query(
                     `
-                    SELECT
-                        id,
-                        name,
-                        company_name,
-                        email,
-                        city,
-                        lead_industries
+                        SELECT
+                            id,
+                            name,
+                            company_name,
+                            email,
+                            city,
+                            lead_industries
 
-                    FROM chamber_of_commerce
+                        FROM chamber_of_commerce
 
-                    WHERE id = $1
+                        WHERE id = $1
 
-                      AND NULLIF(
-                            BTRIM(email),
-                            ''
-                          ) IS NOT NULL
+                          AND NULLIF(
+                                BTRIM(email),
+                                ''
+                              ) IS NOT NULL
 
-                    LIMIT 1;
-                `,
-                    [chamberRecordId]
+                        LIMIT 1;
+                    `,
+                    [
+                        chamberRecordId
+                    ]
                 );
 
-            if (!chamberResult.rows.length) {
-                return res.status(404).json({
-                    success: false,
-                    error:
-                        "Chamber recipient not found"
-                });
+
+            if (
+                !chamberResult.rows.length
+            ) {
+                return res
+                    .status(404)
+                    .json({
+                        success: false,
+                        error:
+                            "Chamber recipient not found"
+                    });
             }
+
 
             const recipient =
                 chamberResult.rows[0];
+
+
+            /*
+             * --------------------------------------------------------------
+             * 4. Verify that this industry actually belongs to the
+             *    Chamber business.
+             * --------------------------------------------------------------
+             */
 
             const allowedIndustries =
                 Array.isArray(
                     recipient.lead_industries
                 )
-                    ? recipient.lead_industries.map(
-                        (value) =>
-                            String(value)
-                                .trim()
-                                .toLowerCase()
-                    )
+                    ? recipient
+                        .lead_industries
+                        .map(
+                            (value) =>
+                                String(value)
+                                    .trim()
+                                    .toLowerCase()
+                                    .replace(
+                                        /\s+/g,
+                                        "_"
+                                    )
+                                    .replace(
+                                        /-/g,
+                                        "_"
+                                    )
+                        )
                     : [];
 
+
             if (
-                !allowedIndustries.includes(
-                    industry
-                )
+                !allowedIndustries
+                    .includes(
+                        industry
+                    )
             ) {
-                return res.status(409).json({
-                    success: false,
-                    error:
-                        "Industry is not assigned to this Chamber business"
-                });
+                return res
+                    .status(409)
+                    .json({
+                        success: false,
+                        error:
+                            "Industry is not assigned to this Chamber business",
+                        requested_industry:
+                        industry,
+                        allowed_industries:
+                        allowedIndustries
+                    });
             }
+
 
             const recipientEmail =
                 String(
-                    recipient.email
+                    recipient.email ||
+                    ""
                 ).trim();
 
 
             /*
-             * ---------------------------------------------------------
-             * Unsubscribe status / token
-             * ---------------------------------------------------------
+             * --------------------------------------------------------------
+             * 5. Create/retrieve unsubscribe token and make sure this
+             *    recipient has not unsubscribed.
+             * --------------------------------------------------------------
              */
 
             const unsubscribeRecord =
@@ -2265,26 +2382,41 @@ exports.sendChamberLeadDigest =
                     recipientEmail
                 );
 
+
+            if (
+                !unsubscribeRecord ||
+                !unsubscribeRecord.token
+            ) {
+                throw new Error(
+                    "Could not create Chamber unsubscribe token"
+                );
+            }
+
+
             if (
                 unsubscribeRecord
-                    ?.unsubscribed_at
+                    .unsubscribed_at
             ) {
-                return res.status(410).json({
-                    success: false,
-                    skipped: true,
-                    reason:
-                        "recipient_unsubscribed"
-                });
+                return res
+                    .status(410)
+                    .json({
+                        success: false,
+                        skipped: true,
+                        reason:
+                            "recipient_unsubscribed",
+                        recipient_email:
+                        recipientEmail
+                    });
             }
 
 
             /*
-             * ---------------------------------------------------------
-             * Re-validate all ten leads on backend
-             * ---------------------------------------------------------
+             * --------------------------------------------------------------
+             * 6. Lead age setting
+             * --------------------------------------------------------------
              */
 
-            const maxAgeDays =
+            const parsedMaxAgeDays =
                 Number.parseInt(
                     process.env
                         .CHAMBER_LEAD_MAX_AGE_DAYS ||
@@ -2292,80 +2424,115 @@ exports.sendChamberLeadDigest =
                     10
                 );
 
+
+            const maxAgeDays =
+                Number.isFinite(
+                    parsedMaxAgeDays
+                ) &&
+                parsedMaxAgeDays >= 0
+                    ? parsedMaxAgeDays
+                    : 30;
+
+
+            /*
+             * --------------------------------------------------------------
+             * 7. Re-validate all 10 FamilyTree leads.
+             *
+             * IMPORTANT:
+             *
+             * familytreenow.lead_type is TEXT, not TEXT[].
+             *
+             * Example:
+             *
+             *   painter
+             *
+             * or:
+             *
+             *   general_contractor,painter
+             *
+             * So we split it into a temporary PostgreSQL text array
+             * before matching.
+             * --------------------------------------------------------------
+             */
+
             const leadResult =
                 await db.query(
                     `
-                    SELECT
-                        f.id,
-                        f.author,
-                        f.city,
-                        f.state,
-                        f.description,
-                        f.lead_type,
-                        f.scraped_at
+                        SELECT
+                            f.id,
+                            f.author,
+                            f.city,
+                            f.state,
+                            f.description,
+                            f.lead_type,
+                            f.scraped_at
 
-                    FROM familytreenow f
+                        FROM familytreenow f
 
-                    WHERE
-                        f.id =
-                        ANY($1::int[])
+                        WHERE
+                            f.id =
+                            ANY(
+                                $1::int[]
+                            )
 
-                      AND $2 = ANY (
-                        regexp_split_to_array(
-                                TRIM(
+                          AND $2 = ANY(
+                                regexp_split_to_array(
+                                    TRIM(
                                         BOTH '{}'
                                         FROM LOWER(
-                                                COALESCE(
-                                                        f.lead_type,
-                                                        ''
-                                                )
-                                             )
+                                            COALESCE(
+                                                f.lead_type,
+                                                ''
+                                            )
+                                        )
+                                    ),
+                                    '\\s*,\\s*'
+                                )
+                              )
+
+                          AND NULLIF(
+                                BTRIM(
+                                    f.description
                                 ),
-                                '\\s*,\\s*'
-                        )
-                        )
+                                ''
+                              ) IS NOT NULL
 
-                      AND NULLIF(
-                            BTRIM(
-                                f.description
-                            ),
-                            ''
-                          ) IS NOT NULL
+                          AND (
+                                $4::int <= 0
 
-                      AND (
-                            $4::int <= 0
+                                OR f.scraped_at >=
+                                   NOW() -
+                                   (
+                                       $4::int *
+                                       INTERVAL '1 day'
+                                   )
+                              )
 
-                            OR f.scraped_at >=
-                               NOW() -
-                               (
-                                   $4::int *
-                                   INTERVAL '1 day'
-                               )
-                      )
+                          AND NOT EXISTS (
+                                SELECT 1
 
-                      AND NOT EXISTS (
-                            SELECT 1
+                                FROM
+                                    chamber_lead_email_log
+                                    AS log
 
-                            FROM chamber_lead_email_log log
+                                WHERE
+                                    log.lead_id =
+                                    f.id
 
-                            WHERE
-                                log.lead_id =
-                                f.id
+                                  AND LOWER(
+                                        BTRIM(
+                                            log.recipient_email
+                                        )
+                                      ) =
+                                      LOWER(
+                                        BTRIM($3)
+                                      )
+                              )
 
-                              AND LOWER(
-                                    BTRIM(
-                                        log.recipient_email
-                                    )
-                                  ) =
-                                  LOWER(
-                                    BTRIM($3)
-                                  )
-                      )
-
-                    ORDER BY
-                        f.scraped_at ASC,
-                        f.id ASC;
-                `,
+                        ORDER BY
+                            f.scraped_at DESC,
+                            f.id DESC;
+                    `,
                     [
                         requestedLeadIds,
                         industry,
@@ -2374,93 +2541,126 @@ exports.sendChamberLeadDigest =
                     ]
                 );
 
+
             const leads =
                 leadResult.rows;
+
+
+            /*
+             * We send ONLY complete batches of 10.
+             */
 
             if (
                 leads.length !==
                 CHAMBER_DIGEST_SIZE
             ) {
-                return res.status(409).json({
-                    success: false,
-                    error:
-                        "All 10 leads are no longer eligible or unsent",
-                    eligible_count:
-                    leads.length
-                });
+                return res
+                    .status(409)
+                    .json({
+                        success: false,
+                        error:
+                            "All 10 leads are no longer eligible or unsent",
+                        requested_count:
+                        requestedLeadIds.length,
+                        eligible_count:
+                        leads.length
+                    });
             }
 
 
             /*
-             * ---------------------------------------------------------
-             * Reserve the 10 leads before sending.
+             * --------------------------------------------------------------
+             * 8. Reserve the leads before sending.
              *
-             * Prevents concurrent runs from emailing the same batch.
-             * ---------------------------------------------------------
+             * This prevents two jobs from emailing the same lead to
+             * the same recipient at the same time.
+             * --------------------------------------------------------------
              */
 
             batchId =
                 crypto.randomUUID();
 
+
             const reservationClient =
                 await db.connect();
 
+
             try {
-                await reservationClient.query(
-                    "BEGIN"
-                );
 
-                for (const lead of leads) {
-                    const reservation =
-                        await reservationClient.query(
-                            `
-                            INSERT INTO
-                                chamber_lead_email_log
-                            (
-                                lead_id,
-                                chamber_source,
-                                chamber_record_id,
-                                recipient_email,
-                                company_name,
-                                lead_type,
-                                industry,
-                                batch_id,
-                                status,
-                                sent_at
-                            )
+                await reservationClient
+                    .query(
+                        "BEGIN"
+                    );
 
-                            VALUES
-                            (
-                                $1,
-                                'chamber_of_commerce',
-                                $2,
-                                $3,
-                                $4,
-                                $5::text[],
-                                $6,
-                                $7::uuid,
-                                'pending',
-                                NOW()
-                            )
 
-                            ON CONFLICT
-                                DO NOTHING
+                for (
+                    const lead of leads
+                    ) {
 
-                            RETURNING id;
-                        `,
-                            [
-                                lead.id,
-                                recipient.id,
-                                recipientEmail,
-                                recipient.company_name,
-                                lead.lead_type,
-                                industry,
-                                batchId
-                            ]
+                    /*
+                     * Convert FamilyTree's TEXT lead_type into
+                     * a proper JS array for the log's TEXT[] column.
+                     */
+
+                    const leadTypes =
+                        normalizeChamberLeadTypeArray(
+                            lead.lead_type
                         );
 
+
+                    const reservation =
+                        await reservationClient
+                            .query(
+                                `
+                                    INSERT INTO
+                                        chamber_lead_email_log
+                                    (
+                                        lead_id,
+                                        chamber_source,
+                                        chamber_record_id,
+                                        recipient_email,
+                                        company_name,
+                                        lead_type,
+                                        industry,
+                                        batch_id,
+                                        status,
+                                        sent_at
+                                    )
+
+                                    VALUES
+                                    (
+                                        $1,
+                                        'chamber_of_commerce',
+                                        $2,
+                                        $3,
+                                        $4,
+                                        $5::text[],
+                                        $6,
+                                        $7::uuid,
+                                        'pending',
+                                        NOW()
+                                    )
+
+                                    ON CONFLICT
+                                        DO NOTHING
+
+                                    RETURNING id;
+                                `,
+                                [
+                                    lead.id,
+                                    recipient.id,
+                                    recipientEmail,
+                                    recipient.company_name,
+                                    leadTypes,
+                                    industry,
+                                    batchId
+                                ]
+                            );
+
+
                     if (
-                        reservation.rowCount !== 1
+                        reservation.rowCount !==
+                        1
                     ) {
                         throw new Error(
                             `Lead ${lead.id} was already reserved or sent`
@@ -2468,26 +2668,39 @@ exports.sendChamberLeadDigest =
                     }
                 }
 
-                await reservationClient.query(
-                    "COMMIT"
-                );
+
+                await reservationClient
+                    .query(
+                        "COMMIT"
+                    );
 
             } catch (error) {
-                await reservationClient.query(
-                    "ROLLBACK"
-                );
+
+                await reservationClient
+                    .query(
+                        "ROLLBACK"
+                    );
 
                 throw error;
 
             } finally {
-                reservationClient.release();
+
+                reservationClient
+                    .release();
             }
 
 
             /*
-             * ---------------------------------------------------------
-             * Build unsubscribe URL
-             * ---------------------------------------------------------
+             * --------------------------------------------------------------
+             * 9. Build unsubscribe URL
+             *
+             * CHAMBER_PUBLIC_BASE_URL should be:
+             *
+             * https://crm-function-app-5d4de511071d.herokuapp.com/
+             * server/lead_function/api/leads
+             *
+             * Therefore DO NOT add /api/leads again here.
+             * --------------------------------------------------------------
              */
 
             const publicBaseUrl =
@@ -2497,7 +2710,11 @@ exports.sendChamberLeadDigest =
                     ""
                 )
                     .trim()
-                    .replace(/\/+$/, "");
+                    .replace(
+                        /\/+$/,
+                        ""
+                    );
+
 
             if (!publicBaseUrl) {
                 throw new Error(
@@ -2505,22 +2722,28 @@ exports.sendChamberLeadDigest =
                 );
             }
 
+
             const unsubscribeUrl =
                 `${publicBaseUrl}` +
-                `/api/leads/chamber-unsubscribe/` +
-                `${unsubscribeRecord.token}`;
+                `/chamber-unsubscribe/` +
+                `${encodeURIComponent(
+                    String(
+                        unsubscribeRecord.token
+                    )
+                )}`;
 
 
             /*
-             * ---------------------------------------------------------
-             * Neo-punk email
-             * ---------------------------------------------------------
+             * --------------------------------------------------------------
+             * 10. Email content
+             * --------------------------------------------------------------
              */
 
             const industryLabel =
                 formatChamberIndustry(
                     industry
                 );
+
 
             const companyName =
                 String(
@@ -2529,32 +2752,52 @@ exports.sendChamberLeadDigest =
                     "Local Business"
                 ).trim();
 
+
             const contactName =
                 String(
-                    recipient.name || ""
+                    recipient.name ||
+                    ""
                 ).trim();
+
 
             const greeting =
                 contactName
                     ? `Hi ${contactName},`
                     : `Hello ${companyName},`;
 
+
             const subject =
                 `10 New ${industryLabel} Opportunities in DFW`;
+
+
+            /*
+             * CTA is intentionally SMS-only.
+             */
 
             const smsHref =
                 "sms:+12145489175?body=SIGNUP";
 
 
+            /*
+             * --------------------------------------------------------------
+             * 11. Build lead cards
+             * --------------------------------------------------------------
+             */
+
             const leadCards =
                 leads
                     .map(
-                        (lead, index) => {
+                        (
+                            lead,
+                            index
+                        ) => {
+
                             const author =
                                 String(
                                     lead.author ||
                                     "Local homeowner"
                                 ).trim();
+
 
                             const city =
                                 [
@@ -2565,13 +2808,17 @@ exports.sendChamberLeadDigest =
                                     .join(", ") ||
                                 "DFW";
 
+
                             const description =
                                 escapeChamberHtml(
-                                    lead.description
-                                ).replace(
-                                    /\r?\n/g,
-                                    "<br>"
-                                );
+                                    lead.description ||
+                                    ""
+                                )
+                                    .replace(
+                                        /\r?\n/g,
+                                        "<br>"
+                                    );
+
 
                             const date =
                                 lead.scraped_at
@@ -2583,75 +2830,98 @@ exports.sendChamberLeadDigest =
                                         )
                                     : "";
 
+
                             return `
-                            <div
-                                style="
-                                    margin:0 0 16px;
-                                    padding:18px;
-                                    background:#0d1020;
-                                    border:1px solid #29324d;
-                                    border-left:4px solid #22d3ee;
-                                    border-radius:12px;
-                                "
-                            >
                                 <div
                                     style="
-                                        color:#ff4db8;
-                                        font-size:12px;
-                                        font-weight:900;
-                                        letter-spacing:1.5px;
-                                        text-transform:uppercase;
+                                        margin:0 0 16px;
+                                        padding:18px;
+                                        background:#0d1020;
+                                        border:1px solid #29324d;
+                                        border-left:4px solid #22d3ee;
+                                        border-radius:12px;
                                     "
                                 >
-                                    Opportunity ${index + 1}
-                                </div>
+                                    <div
+                                        style="
+                                            color:#ff4db8;
+                                            font-size:12px;
+                                            font-weight:900;
+                                            letter-spacing:1.5px;
+                                            text-transform:uppercase;
+                                        "
+                                    >
+                                        Opportunity ${index + 1}
+                                    </div>
 
-                                <div
-                                    style="
-                                        margin-top:7px;
-                                        color:#ffffff;
-                                        font-size:18px;
-                                        font-weight:900;
-                                    "
-                                >
-                                    ${escapeChamberHtml(author)}
-                                </div>
+                                    <div
+                                        style="
+                                            margin-top:7px;
+                                            color:#ffffff;
+                                            font-size:18px;
+                                            font-weight:900;
+                                        "
+                                    >
+                                        ${escapeChamberHtml(author)}
+                                    </div>
 
-                                <div
-                                    style="
-                                        margin-top:4px;
-                                        color:#22d3ee;
-                                        font-size:14px;
-                                        font-weight:800;
-                                    "
-                                >
-                                    ${escapeChamberHtml(city)}
-                                    ${
+                                    <div
+                                        style="
+                                            margin-top:4px;
+                                            color:#22d3ee;
+                                            font-size:14px;
+                                            font-weight:800;
+                                        "
+                                    >
+                                        ${escapeChamberHtml(city)}
+                                        ${
                                 date
                                     ? ` • ${escapeChamberHtml(date)}`
                                     : ""
                             }
-                                </div>
+                                    </div>
 
-                                <div
-                                    style="
-                                        margin-top:13px;
-                                        color:#dbe4ee;
-                                        font-size:15px;
-                                        line-height:1.65;
-                                    "
-                                >
-                                    ${description}
+                                    <div
+                                        style="
+                                            margin-top:13px;
+                                            color:#dbe4ee;
+                                            font-size:15px;
+                                            line-height:1.65;
+                                        "
+                                    >
+                                        ${description}
+                                    </div>
                                 </div>
-                            </div>
-                        `;
+                            `;
                         }
                     )
                     .join("");
 
+
+            /*
+             * --------------------------------------------------------------
+             * 12. Neo-punk HTML email
+             * --------------------------------------------------------------
+             */
+
             const emailHtml = `
 <!doctype html>
+
 <html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        ${escapeChamberHtml(subject)}
+    </title>
+</head>
+
 
 <body
     style="
@@ -2660,6 +2930,7 @@ exports.sendChamberLeadDigest =
         background:#050510;
     "
 >
+
 <table
     role="presentation"
     width="100%"
@@ -2671,10 +2942,14 @@ exports.sendChamberLeadDigest =
         background:#050510;
     "
 >
+
 <tr>
+
 <td
     align="center"
-    style="padding:28px 14px;"
+    style="
+        padding:28px 14px;
+    "
 >
 
 <table
@@ -2689,17 +2964,24 @@ exports.sendChamberLeadDigest =
         background:#090914;
         border:1px solid #22d3ee;
         border-radius:18px;
+        overflow:hidden;
     "
 >
 
+
+<!-- Header -->
+
 <tr>
+
 <td
     style="
         padding:30px;
         text-align:center;
+        background:#111126;
         border-bottom:2px solid #ff0080;
     "
 >
+
     <div
         style="
             color:#22d3ee;
@@ -2707,10 +2989,12 @@ exports.sendChamberLeadDigest =
             font-size:12px;
             font-weight:900;
             letter-spacing:2px;
+            text-transform:uppercase;
         "
     >
         CLUBHOUSE LINKS // LOCAL OPPORTUNITIES
     </div>
+
 
     <h1
         style="
@@ -2718,11 +3002,14 @@ exports.sendChamberLeadDigest =
             color:#ffffff;
             font-family:Arial,sans-serif;
             font-size:30px;
+            line-height:1.25;
         "
     >
-        10 New ${escapeChamberHtml(industryLabel)}
+        10 New
+        ${escapeChamberHtml(industryLabel)}
         Opportunities
     </h1>
+
 
     <div
         style="
@@ -2735,11 +3022,16 @@ exports.sendChamberLeadDigest =
     >
         Dallas–Fort Worth
     </div>
+
 </td>
+
 </tr>
 
 
+<!-- Greeting -->
+
 <tr>
+
 <td
     style="
         padding:26px 28px 10px;
@@ -2749,30 +3041,57 @@ exports.sendChamberLeadDigest =
         line-height:1.7;
     "
 >
-    <p>
+
+    <p
+        style="
+            margin:0 0 14px;
+        "
+    >
         ${escapeChamberHtml(greeting)}
     </p>
 
-    <p>
+
+    <p
+        style="
+            margin:0;
+        "
+    >
         We identified these recent local
-        <strong style="color:#22d3ee;">
+
+        <strong
+            style="
+                color:#22d3ee;
+            "
+        >
             ${escapeChamberHtml(industryLabel)}
         </strong>
+
         opportunities that may be relevant to
-        <strong style="color:#ff4db8;">
+
+        <strong
+            style="
+                color:#ff4db8;
+            "
+        >
             ${escapeChamberHtml(companyName)}
         </strong>.
     </p>
+
 </td>
+
 </tr>
 
 
+<!-- Main CTA -->
+
 <tr>
+
 <td
     style="
-        padding:10px 28px 26px;
+        padding:20px 28px 26px;
     "
 >
+
     <div
         style="
             padding:22px;
@@ -2782,17 +3101,20 @@ exports.sendChamberLeadDigest =
             border-radius:14px;
         "
     >
+
         <div
             style="
                 color:#ffffff;
                 font-family:Arial,sans-serif;
                 font-size:20px;
                 font-weight:900;
+                line-height:1.4;
             "
         >
             Want leads like these sent directly
             to your business?
         </div>
+
 
         <div
             style="
@@ -2803,14 +3125,26 @@ exports.sendChamberLeadDigest =
             "
         >
             Text
-            <strong style="color:#22d3ee;">
+
+            <strong
+                style="
+                    color:#22d3ee;
+                "
+            >
                 SIGNUP
             </strong>
+
             to
-            <strong style="color:#ff4db8;">
+
+            <strong
+                style="
+                    color:#ff4db8;
+                "
+            >
                 214-548-9175
             </strong>
         </div>
+
 
         <a
             href="${smsHref}"
@@ -2822,30 +3156,44 @@ exports.sendChamberLeadDigest =
                 color:#050510;
                 border-radius:8px;
                 font-family:Arial,sans-serif;
+                font-size:15px;
                 font-weight:900;
                 text-decoration:none;
+                text-transform:uppercase;
             "
         >
             TEXT SIGNUP NOW
         </a>
+
     </div>
+
 </td>
+
 </tr>
 
 
+<!-- Ten opportunities -->
+
 <tr>
+
 <td
     style="
         padding:0 28px;
         font-family:Arial,sans-serif;
     "
 >
+
     ${leadCards}
+
 </td>
+
 </tr>
 
 
+<!-- Bottom CTA -->
+
 <tr>
+
 <td
     style="
         padding:24px 28px;
@@ -2853,6 +3201,7 @@ exports.sendChamberLeadDigest =
         font-family:Arial,sans-serif;
     "
 >
+
     <div
         style="
             padding:22px;
@@ -2861,6 +3210,7 @@ exports.sendChamberLeadDigest =
             background:#12071d;
         "
     >
+
         <strong
             style="
                 color:#ffffff;
@@ -2870,6 +3220,7 @@ exports.sendChamberLeadDigest =
             Ready to receive local opportunities?
         </strong>
 
+
         <div
             style="
                 margin-top:9px;
@@ -2878,20 +3229,37 @@ exports.sendChamberLeadDigest =
             "
         >
             Text
-            <strong style="color:#22d3ee;">
+
+            <strong
+                style="
+                    color:#22d3ee;
+                "
+            >
                 SIGNUP
             </strong>
+
             to
-            <strong style="color:#ff4db8;">
+
+            <strong
+                style="
+                    color:#ff4db8;
+                "
+            >
                 214-548-9175
             </strong>
         </div>
+
     </div>
+
 </td>
+
 </tr>
 
 
+<!-- Footer -->
+
 <tr>
+
 <td
     style="
         padding:22px 28px 30px;
@@ -2903,14 +3271,13 @@ exports.sendChamberLeadDigest =
         line-height:1.7;
     "
 >
+
     You're receiving this message because
     ${escapeChamberHtml(companyName)}
     appears in a local Chamber of Commerce
     business directory.
 
     <br><br>
-
-
 
     <a
         href="${unsubscribeUrl}"
@@ -2921,51 +3288,80 @@ exports.sendChamberLeadDigest =
     >
         Unsubscribe from future lead opportunities
     </a>
+
 </td>
+
 </tr>
+
 
 </table>
 
 </td>
+
 </tr>
+
 </table>
 
 </body>
+
 </html>
-        `;
-
-
-            const emailText = [
-                `10 New ${industryLabel} Opportunities in DFW`,
-                "",
-                greeting,
-                "",
-                ...leads.flatMap(
-                    (lead, index) => [
-                        `Opportunity ${index + 1}`,
-                        `${lead.author || "Local homeowner"} — ` +
-                        `${[lead.city, lead.state].filter(Boolean).join(", ")}`,
-                        String(
-                            lead.description || ""
-                        ),
-                        ""
-                    ]
-                ),
-                "Want leads like these sent directly to your business?",
-                "Text SIGNUP to 214-548-9175",
-                "",
-                `Unsubscribe: ${unsubscribeUrl}`,
-            ].join("\n");
+            `;
 
 
             /*
-             * ---------------------------------------------------------
-             * Send
-             * ---------------------------------------------------------
+             * --------------------------------------------------------------
+             * 13. Plain-text fallback
+             * --------------------------------------------------------------
+             */
+
+            const emailText =
+                [
+                    `10 New ${industryLabel} Opportunities in DFW`,
+                    "",
+                    greeting,
+                    "",
+                    "We identified these recent local opportunities that may be relevant to your business.",
+                    "",
+
+                    ...leads.flatMap(
+                        (
+                            lead,
+                            index
+                        ) => [
+                            `Opportunity ${index + 1}`,
+                            `${lead.author || "Local homeowner"} — ${
+                                [
+                                    lead.city,
+                                    lead.state
+                                ]
+                                    .filter(Boolean)
+                                    .join(", ")
+                            }`,
+                            String(
+                                lead.description ||
+                                ""
+                            ),
+                            ""
+                        ]
+                    ),
+
+                    "Want leads like these sent directly to your business?",
+                    "Text SIGNUP to 214-548-9175",
+                    "",
+                    `Unsubscribe: ${unsubscribeUrl}`
+                ]
+                    .join("\n");
+
+
+            /*
+             * --------------------------------------------------------------
+             * 14. Send via existing ZeptoMail SMTP transporter
+             * --------------------------------------------------------------
              */
 
             const transporter =
                 getZeptoTransporter();
+
 
             const fromName =
                 String(
@@ -2974,6 +3370,7 @@ exports.sendChamberLeadDigest =
                     "Clubhouse Links"
                 ).trim();
 
+
             const fromEmail =
                 String(
                     process.env
@@ -2981,150 +3378,240 @@ exports.sendChamberLeadDigest =
                     ""
                 ).trim();
 
+
             let emailResult;
 
+
             try {
+
                 emailResult =
-                    await transporter.sendMail({
-                        from: {
-                            name: fromName,
-                            address: fromEmail
-                        },
+                    await transporter
+                        .sendMail({
+                            from: {
+                                name:
+                                fromName,
 
-                        to:
-                        recipientEmail,
+                                address:
+                                fromEmail
+                            },
 
-                        subject,
+                            to:
+                            recipientEmail,
 
-                        text:
-                        emailText,
+                            subject,
 
-                        html:
-                        emailHtml,
+                            text:
+                            emailText,
 
-                        headers: {
-                            "List-Unsubscribe":
-                                `<${unsubscribeUrl}>`,
+                            html:
+                            emailHtml,
 
-                            "List-Unsubscribe-Post":
-                                "List-Unsubscribe=One-Click"
-                        }
-                    });
+                            headers: {
+                                "List-Unsubscribe":
+                                    `<${unsubscribeUrl}>`,
+
+                                "List-Unsubscribe-Post":
+                                    "List-Unsubscribe=One-Click"
+                            }
+                        });
+
+
+                /*
+                 * Once this flips true, we never delete the pending
+                 * reservations automatically.
+                 *
+                 * If the DB update fails after Zepto accepted the email,
+                 * retaining them prevents accidental duplicate sending.
+                 */
 
                 emailSent = true;
 
+
             } catch (error) {
+
                 /*
-                 * Send failed. Remove reservation so
-                 * these leads can be attempted again.
+                 * SMTP did NOT accept the email.
+                 *
+                 * Free the reservations so this exact group can be
+                 * retried safely.
                  */
+
                 await db.query(
                     `
-                    DELETE FROM chamber_lead_email_log
+                        DELETE FROM
+                            chamber_lead_email_log
 
-                    WHERE batch_id = $1::uuid
-                      AND status = 'pending';
-                `,
-                    [batchId]
+                        WHERE
+                            batch_id =
+                            $1::uuid
+
+                          AND status =
+                            'pending';
+                    `,
+                    [
+                        batchId
+                    ]
                 );
+
 
                 throw error;
             }
 
 
             /*
-             * ---------------------------------------------------------
-             * Mark reservation sent
-             * ---------------------------------------------------------
+             * --------------------------------------------------------------
+             * 15. Mark all ten rows sent
+             * --------------------------------------------------------------
              */
 
             await db.query(
                 `
-                UPDATE chamber_lead_email_log
+                    UPDATE
+                        chamber_lead_email_log
 
-                SET
-                    status = 'sent',
-                    provider_message_id = $2,
-                    sent_at = NOW()
+                    SET
+                        status = 'sent',
 
-                WHERE batch_id = $1::uuid;
-            `,
+                        provider_message_id =
+                            $2,
+
+                        sent_at =
+                            NOW()
+
+                    WHERE
+                        batch_id =
+                        $1::uuid;
+                `,
                 [
                     batchId,
-                    emailResult?.messageId ||
+
+                    emailResult
+                        ?.messageId ||
                     null
                 ]
             );
 
 
-            return res.status(200).json({
-                success: true,
+            /*
+             * --------------------------------------------------------------
+             * 16. Success response
+             * --------------------------------------------------------------
+             */
 
-                batch_id:
-                batchId,
+            console.log(
+                "✅ Chamber lead digest delivered:",
+                {
+                    batchId,
+                    chamberRecordId:
+                    recipient.id,
+                    companyName,
+                    recipientEmail,
+                    industry,
+                    leadCount:
+                    leads.length,
+                    leadIds:
+                        leads.map(
+                            (lead) =>
+                                lead.id
+                        ),
+                    messageId:
+                        emailResult
+                            ?.messageId ||
+                        null
+                }
+            );
 
-                chamber_record_id:
-                recipient.id,
 
-                recipient_email:
-                recipientEmail,
+            return res
+                .status(200)
+                .json({
+                    success: true,
 
-                company_name:
-                companyName,
+                    batch_id:
+                    batchId,
 
-                industry,
+                    chamber_record_id:
+                    recipient.id,
 
-                lead_count:
-                leads.length,
+                    recipient_email:
+                    recipientEmail,
 
-                lead_ids:
-                    leads.map(
-                        (lead) =>
-                            lead.id
-                    ),
+                    company_name:
+                    companyName,
 
-                message_id:
-                    emailResult?.messageId ||
-                    null,
+                    industry,
 
-                emails_sent: 1
-            });
+                    lead_count:
+                    leads.length,
+
+                    lead_ids:
+                        leads.map(
+                            (lead) =>
+                                lead.id
+                        ),
+
+                    message_id:
+                        emailResult
+                            ?.messageId ||
+                        null,
+
+                    emails_sent:
+                        1
+                });
+
 
         } catch (error) {
+
             console.error(
                 "❌ Chamber digest error:",
                 error
             );
 
+
             /*
-             * If email already went out, leave pending
-             * reservations intact rather than risk a
-             * duplicate email on the next run.
+             * If SMTP never accepted the email, clear pending
+             * reservations.
+             *
+             * If SMTP DID accept the email but something later failed,
+             * retain the pending reservation so another run cannot
+             * accidentally send a duplicate.
              */
+
             if (
                 batchId &&
                 !emailSent
             ) {
                 await db.query(
                     `
-                    DELETE FROM chamber_lead_email_log
+                        DELETE FROM
+                            chamber_lead_email_log
 
-                    WHERE batch_id = $1::uuid
-                      AND status = 'pending';
-                `,
-                    [batchId]
-                ).catch(
-                    () => {}
-                );
+                        WHERE
+                            batch_id =
+                            $1::uuid
+
+                          AND status =
+                            'pending';
+                    `,
+                    [
+                        batchId
+                    ]
+                )
+                    .catch(
+                        () => {}
+                    );
             }
 
-            return res.status(500).json({
-                success: false,
-                error:
-                    "Failed to send Chamber lead digest",
-                details:
-                error.message
-            });
+
+            return res
+                .status(500)
+                .json({
+                    success: false,
+                    error:
+                        "Failed to send Chamber lead digest",
+                    details:
+                    error.message
+                });
         }
     };
 
