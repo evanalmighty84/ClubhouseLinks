@@ -2310,13 +2310,20 @@ exports.sendChamberLeadDigest =
                         f.id =
                         ANY($1::int[])
 
-                      AND $2 =
-                          ANY(
-                              COALESCE(
-                                  f.lead_type,
-                                  ARRAY[]::text[]
-                              )
-                          )
+                      AND $2 = ANY (
+                        regexp_split_to_array(
+                                TRIM(
+                                        BOTH '{}'
+                                        FROM LOWER(
+                                                COALESCE(
+                                                        f.lead_type,
+                                                        ''
+                                                )
+                                             )
+                                ),
+                                '\\s*,\\s*'
+                        )
+                        )
 
                       AND NULLIF(
                             BTRIM(
