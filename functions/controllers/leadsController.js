@@ -3670,6 +3670,7 @@ exports.openChamberSignupSms =
 
 exports.unsubscribeChamberEmail =
     async (req, res) => {
+
         try {
             const token =
                 String(
@@ -3677,103 +3678,401 @@ exports.unsubscribeChamberEmail =
                 ).trim();
 
             if (!token) {
-                return res.status(400).send(
-                    "Invalid unsubscribe link."
-                );
+                return res
+                    .status(400)
+                    .send(
+                        "Invalid unsubscribe link."
+                    );
             }
 
-            const result =
-                await db.query(
-                    `
-                    UPDATE chamber_email_unsubscribes
-
-                    SET
-                        unsubscribed_at =
-                            COALESCE(
-                                unsubscribed_at,
-                                NOW()
-                            )
-
-                    WHERE token::text = $1
-
-                    RETURNING
-                        email,
-                        unsubscribed_at;
-                `,
-                    [token]
-                );
-
-            if (!result.rows.length) {
-                return res.status(404).send(
-                    "Unsubscribe link not found."
-                );
-            }
 
             /*
-             * One-click List-Unsubscribe request.
+             * ---------------------------------------------------------
+             * GET
+             *
+             * Do NOT unsubscribe here.
+             *
+             * Email security scanners frequently crawl links with GET.
+             * We only show a confirmation page.
+             * ---------------------------------------------------------
              */
-            if (req.method === "POST") {
-                return res.status(200).json({
-                    success: true
-                });
+
+            if (req.method === "GET") {
+
+                const result =
+                    await db.query(
+                        `
+                            SELECT
+                                email,
+                                unsubscribed_at
+
+                            FROM
+                                chamber_email_unsubscribes
+
+                            WHERE
+                                token = $1::uuid
+
+                            LIMIT 1;
+                        `,
+                        [
+                            token
+                        ]
+                    );
+
+
+                if (!result.rows.length) {
+                    return res
+                        .status(404)
+                        .send(
+                            "This unsubscribe link is invalid or expired."
+                        );
+                }
+
+
+                const record =
+                    result.rows[0];
+
+
+                if (
+                    record.unsubscribed_at
+                ) {
+                    return res
+                        .status(200)
+                        .send(`
+                            <!doctype html>
+
+                            <html>
+                            <head>
+                                <meta
+                                    name="viewport"
+                                    content="width=device-width, initial-scale=1"
+                                >
+
+                                <title>
+                                    Unsubscribed
+                                </title>
+                            </head>
+
+                            <body
+                                style="
+                                    margin:0;
+                                    padding:40px 20px;
+                                    background:#050510;
+                                    color:#ffffff;
+                                    font-family:Arial,sans-serif;
+                                    text-align:center;
+                                "
+                            >
+
+                                <div
+                                    style="
+                                        max-width:560px;
+                                        margin:0 auto;
+                                        padding:30px;
+                                        background:#0d1020;
+                                        border:1px solid #22d3ee;
+                                        border-radius:16px;
+                                    "
+                                >
+
+                                    <h1
+                                        style="
+                                            color:#22d3ee;
+                                        "
+                                    >
+                                        Already Unsubscribed
+                                    </h1>
+
+                                    <p
+                                        style="
+                                            color:#cbd5e1;
+                                            line-height:1.6;
+                                        "
+                                    >
+                                        This email address has already
+                                        been removed from future
+                                        Clubhouse Links lead opportunity
+                                        emails.
+                                    </p>
+
+                                </div>
+
+                            </body>
+                            </html>
+                        `);
+                }
+
+
+                return res
+                    .status(200)
+                    .send(`
+                        <!doctype html>
+
+                        <html>
+
+                        <head>
+                            <meta
+                                name="viewport"
+                                content="width=device-width, initial-scale=1"
+                            >
+
+                            <title>
+                                Confirm Unsubscribe
+                            </title>
+                        </head>
+
+
+                        <body
+                            style="
+                                margin:0;
+                                padding:40px 20px;
+                                background:#050510;
+                                color:#ffffff;
+                                font-family:Arial,sans-serif;
+                                text-align:center;
+                            "
+                        >
+
+                            <div
+                                style="
+                                    max-width:560px;
+                                    margin:0 auto;
+                                    padding:30px;
+                                    background:#0d1020;
+                                    border:1px solid #22d3ee;
+                                    border-radius:16px;
+                                "
+                            >
+
+                                <div
+                                    style="
+                                        color:#ff4db8;
+                                        font-size:12px;
+                                        font-weight:900;
+                                        letter-spacing:2px;
+                                    "
+                                >
+                                    CLUBHOUSE LINKS
+                                </div>
+
+
+                                <h1
+                                    style="
+                                        margin-top:15px;
+                                        color:#ffffff;
+                                    "
+                                >
+                                    Unsubscribe?
+                                </h1>
+
+
+                                <p
+                                    style="
+                                        color:#cbd5e1;
+                                        line-height:1.6;
+                                    "
+                                >
+                                    Confirm that you no longer want to
+                                    receive local lead opportunities.
+                                </p>
+
+
+                                <form
+                                    method="POST"
+                                    action="/server/lead_function/api/leads/chamber-unsubscribe/${encodeURIComponent(token)}"
+                                >
+
+                                    <button
+                                        type="submit"
+                                        style="
+                                            margin-top:18px;
+                                            padding:14px 24px;
+                                            background:#ff4db8;
+                                            color:#050510;
+                                            border:0;
+                                            border-radius:8px;
+                                            font-size:16px;
+                                            font-weight:900;
+                                            cursor:pointer;
+                                        "
+                                    >
+                                        UNSUBSCRIBE
+                                    </button>
+
+                                </form>
+
+                            </div>
+
+                        </body>
+
+                        </html>
+                    `);
             }
 
-            return res.status(200).send(`
-            <!doctype html>
 
-            <html>
-            <body
-                style="
-                    margin:0;
-                    background:#050510;
-                    color:#fff;
-                    font-family:Arial,sans-serif;
-                    text-align:center;
-                    padding:60px 20px;
-                "
-            >
-                <div
-                    style="
-                        max-width:600px;
-                        margin:0 auto;
-                        padding:32px;
-                        border:1px solid #22d3ee;
-                        border-radius:16px;
-                        background:#090914;
-                    "
-                >
-                    <h1
-                        style="
-                            color:#22d3ee;
-                        "
-                    >
-                        Unsubscribed
-                    </h1>
+            /*
+             * ---------------------------------------------------------
+             * POST
+             *
+             * This is the ONLY method that actually unsubscribes.
+             * ---------------------------------------------------------
+             */
 
-                    <p
-                        style="
-                            color:#cbd5e1;
-                            line-height:1.7;
-                        "
-                    >
-                        You will no longer receive
-                        Chamber lead-opportunity emails
-                        from Clubhouse Links.
-                    </p>
-                </div>
-            </body>
-            </html>
-        `);
+            if (req.method === "POST") {
+
+                const result =
+                    await db.query(
+                        `
+                            UPDATE
+                                chamber_email_unsubscribes
+
+                            SET
+                                unsubscribed_at =
+                                    COALESCE(
+                                        unsubscribed_at,
+                                        NOW()
+                                    )
+
+                            WHERE
+                                token = $1::uuid
+
+                            RETURNING
+                                email,
+                                unsubscribed_at;
+                        `,
+                        [
+                            token
+                        ]
+                    );
+
+
+                if (!result.rows.length) {
+                    return res
+                        .status(404)
+                        .json({
+                            success: false,
+                            error:
+                                "Invalid unsubscribe token"
+                        });
+                }
+
+
+                /*
+                 * List-Unsubscribe-Post clients generally only care
+                 * about a successful 2xx response.
+                 */
+                const acceptsJson =
+                    String(
+                        req.get("accept") || ""
+                    ).includes(
+                        "application/json"
+                    );
+
+
+                if (acceptsJson) {
+                    return res
+                        .status(200)
+                        .json({
+                            success: true,
+                            unsubscribed: true
+                        });
+                }
+
+
+                return res
+                    .status(200)
+                    .send(`
+                        <!doctype html>
+
+                        <html>
+
+                        <head>
+                            <meta
+                                name="viewport"
+                                content="width=device-width, initial-scale=1"
+                            >
+
+                            <title>
+                                Unsubscribed
+                            </title>
+                        </head>
+
+
+                        <body
+                            style="
+                                margin:0;
+                                padding:40px 20px;
+                                background:#050510;
+                                color:#ffffff;
+                                font-family:Arial,sans-serif;
+                                text-align:center;
+                            "
+                        >
+
+                            <div
+                                style="
+                                    max-width:560px;
+                                    margin:0 auto;
+                                    padding:30px;
+                                    background:#0d1020;
+                                    border:1px solid #22d3ee;
+                                    border-radius:16px;
+                                "
+                            >
+
+                                <h1
+                                    style="
+                                        color:#22d3ee;
+                                    "
+                                >
+                                    You're Unsubscribed
+                                </h1>
+
+
+                                <p
+                                    style="
+                                        color:#cbd5e1;
+                                        line-height:1.6;
+                                    "
+                                >
+                                    You will no longer receive
+                                    Clubhouse Links lead opportunity
+                                    emails at this address.
+                                </p>
+
+                            </div>
+
+                        </body>
+
+                        </html>
+                    `);
+            }
+
+
+            return res
+                .status(405)
+                .json({
+                    success: false,
+                    error:
+                        "Method not allowed"
+                });
+
 
         } catch (error) {
+
             console.error(
                 "❌ Chamber unsubscribe error:",
                 error
             );
 
-            return res.status(500).send(
-                "Unable to process unsubscribe request."
-            );
+
+            return res
+                .status(500)
+                .json({
+                    success: false,
+                    error:
+                        "Unable to process unsubscribe request"
+                });
         }
     };
 
