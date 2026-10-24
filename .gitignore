@@ -3,6 +3,9 @@ node_modules/
 npm-debug.log
 functions/.env
 
+# Generated PDF packets/reports
+*.pdf
+
 # Logs
 logs
 *.log

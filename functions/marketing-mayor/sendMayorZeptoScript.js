@@ -415,11 +415,16 @@ function buildEmail(config) {
         </html>
     `;
 
+
     return {
         to: config.recipientEmail,
+        bcc: Array.isArray(config.bcc)
+            ? config.bcc
+            : [],
         subject: config.subject,
-        html,
+        html
     };
+
 }
 
 // ---------------------------------------------------------
@@ -624,8 +629,47 @@ function buildAttachments(config) {
         });
     }
 
+
+    // -----------------------------------------------------
+    // CONFIG-DEFINED ATTACHMENTS
+    // PDFs, documents, spreadsheets, etc.
+    // -----------------------------------------------------
+
+    if (Array.isArray(config.attachments)) {
+        for (const attachment of config.attachments) {
+
+            const attachmentPath =
+                path.isAbsolute(attachment.path)
+                    ? attachment.path
+                    : path.resolve(
+                        __dirname,
+                        attachment.path
+                    );
+
+            validateFile(
+                attachmentPath,
+                attachment.filename || "Email attachment"
+            );
+
+            attachments.push({
+                filename:
+                    attachment.filename ||
+                    path.basename(attachmentPath),
+
+                path: attachmentPath,
+
+                contentType:
+                    attachment.contentType ||
+                    undefined,
+
+                contentDisposition: "attachment"
+            });
+        }
+    }
+
     return attachments;
 }
+
 
 // ---------------------------------------------------------
 // SEND
@@ -665,22 +709,16 @@ async function sendEmail() {
             "✅ ZeptoMail SMTP connection verified."
         );
 
-        const info =
-            await transport.sendMail({
-                from:
-                    `"${FROM_NAME}" <${FROM_EMAIL}>`,
 
-                to:
-                email.to,
+        const info = await transport.sendMail({
+            from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
+            to: email.to,
+            bcc: email.bcc,
+            subject: email.subject,
+            html: email.html,
+            attachments
+        });
 
-                subject:
-                email.subject,
-
-                html:
-                email.html,
-
-                attachments,
-            });
 
         console.log(
             "✅ Email sent successfully."

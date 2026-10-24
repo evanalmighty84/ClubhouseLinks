@@ -504,6 +504,11 @@ function buildEmail(config) {
 
     return {
         to: config.recipientEmail,
+
+        bcc: Array.isArray(config.bcc)
+            ? config.bcc
+            : [],
+
         subject: config.subject,
         html
     };
@@ -581,14 +586,45 @@ async function sendEmail() {
             "Connected to ZeptoMail SMTP."
         );
 
+        console.log(
+            "Sending email..."
+        );
+
+        console.log(
+            "TO:",
+            email.to
+        );
+
+        console.log(
+            "BCC:",
+            email.bcc
+        );
+
+        console.log(
+            "SUBJECT:",
+            email.subject
+        );
+
         const info = await transport.sendMail({
             from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
-            to: email.to,
-            subject: email.subject,
-            html: email.html,
-            attachments: buildAttachments(emailConfig)
-        });
 
+            to: email.to,
+
+            bcc:
+                email.bcc &&
+                email.bcc.length > 0
+                    ? email.bcc
+                    : undefined,
+
+            subject: email.subject,
+
+            html: email.html,
+
+            attachments:
+                buildAttachments(
+                    emailConfig
+                )
+        });
         console.log(
             "ZeptoMail message sent:",
             info.messageId

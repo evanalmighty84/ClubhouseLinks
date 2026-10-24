@@ -1,140 +1,391 @@
-module.exports = {
-    recipientEmail: "lenox3@sbcglobal.net",
-    recipientName: "Chip",
 
-    subject: "Thursday, September 24th at Noon — Old Damascus + Clubhouse Links",
+module.exports = {
+    // Lindsay Turman — Director of Community Services
+    // City of Richardson
+
+    // TEST ADDRESS — replace with Lindsay's verified email
+    recipientEmail: "Lindsay.Turman@cor.gov",
+    recipientName: "Lindsay",
+
+    subject:
+        "Clubhouse Links — Richardson Neighborhood Engagement Workshop | Thursday, October 22",
+
+    // BCC addresses must be plain email strings.
+    // Add Chip, Terry, Horace, and Patricia when verified.
+    bcc: [
+        "evanaligon7@clubouselinks.com",
+        "dianeleedees@gmail.com",
+        "patmulv@swbell.net",
+        "ubsatisfied12@gmail.com",
+        "tfxz1950@gmail.com",
+    ],
 
     bodyHtml: `
-        <p style="margin:0 0 18px 0;color:#000000;">
-            Thanks for making time to meet Thursday. Just one quick correction
-            before then: I originally sent over Zoe's Kitchen by mistake.
+    <div style="
+        font-family:Arial,Helvetica,sans-serif;
+        font-size:15px;
+        line-height:1.8;
+        color:#000000 !important;
+        -webkit-text-fill-color:#000000 !important;
+        max-width:720px;
+    ">
+
+        <p style="
+            margin:0 0 18px 0;
+            color:#000000 !important;
+            -webkit-text-fill-color:#000000 !important;
+        ">
+            With Mayor Omar's support for continuing
+            the Clubhouse Links discussion, I'm excited
+            that we'll have an opportunity to sit down
+            Thursday with several neighborhood board
+            members and discuss how the platform
+            could benefit Richardson's neighborhoods.
+            Bringing your Community Services experience
+            together with the perspectives of neighborhood
+            leaders should help us identify a practical
+            path toward implementation.
         </p>
 
-        <p style="margin:0 0 18px 0;color:#000000;">
-            Let's meet at
-            <strong style="color:#000000;">Old Damascus Mediterranean Restaurant</strong>
-            at <strong style="color:#000000;">12:00 PM Thursday</strong>.
+        <p style="
+            margin:0 0 18px 0;
+            color:#000000 !important;
+            -webkit-text-fill-color:#000000 !important;
+        ">
+            While I'm certainly hoping we can reach
+            an agreement on moving forward with
+            Clubhouse Links, I thought it would be
+            valuable to hear directly from some
+            neighborhood board members who have already
+            expressed an interest in funding or
+            pursuing sponsorship for the platform.
         </p>
 
-        <p style="margin:0 0 18px 0;color:#000000;">
-            <strong style="color:#000000;">
-                1310 W Campbell Rd #108<br>
-                Richardson, TX 75080
-            </strong>
+        <p style="
+            margin:0 0 18px 0;
+            color:#000000 !important;
+            -webkit-text-fill-color:#000000 !important;
+        ">
+            My hope is that our conversation can serve
+            as a
+            <strong style="
+                color:#000000 !important;
+                -webkit-text-fill-color:#000000 !important;
+            ">Neighborhood Engagement Workshop</strong>,
+            bringing together community leaders to
+            exchange ideas, identify opportunities,
+            and discuss how Clubhouse Links can build
+            upon the programs and relationships
+            Richardson has already established.
         </p>
 
-        <p style="margin:0 0 18px 0;color:#000000;">
-            Patricia, Diane, and I spoke about Clubhouse Links, so I wanted to
-            give you a little context before we meet.
+        <!-- WORKSHOP DETAILS -->
+
+        <table role="presentation"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="
+                width:100%;
+                border-collapse:collapse;
+                font-size:14px;
+                margin:20px 0;
+                color:#000000 !important;
+            "
+        >
+
+            <tr style="background-color:#102D55;">
+                <th colspan="2" style="
+                    padding:13px;
+                    text-align:left;
+                    border:1px solid #102D55;
+                    background-color:#102D55;
+                    color:#FFFFFF !important;
+                    -webkit-text-fill-color:#FFFFFF !important;
+                ">
+                    Richardson Neighborhood Engagement Workshop
+                </th>
+            </tr>
+
+            <tr style="background-color:#FFFFFF;">
+                <td style="
+                    padding:11px;
+                    border:1px solid #CCCCCC;
+                    font-weight:bold;
+                    width:30%;
+                    background-color:#FFFFFF;
+                    color:#000000 !important;
+                    -webkit-text-fill-color:#000000 !important;
+                ">
+                    Date
+                </td>
+                <td style="
+                    padding:11px;
+                    border:1px solid #CCCCCC;
+                    background-color:#FFFFFF;
+                    color:#000000 !important;
+                    -webkit-text-fill-color:#000000 !important;
+                ">
+                    Thursday, October 22, 2026
+                </td>
+            </tr>
+
+            <tr style="background-color:#F0F6FC;">
+                <td style="
+                    padding:11px;
+                    border:1px solid #CCCCCC;
+                    font-weight:bold;
+                    background-color:#F0F6FC;
+                    color:#000000 !important;
+                    -webkit-text-fill-color:#000000 !important;
+                ">
+                    Time
+                </td>
+                <td style="
+                    padding:11px;
+                    border:1px solid #CCCCCC;
+                    background-color:#F0F6FC;
+                    color:#000000 !important;
+                    -webkit-text-fill-color:#000000 !important;
+                ">
+                    3:00 PM
+                </td>
+            </tr>
+
+            <tr style="background-color:#FFFFFF;">
+                <td style="
+                    padding:11px;
+                    border:1px solid #CCCCCC;
+                    font-weight:bold;
+                    background-color:#FFFFFF;
+                    color:#000000 !important;
+                    -webkit-text-fill-color:#000000 !important;
+                ">
+                    Location
+                </td>
+                <td style="
+                    padding:11px;
+                    border:1px solid #CCCCCC;
+                    background-color:#FFFFFF;
+                    color:#000000 !important;
+                    -webkit-text-fill-color:#000000 !important;
+                ">
+                    <strong style="
+                        color:#000000 !important;
+                        -webkit-text-fill-color:#000000 !important;
+                    ">Dimassi's Mediterranean Buffet</strong><br>
+                    180 W Campbell Rd.<br>
+                    Richardson, TX 75080
+                </td>
+            </tr>
+
+        </table>
+
+        <!-- NEIGHBORHOOD LEADERS -->
+
+        <p style="
+            margin:0 0 18px 0;
+            color:#000000 !important;
+            -webkit-text-fill-color:#000000 !important;
+        ">
+            I spoke with
+            <strong style="
+                color:#000000 !important;
+                -webkit-text-fill-color:#000000 !important;
+            ">Diane Dees of Cottonwood Creek</strong>
+            earlier today, and she's indicated she should
+            be able to join us if her schedule remains open.
+            We discussed some of the neighborhood's
+            recent activities, including the community
+            partnerships that helped support National
+            Night Out.
         </p>
 
-        <p style="margin:0 0 18px 0;color:#000000;">
-            At its core,
-            <strong style="color:#000000;">Clubhouse Links</strong>
-            gives an HOA and its residents one shared platform for neighborhood
-            services and communication.
+        <p style="
+            margin:0 0 18px 0;
+            color:#000000 !important;
+            -webkit-text-fill-color:#000000 !important;
+        ">
+            I also spoke with
+            <strong style="
+                color:#000000 !important;
+                -webkit-text-fill-color:#000000 !important;
+            ">Patricia Mulvihill of Cottonwood Creek</strong>
+            a few weeks ago about neighborhood
+            engagement and community initiatives.
         </p>
 
-        <p style="margin:0 0 18px 0;color:#000000;">
-            HOA Board members can book food trucks 🚚, coordinate catering,
-            send notifications about block parties and neighborhood events,
-            and alert residents when important safety concerns arise 🔔.
+        <p style="
+            margin:0 0 18px 0;
+            color:#000000 !important;
+            -webkit-text-fill-color:#000000 !important;
+        ">
+            I'm also extending the invitation to
+            <strong style="
+                color:#000000 !important;
+                -webkit-text-fill-color:#000000 !important;
+            ">Chip Hodge, Terry, Horace,
+            and Patricia Mulvihill</strong>,
+            should their schedules allow them to join us.
+            Having several neighborhood perspectives
+            represented will make for an even more
+            productive workshop.
         </p>
 
-        <p style="margin:0 0 18px 0;color:#000000;">
-            Residents can submit service requests, connect with trusted local
-            professionals, receive notifications when those requests are viewed
-            or answered, and see work completed for other neighbors through
-            their neighborhood's own rating system.
+        <!-- CITY COLLABORATION -->
+
+        <p style="
+            margin:0 0 18px 0;
+            color:#000000 !important;
+            -webkit-text-fill-color:#000000 !important;
+        ">
+            As we work
+            <strong style="
+                color:#000000 !important;
+                -webkit-text-fill-color:#000000 !important;
+            ">alongside Mayor Omar</strong>
+            and coordinate discussions regarding
+            the proposed Richardson pilot with
+            City Manager Don Magner, I believe
+            this workshop offers an excellent
+            opportunity to connect neighborhood
+            leadership with City Community Services.
         </p>
 
-        <p style="margin:0 0 18px 0;color:#000000;">
-            Approved neighborhood vendors can build their reputation through
-            <strong style="color:#000000;">
-                resident reviews and completed-project photos
-            </strong>.
-            The more positive feedback and completed work residents document,
-            the more recognized those professionals become within the neighborhood.
+        <p style="
+            margin:0 0 18px 0;
+            color:#000000 !important;
+            -webkit-text-fill-color:#000000 !important;
+        ">
+            I'm particularly interested in hearing
+            your perspective on how Clubhouse Links
+            can complement the work your department
+            is already doing, while providing
+            neighborhood leaders with practical
+            tools to connect and engage residents.
         </p>
 
-        <div style="margin:24px 0;text-align:center;">
-            <img
-                src="cid:street-fair"
-                alt="Clubhouse Links Street Fair"
-                style="
-                    display:block;
-                    width:100%;
-                    max-width:900px;
-                    height:auto;
-                    margin:0 auto;
-                    border:0;
-                "
-            >
-        </div>
+        <!-- ATTACHMENT INTRODUCTION -->
 
-        <p style="margin:0 0 18px 0;color:#000000;">
-            This also lines up closely with a goal
-            <strong style="color:#000000;">Mayor Omar shared with me</strong>
-            after we last spoke. His emphasis at this month's HOA Presidents meeting
-            on increasing engagement between neighborhood leaders and their residents
-            is a natural fit for what Clubhouse Links is designed to support.
+        <p style="
+            margin:0 0 18px 0;
+            color:#000000 !important;
+            -webkit-text-fill-color:#000000 !important;
+        ">
+            I've attached
+            <strong style="
+                color:#000000 !important;
+                -webkit-text-fill-color:#000000 !important;
+            ">two neighborhood engagement presentations</strong>
+            illustrating different approaches
+            to supporting the platform.
         </p>
 
-        <p style="margin:0 0 18px 0;color:#000000;">
-            Ideally, I'd like your neighborhood to be one of the communities
-            we work with ahead of
-            <strong style="color:#000000;">October 15</strong>.
-            If you and the Board can help us get the flyer in front of residents
-            by email, we'll handle the rest of the setup.
+        <p style="
+            margin:0 0 18px 0;
+            color:#000000 !important;
+            -webkit-text-fill-color:#000000 !important;
+        ">
+            <strong style="
+                color:#000000 !important;
+                -webkit-text-fill-color:#000000 !important;
+            ">Cottonwood Creek</strong>
+            represents a neighborhood-led sponsorship
+            approach, where local businesses and
+            community partnerships help fund the
+            platform and support neighborhood activities.
         </p>
 
-        <p style="margin:0 0 18px 0;color:#000000;">
-            That includes sending invite codes to residents, setting up the HOA
-            portion of the app, and defining the appropriate roles for you and
-            the other Board members so the neighborhood profile works the way
-            you need it to.
+        <p style="
+            margin:0 0 18px 0;
+            color:#000000 !important;
+            -webkit-text-fill-color:#000000 !important;
+        ">
+            <strong style="
+                color:#000000 !important;
+                -webkit-text-fill-color:#000000 !important;
+            ">Crowley Park</strong>
+            illustrates a vendor-supported approach
+            with the potential for City participation,
+            showing how neighborhood communication,
+            local business engagement, and community
+            programming could work together under
+            a broader Richardson initiative.
         </p>
 
-        <p style="margin:0 0 18px 0;color:#000000;">
-            The goal is to get residents and HOA administrators onto the same
-            platform, measure real participation, and show how Clubhouse Links
-            can support the kind of HOA-to-resident engagement Mayor Omar described.
+        <p style="
+            margin:0 0 18px 0;
+            color:#000000 !important;
+            -webkit-text-fill-color:#000000 !important;
+        ">
+            Both presentations highlight practical
+            opportunities, from notifying residents
+            when landscaping crews are working nearby
+            or an ice cream truck is visiting, to
+            sharing neighborhood safety concerns,
+            promoting community events, and
+            connecting residents with local vendors.
         </p>
 
-        <p style="margin:0 0 18px 0;color:#000000;">
-            The key piece I need from the HOA is help getting the same information
-            in front of residents. If you and the Board are comfortable
-            <strong style="color:#000000;">
-                emailing our Clubhouse Links flyer to the neighborhood
-            </strong>,
-            we'll handle the
-            <strong style="color:#000000;">EDDM direct-mail campaign</strong>
-            on our side.
+        <p style="
+            margin:0 0 18px 0;
+            color:#000000 !important;
+            -webkit-text-fill-color:#000000 !important;
+        ">
+            I believe these examples will give us
+            a useful starting point for discussing
+            how a Richardson pilot could be funded,
+            implemented, and evaluated, and what
+            each participating neighborhood might
+            contribute to its success.
         </p>
 
-        <p style="margin:0 0 18px 0;color:#000000;">
-            That way, residents see the same message in both their inbox and
-            mailbox. They can scan the QR code, download the app, and join the
-            same neighborhood platform. It also gives us real participation
-            and feedback to evaluate instead of simply demonstrating software.
+        <!-- CALENDAR INVITATION -->
+
+        <p style="
+            margin:0 0 18px 0;
+            color:#000000 !important;
+            -webkit-text-fill-color:#000000 !important;
+        ">
+            <strong style="
+                color:#000000 !important;
+                -webkit-text-fill-color:#000000 !important;
+            ">You'll receive a calendar invitation
+            shortly with the meeting details.</strong>
         </p>
 
-        <p style="margin:0 0 18px 0;color:#000000;">
-            There is
-            <strong style="color:#000000;">no cost to the HOA for this pilot</strong>.
-            The goal is to get the platform into a real neighborhood, see how
-            residents use it, and learn what works before October 15.
+        <p style="
+            margin:0 0 18px 0;
+            color:#000000 !important;
+            -webkit-text-fill-color:#000000 !important;
+        ">
+            Looking forward to seeing everyone
+            Thursday and having a productive workshop!
         </p>
 
-        <p style="margin:0 0 18px 0;color:#000000;">
-            I'll bring everything with me Thursday, including the resident flyer
-            and a look at the HOA side of the app. If it makes sense after you
-            see it, we can get the resident email moving and start collecting
-            useful results.
-        </p>
+    </div>
+    `,
 
-        <p style="margin:0;color:#000000;">
-            Looking forward to lunch Thursday.
-        </p>
-    `
+    attachments: [
+        {
+            filename:
+                "Clubhouse_Links_Cottonwood_Creek_Workshop.pdf",
+
+            path:
+                "./Clubhouse_Links_Richardson_Engagement_Workshop_Compressed.pdf",
+
+            contentType:
+                "application/pdf"
+        },
+        {
+            filename:
+                "Clubhouse_Links_Crowley_Park_Engagement_Workshop.pdf",
+
+            path:
+                "./Clubhouse_Links_Crowley_Park_Engagement_Workshop.pdf",
+
+            contentType:
+                "application/pdf"
+        }
+    ]
 };

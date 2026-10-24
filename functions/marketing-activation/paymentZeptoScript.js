@@ -4,7 +4,8 @@ const fs = require("fs");
 const emailConfig = require("./paymentEmailConfig");
 
 const PAYMENT_URL =
-    "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-45B07068GJ117120GNJRZ23A";
+    emailConfig.paymentUrl ||
+    "https://www.paypal.com/invoice/p/#INV2-G4WR-DZW6-SYVC-U9LG";
 
 const CLUBHOUSE_LOGO_PATH = path.join(__dirname, "clubhouse-logo.png");
 const CLUBHOUSE_DASHBOARD_PATH = path.join(__dirname, "clubhouse.png");
@@ -88,7 +89,8 @@ function validateImageFiles() {
     const imageFiles = [
         CLUBHOUSE_LOGO_PATH,
         CLUBHOUSE_DASHBOARD_PATH,
-        HEADSHOT_PATH
+        HEADSHOT_PATH,
+        ...(emailConfig.attachments || []).map(item => item.path).filter(Boolean)
     ];
 
     for (const imagePath of imageFiles) {
@@ -161,7 +163,7 @@ function buildEmail(config) {
                                                             color:#009899;
                                                         "
                                                     >
-                                                        Activation Payment Link
+                                                        Your Activation Invoice
                                                     </div>
 
                                                     <div
@@ -173,7 +175,7 @@ function buildEmail(config) {
                                                             color:#111827;
                                                         "
                                                     >
-                                                        Activate your Clubhouse Links lead-generation service
+                                                        Activate your Clubhouse Links A.I. coverage
                                                     </div>
 
                                                     <p
@@ -185,9 +187,7 @@ function buildEmail(config) {
                                                             color:#374151;
                                                         "
                                                     >
-                                                        This is your activation link. Complete the  payment
-                                                        below to activate your Clubhouse Links lead-generation
-                                                        service and begin receiving leads.
+                                                        Complete your activation payment to begin receiving relevant customer opportunities.
                                                     </p>
 
                                                     <a
@@ -207,7 +207,7 @@ function buildEmail(config) {
                                                             box-shadow:0 0 16px rgba(255,59,212,0.35);
                                                         "
                                                     >
-                                                        Click here to pay and start service
+                                                        View & Pay Activation Invoice
                                                     </a>
                                                 </td>
                                             </tr>
@@ -294,7 +294,8 @@ async function sendEmail() {
                     cid: "evan-headshot",
                     contentType: "image/png",
                     contentDisposition: "inline"
-                }
+                },
+                ...(emailConfig.attachments || [])
             ]
         });
 
@@ -306,3 +307,4 @@ async function sendEmail() {
 }
 
 sendEmail();
+
