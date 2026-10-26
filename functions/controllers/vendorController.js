@@ -1605,6 +1605,8 @@ exports.getVendorServiceRequests = async (req, res) => {
 
                     sr.source,
                     sr.source_lead_id,
+                    sr.original_post_at,
+                    sr.posted_at_text,
 
                     v.company_name AS vendor_company_name,
                     v.category AS vendor_category
