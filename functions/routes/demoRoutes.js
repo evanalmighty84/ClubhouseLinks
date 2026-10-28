@@ -5,6 +5,9 @@ const leadsController = require("../controllers/leadsController");
 
 
 router.post("/sent", demoController.sendDemoLead);
-
+router.post(
+    "/hoaboard-demo",
+    demoController.sendHOABoardDemo
+);
 
 module.exports = router;
