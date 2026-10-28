@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#061525" />
+<title>Cottonwood Creek | HOA Board Notification Experience</title>
+<style>
+:root{color-scheme:dark;--bg:#061525;--panel:#13233d;--line:#42627f;--cyan:#05c9e9;--pink:#d93cdf;--text:#f3f8ff;--muted:#b5c4d8}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 10% 5%,#064955 0%,transparent 42%),radial-gradient(ellipse at 90% 85%,#351341 0%,transparent 45%),var(--bg);font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text)}
+main{max-width:740px;margin:0 auto;padding:32px 20px 70px}.brand{text-align:center;margin-bottom:26px}.logo{font-size:45px;line-height:1}.brand-name{font-size:16px;font-weight:900;letter-spacing:.2em}.eyebrow{color:#cfff62;letter-spacing:.15em;font-size:12px;font-weight:800;text-transform:uppercase;margin:25px 0 7px}h1{font-size:clamp(34px,7vw,55px);line-height:1.08;letter-spacing:-.04em;margin:0 0 13px}.accent{color:var(--cyan)}.sub{color:var(--muted);margin-bottom:24px}.panel{background:linear-gradient(145deg,#112940,#1b1834);border:1px solid #48718c;border-radius:25px;padding:clamp(22px,5vw,36px);box-shadow:0 25px 65px #0005;position:relative;overflow:hidden}.panel:before{content:"";position:absolute;inset:0 0 auto;height:4px;background:linear-gradient(90deg,var(--cyan),#6575ff,var(--pink))}.steps{color:#ccfc73;font-weight:850;letter-spacing:.1em;font-size:13px;margin:8px 0 25px}label.field{display:block;font-weight:750;margin:19px 0 8px}input,select,textarea{font:inherit;width:100%;border:1px solid #4e7795;border-radius:14px;background:#06192b;color:#fff;padding:15px 17px;outline:none}input:focus,select:focus,textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px #06c9e933}textarea{resize:vertical;min-height:115px}small,.hint{color:var(--muted);font-size:13px;display:block;margin-top:7px}.consent{display:flex;align-items:flex-start;gap:12px;margin:25px 0}.consent input{width:21px;height:21px;flex-shrink:0;margin-top:3px;accent-color:var(--cyan)}button{width:100%;border:0;padding:18px;border-radius:16px;background:linear-gradient(105deg,#04cce8,#4b9efd);color:#062032;font-weight:850;font-size:18px;cursor:pointer}button:disabled{opacity:.55;cursor:wait}.status{margin-top:18px;padding:15px 17px;border-radius:13px;display:none;white-space:pre-wrap}.status.success{display:block;background:#073c38;border:1px solid #2de6ab}.status.error{display:block;background:#382131;border:1px solid #e16fa6}.preview{margin-top:24px;border:1px solid #365b76;background:#091729;border-radius:16px;padding:20px}.preview h2{margin:0 0 13px;font-size:15px;color:#c6e9ff}.preview pre{white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.65 system-ui;color:#e3f2ff;margin:0}.footer{text-align:center;color:#9eb2c8;font-size:12px;margin-top:22px}a{color:#8addf5}@media(max-width:480px){main{padding:20px 13px 45px}.panel{border-radius:19px}}
+</style>
+</head>
+<body>
+<main>
+<header class="brand"><div class="logo" aria-hidden="true">🏡</div><div class="brand-name">CLUBHOUSE LINKS</div><div style="font-size:12px;color:#07d1f3;letter-spacing:.2em">COTTONWOOD CREEK</div></header>
+<p class="eyebrow">Community engagement in action</p>
+<h1>Send a <span class="accent">neighborhood alert.</span></h1>
+<p class="sub">See how a Cottonwood Creek resident could receive an HOA update right on their phone. This form sends a one-time presentation example to the mobile number you provide; it does not notify the entire neighborhood.</p>
+<section class="panel">
+<div class="steps">01 / CHOOSE · 02 / SEND · 03 / RECEIVE</div>
+<form id="hoaForm">
+<label class="field" for="category">📣 Choose notification type</label>
+<select id="category" required>
+<option value="event">🎉 Community Event</option>
+<option value="meeting">📅 HOA Meeting</option>
+<option value="security">🛡️ Security Alert</option>
+</select>
+<label class="field" for="message">📝 Announcement</label>
+<textarea id="message" maxlength="400" required></textarea>
+<small id="securityHelp" style="display:none">Security messages are clearly labeled as samples. Do not report an unverified emergency.</small>
+<label class="field" for="phone">📱 Your mobile number</label>
+<input id="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(214) 555-0123" required />
+<small>U.S. mobile numbers only. The message will be sent only to the number you enter.</small>
+<label class="field" for="demoCode">🔑 Presentation access code</label>
+<input id="demoCode" type="password" autocomplete="off" placeholder="Enter access code" required />
+<small>Enter the access code provided by the presenter.</small>
+<label class="consent" for="consent"><input id="consent" type="checkbox" required /><span>I agree to receive a one-time Cottonwood Creek / Clubhouse Links notification example at the phone number entered above.</span></label>
+<button id="sendButton" type="submit">📲 Send My HOA Notification</button>
+<div id="status" class="status" role="status" aria-live="polite"></div>
+</form>
+<div class="preview"><h2>✉️ MESSAGE PREVIEW</h2><pre id="previewText"></pre></div>
+</section>
+<p class="footer">Cottonwood Creek • Richardson, Texas • Powered by Clubhouse Links<br />Presentation-only SMS. No neighborhood-wide broadcast is performed.</p>
+</main>
+<script>
+(() => {
+  const API_URL = 'https://crm-function-app-5d4de511071d.herokuapp.com/server/lead_function/api/demo/hoaboard-demo';
+  const $ = id => document.getElementById(id);
+  const examples = {
+    event: 'Join your neighbors for a Cottonwood Creek community gathering! Watch for additional event information from the HOA board.',
+    meeting: 'The Cottonwood Creek HOA invites residents to an upcoming community meeting. Meeting details will be shared by the board.',
+    security: 'This is a sample neighborhood safety notification. No actual security incident is being reported.'
+  };
+  const labels = {event:'🎉 COMMUNITY EVENT',meeting:'📅 HOA MEETING',security:'🛡️ SECURITY NOTICE'};
+  let edited = false;
+  function refreshTemplate(){
+    const type=$('category').value;
+    if(!edited) $('message').value=examples[type];
+    $('securityHelp').style.display=type==='security'?'block':'none';
+    $('previewText').textContent=[
+      '🏡 CLUBHOUSE LINKS','🌳 COTTONWOOD CREEK','','📢 HOA BOARD NOTIFICATION','',labels[type], '📍 Richardson, TX','',
+      ...(type==='security'?['⚠️ SAMPLE SAFETY NOTIFICATION','No verified incident is being reported.','']:[]),
+      '📝 ANNOUNCEMENT', $('message').value.trim() || '(Your announcement)', '', '━━━━━━━━━━━━━━','🏘️ COTTONWOOD CREEK HOA','Powered by Clubhouse Links','','Presentation preview • One-time SMS'
+    ].join('\n');
+  }
+  $('category').addEventListener('change',()=>{edited=false;refreshTemplate();});
+  $('message').addEventListener('input',()=>{edited=true;refreshTemplate();});
+  refreshTemplate();
+  $('hoaForm').addEventListener('submit',async e=>{
+    e.preventDefault();
+    const status=$('status');const button=$('sendButton');
+    status.className='status';status.textContent='';
+    const category=$('category').value;
+    const message=$('message').value.trim();
+    const digits=$('phone').value.replace(/\D/g,'');
+    const phone=digits.length===10?'+1'+digits:digits.length===11&&digits.startsWith('1')?'+'+digits:null;
+    if(!phone){status.className='status error';status.textContent='Enter a valid 10-digit U.S. mobile number.';return;}
+    if(message.length<10){status.className='status error';status.textContent='Please enter an announcement of at least 10 characters.';return;}
+    button.disabled=true;button.textContent='📨 Sending notification…';
+    try{
+      const response=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,category,message,consent:$('consent').checked,demoCode:$('demoCode').value})});
+      const raw=await response.text();let result={};try{result=JSON.parse(raw);}catch{}
+      if(!response.ok)throw new Error(result.error||result.message||`Unable to send notification (HTTP ${response.status}).`);
+      status.className='status success';status.textContent='✅ Notification submitted to Twilio. Check your phone!'+(result.deliveryStatus?'\nStatus: '+result.deliveryStatus:'');
+    }catch(err){status.className='status error';status.textContent=err.message==='Failed to fetch'?'Could not reach the endpoint. Check that the Heroku route is deployed and CORS permits this page origin.':err.message;}
+    finally{button.disabled=false;button.textContent='📲 Send My HOA Notification';}
+  });
+})();
+</script>
+</body>
+</html>
