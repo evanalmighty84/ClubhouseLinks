@@ -3,9 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const emailConfig = require("./paymentEmailConfig");
 
-const PAYMENT_URL =
-    emailConfig.paymentUrl ||
-    "https://www.paypal.com/invoice/p/#INV2-G4WR-DZW6-SYVC-U9LG";
+const PAYMENT_URL = "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-0G617750V9950882NNLP5SHI";
 
 const CLUBHOUSE_LOGO_PATH = path.join(__dirname, "clubhouse-logo.png");
 const CLUBHOUSE_DASHBOARD_PATH = path.join(__dirname, "clubhouse.png");
@@ -163,7 +161,7 @@ function buildEmail(config) {
                                                             color:#009899;
                                                         "
                                                     >
-                                                        Your Activation Invoice
+                                                        Your Roofing Lead Subscription
                                                     </div>
 
                                                     <div
@@ -187,7 +185,7 @@ function buildEmail(config) {
                                                             color:#374151;
                                                         "
                                                     >
-                                                        Complete your activation payment to begin receiving relevant customer opportunities.
+                                                        Choose PayPal below for recurring monthly billing, or use the Zelle option in the message below. Roofing service has a three-month minimum commitment.
                                                     </p>
 
                                                     <a
@@ -207,8 +205,11 @@ function buildEmail(config) {
                                                             box-shadow:0 0 16px rgba(255,59,212,0.35);
                                                         "
                                                     >
-                                                        View & Pay Activation Invoice
+                                                        Activate Roofing Subscription via PayPal
                                                     </a>
+                                                    <p style="margin:14px 0 0;font-size:13px;line-height:1.6;color:#111827;">
+                                                        Button not working? <a href="${safePaymentUrl}" style="color:#006c9c;text-decoration:underline;">Open the secure PayPal subscription page here</a>.
+                                                    </p>
                                                 </td>
                                             </tr>
                                         </table>
@@ -223,7 +224,7 @@ function buildEmail(config) {
 
                                 <tr>
                                     <td style="padding:18px 20px 24px;color:#111827;font-family:Verdana,Arial,Helvetica,sans-serif;font-size:15px;line-height:1.65;background:#ffffff;">
-                                        <p style="margin:0 0 18px 0;color:#111827;">Hey ${safeRecipientName}!</p>
+                                     
 
                                         <div style="color:#111827;">${config.bodyHtml}</div>
 
@@ -307,4 +308,3 @@ async function sendEmail() {
 }
 
 sendEmail();
-

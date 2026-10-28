@@ -1,20 +1,18 @@
 
 module.exports = {
-    recipientEmail: "amdrdallas@gmail.com", // Add Antonio's email address
-    recipientName: "Antonio",
-    companyName: "Antonio's Mobile Dent Repair",
+    recipientEmail: "Info@BORRichardson.com",
+    recipientName: "P.J.",
+    companyName: "Best Option Restoration",
 
     subject:
-        "Welcome & Lead Generation Activation — Antonio's Mobile Dent Repair / Clubhouse Links",
+        "Welcome & Lead Generation Activation — Best Option Restoration / Clubhouse Links",
 
     bodyHtml: `
-  
-
         <p style="margin:0 0 18px 0;color:#000000;">
             Welcome to
             <strong style="color:#000000;">Clubhouse Links</strong>!
             We're excited to have
-            <strong style="color:#000000;">Antonio's Mobile Dent Repair</strong>
+            <strong style="color:#000000;">Best Option Restoration</strong>
             joining our homeowner and community lead-generation service.
         </p>
 
@@ -26,19 +24,14 @@ module.exports = {
             border-radius:10px;
             color:#000000;
         ">
-            <p style="
-                margin:0 0 8px 0;
-                color:#000000;
-                font-weight:700;
-                font-size:16px;
-            ">
+            <p style="margin:0 0 8px 0;color:#000000;font-weight:700;font-size:16px;">
                 Service Activation
             </p>
 
             <p style="margin:0 0 8px 0;color:#000000;">
-                Antonio's Mobile Dent Repair is being set up
-                to receive automotive repair opportunities
-                through Clubhouse Links.
+                Best Option Restoration is being set up to receive
+                mold remediation, water damage restoration, and
+                plumbing-related opportunities through Clubhouse Links.
             </p>
 
             <p style="margin:0;color:#000000;">
@@ -48,9 +41,10 @@ module.exports = {
         </div>
 
         <p style="margin:0 0 18px 0;color:#000000;">
-            We'll monitor local homeowner and community
-            conversations for people seeking automotive
-            repair services that match the work you provide.
+            We'll monitor local homeowner and community conversations
+            for people seeking mold remediation, restoration,
+            water damage assistance, and plumbing services
+            that match the work your company provides.
         </p>
 
         <p style="margin:0 0 18px 0;color:#000000;">
@@ -65,46 +59,68 @@ module.exports = {
             border-radius:10px;
             color:#000000;
         ">
-            <p style="margin:0 0 10px 0;color:#000000;font-weight:700;">
-                ✓ Mobile dent repair and removal
+            <p style="margin:0 0 12px 0;color:#000000;font-weight:700;font-size:16px;">
+                Mold Remediation & Restoration
             </p>
 
             <p style="margin:0 0 10px 0;color:#000000;font-weight:700;">
-                ✓ Auto-body damage and minor collision repairs
+                ✓ Mold inspection, removal, and remediation requests
             </p>
 
             <p style="margin:0 0 10px 0;color:#000000;font-weight:700;">
-                ✓ Hail damage and vehicle dent repair
+                ✓ Water damage cleanup and restoration
             </p>
 
             <p style="margin:0 0 10px 0;color:#000000;font-weight:700;">
-                ✓ Vehicle door, fender, bumper, and panel damage
+                ✓ Flooding, burst pipes, and emergency water damage
             </p>
 
             <p style="margin:0 0 10px 0;color:#000000;font-weight:700;">
-                ✓ Cosmetic vehicle body repairs
+                ✓ Moisture damage and suspected mold growth
+            </p>
+
+            <p style="margin:0 0 18px 0;color:#000000;font-weight:700;">
+                ✓ Homeowners requesting mold and restoration company recommendations
+            </p>
+
+            <p style="margin:0 0 12px 0;color:#000000;font-weight:700;font-size:16px;">
+                Plumbing Opportunities
+            </p>
+
+            <p style="margin:0 0 10px 0;color:#000000;font-weight:700;">
+                ✓ Leaking pipes and plumbing-related water damage
+            </p>
+
+            <p style="margin:0 0 10px 0;color:#000000;font-weight:700;">
+                ✓ Burst pipes and emergency plumbing situations
+            </p>
+
+            <p style="margin:0 0 10px 0;color:#000000;font-weight:700;">
+                ✓ Plumbing leaks affecting walls, floors, and ceilings
+            </p>
+
+            <p style="margin:0 0 10px 0;color:#000000;font-weight:700;">
+                ✓ Drainage, water intrusion, and moisture-related issues
             </p>
 
             <p style="margin:0;color:#000000;font-weight:700;">
-                ✓ Homeowners asking for auto-body and dent-repair recommendations
+                ✓ Homeowners asking for plumbing service recommendations
             </p>
         </div>
 
         <p style="margin:0 0 18px 0;color:#000000;">
-            Once we identify a matching automotive repair
-            opportunity, we'll work to enrich it with
+            Once we identify a matching opportunity, we'll work
+            to enrich it with
             <strong style="color:#000000;">
                 actionable contact information,
                 including phone numbers when available,
             </strong>
-            and route the opportunity to
-            Antonio's Mobile Dent Repair.
+            and route the opportunity to Best Option Restoration.
         </p>
 
         <p style="margin:0 0 18px 0;color:#000000;">
-            As new opportunities become available,
-            we'll send you alerts so you can connect
-            with potential customers.
+            As new opportunities become available, we'll send
+            you alerts so you can connect with potential customers.
         </p>
 
         <div style="
@@ -115,12 +131,7 @@ module.exports = {
             border-radius:10px;
             color:#000000;
         ">
-            <p style="
-                margin:0 0 12px 0;
-                color:#000000;
-                font-weight:700;
-                font-size:16px;
-            ">
+            <p style="margin:0 0 12px 0;color:#000000;font-weight:700;font-size:16px;">
                 Get Your Leads on Your Phone
             </p>
 
@@ -159,9 +170,11 @@ module.exports = {
 
             <p style="margin:0 0 18px 0;color:#000000;">
                 When registering, please use your
-                mobile phone number:
+                mobile phone number.
+                If your business number is also your mobile number,
+                you can register using:
                 <strong style="color:#000000;">
-                    972-388-4825
+                    469-866-4504
                 </strong>
             </p>
 
@@ -170,8 +183,9 @@ module.exports = {
                 <strong style="color:#000000;">
                     allow push notifications
                 </strong>
-                so you'll know when a matching
-                automotive repair opportunity is available.
+                so you'll know when a matching mold,
+                restoration, or plumbing opportunity
+                becomes available.
             </p>
 
             <p style="margin:0;color:#000000;">
@@ -180,9 +194,8 @@ module.exports = {
                 </strong>
                 You'll still be able to participate
                 in our lead-generation service.
-                We'll send matching automotive repair
-                opportunities directly to your mobile phone
-                through
+                We'll send matching opportunities
+                directly to your mobile phone through
                 <strong style="color:#000000;">
                     text messages (SMS),
                 </strong>
@@ -192,33 +205,42 @@ module.exports = {
         </div>
 
         <p style="margin:0 0 18px 0;color:#000000;">
-            We'll continue monitoring which types
-            of automotive repair opportunities
-            are the best fit for your business
-            and refine our searches around
-            the work you want most.
+            As part of our Clubhouse Links neighborhood
+            engagement platform, Best Option Restoration
+            can also be featured in our HOA vendor directory,
+            helping connect your company with homeowners
+            searching for mold remediation, restoration,
+            and plumbing-related services.
+        </p>
+
+        <p style="margin:0 0 18px 0;color:#000000;">
+            We'll continue monitoring which types of
+            opportunities are the best fit for your business
+            and refine our searches around the services
+            you want most.
         </p>
 
         <p style="margin:0 0 18px 0;color:#000000;">
             Our goal is simple: help you spend
             less time searching for customers
-            and more time doing the work
-            you're great at.
+            and more time serving homeowners
+            who need your expertise.
         </p>
 
         <p style="margin:0 0 18px 0;color:#000000;">
             We're excited to welcome
             <strong style="color:#000000;">
-                Antonio's Mobile Dent Repair
+                Best Option Restoration
             </strong>
             to Clubhouse Links.
         </p>
 
         <p style="margin:0;color:#000000;">
             I'm looking forward to getting
-            automotive repair opportunities
-            flowing your way and seeing
-            what we can build together.
+            mold remediation, restoration, and
+            plumbing-related opportunities flowing
+            your way and seeing what we can
+            build together.
         </p>
     `
 };

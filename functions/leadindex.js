@@ -11,7 +11,7 @@ const paymentRoutes = require('./routes/paymentRoutes')
 const marketingRoutes = require('./routes/marketingRoutes')
 const hoaRoutes = require('./routes/hoaRoutes')
 const contactUsRoutes = require("./routes/contactUsRoutes");
-
+const demoRoutes = require('./routes/demoRoutes');
 
 
 const path = require('path');
@@ -61,6 +61,8 @@ app.use('/api/leads',leadRoutes);
 app.use('/api/marketing',marketingRoutes);
 
 app.use('/api/hoa',hoaRoutes);
+
+app.use('/api/demo',demoRoutes);
 
 
 

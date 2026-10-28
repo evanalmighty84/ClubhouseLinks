@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#071321">
+  <meta name="description" content="Experience Clubhouse Links neighborhood service lead alerts.">
+  <title>Clubhouse Links | Experience a Lead</title>
+  <style>
+    :root{color-scheme:dark;--bg:#071321;--panel:#0e1d32;--panel2:#142740;--line:#285068;--ink:#f3f8ff;--muted:#a2b5c8;--cyan:#12d5ef;--pink:#e94ed6;--lime:#c6fc64}
+    *{box-sizing:border-box}html{min-height:100%}body{margin:0;min-height:100vh;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(ellipse at 0% 7%,#06404b 0,transparent 43%),radial-gradient(ellipse at 100% 83%,#481650 0,transparent 43%),var(--bg);padding:clamp(18px,5vw,44px) 15px 45px}
+    .wrap{max-width:520px;margin:0 auto}.brand{display:flex;align-items:center;gap:12px;margin:2px 0 30px}.brand-icon{width:52px;height:52px;border-radius:15px;background:linear-gradient(145deg,#06d6ee,#3c7bed 55%,#e94ed6);display:grid;place-items:center;font-size:27px;box-shadow:0 5px 30px #06d6ee25}.brand-name{font-size:19px;letter-spacing:.1em;font-weight:900;line-height:1.1}.brand-tag{font-size:11px;letter-spacing:.18em;color:var(--cyan);font-weight:750;margin-top:6px}
+    .hero{margin:0 0 20px}.eyebrow{color:var(--cyan);font-weight:800;letter-spacing:.16em;text-transform:uppercase;font-size:11px;margin:0 0 11px}.hero h1{font-size:clamp(33px,7vw,48px);line-height:1.07;letter-spacing:-.045em;margin:0 0 12px;font-weight:850}.hero h1 span{color:var(--cyan)}.hero p{color:var(--muted);line-height:1.55;margin:0;font-size:15px}
+    .card{position:relative;background:linear-gradient(152deg,#112840 0%,#141c35 62%,#271a3b 100%);border:1px solid #3c6378;border-radius:24px;padding:clamp(21px,5vw,29px);box-shadow:0 18px 60px #0006;overflow:hidden}.card:before{content:"";position:absolute;height:3px;left:0;top:0;right:0;background:linear-gradient(90deg,var(--cyan),#4e8cff,var(--pink))}.step{font-size:12px;color:var(--lime);font-weight:750;letter-spacing:.1em;text-transform:uppercase;margin:0 0 20px}label.field-label{display:block;font-size:13px;font-weight:750;margin:0 0 9px;color:#edf8ff}.field{margin-bottom:20px}select,input{width:100%;height:52px;padding:0 15px;background:#07192d;color:white;border:1px solid #44637d;border-radius:12px;font-size:16px;outline:none}select:focus,input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px #12d5ef29}select{appearance:auto}input::placeholder{color:#778fa5}.hint{font-size:12px;color:var(--muted);margin-top:7px;line-height:1.5}.consent{display:flex;gap:11px;align-items:flex-start;line-height:1.45;color:#d5e2ee;font-size:13px;margin:3px 0 20px}.consent input{width:19px;height:19px;flex:0 0 19px;margin:1px 0 0;accent-color:var(--cyan)}button{width:100%;border:0;background:linear-gradient(100deg,#00c9e9,#4b9dff);border-radius:13px;padding:17px 18px;color:#041626;font-size:16px;font-weight:850;cursor:pointer;box-shadow:0 10px 27px #00c9e935}button:disabled{opacity:.62;cursor:wait}.status{display:none;margin-top:17px;border:1px solid #43677b;padding:13px 14px;border-radius:12px;background:#0c2435;font-size:14px;line-height:1.55}.status.show{display:block}.status.ok{border-color:#348e81;color:#c9ffec}.status.error{border-color:#ab5c7e;color:#ffe1eb}.note{text-align:center;color:var(--muted);font-size:12px;line-height:1.65;margin:18px 4px}.footer{display:flex;justify-content:center;gap:9px;align-items:center;color:#9dc1d2;font-size:12px;margin-top:23px}.small-dot{width:6px;height:6px;background:var(--cyan);border-radius:100%}
+    @media (prefers-reduced-motion:no-preference){button:not(:disabled):hover{filter:brightness(1.08);transform:translateY(-1px);transition:.18s}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="brand"><div class="brand-icon" aria-hidden="true">🏡</div><div><div class="brand-name">CLUBHOUSE LINKS</div><div class="brand-tag">NEIGHBORHOOD CONNECTIONS</div></div></header>
+    <section class="hero"><p class="eyebrow">The power of a connected neighborhood</p><h1>Experience a <span>real lead.</span></h1><p>Select the type of work you're interested in and see how a Clubhouse Links lead alert arrives on your phone.</p></section>
+    <section class="card" aria-label="Lead experience form">
+      <p class="step">01 / Choose • 02 / Send • 03 / Receive</p>
+      <form id="leadForm" novalidate>
+        <div class="field"><label class="field-label" for="category">🛠️ Choose your service category</label><select name="category" id="category" required><option value="" selected disabled>Select an industry...</option>
+          <option value="handyman">🔧 Handyman</option><option value="general_contractor">🏗️ General Contractor</option><option value="roofer">🏠 Roofing</option><option value="plumber">🚰 Plumbing</option><option value="electrician">⚡ Electrical</option><option value="landscaping">🌳 Landscaping</option><option value="lawn_care">🌱 Lawn Care</option><option value="house_cleaner">🧹 House Cleaning</option><option value="painter">🎨 Painting</option><option value="security">🔒 Security</option><option value="gutter">🌧️ Gutters</option><option value="gutters">🌧️ Gutters (alternate)</option><option value="auto_body">🚗 Auto Body</option><option value="pool">🏊 Pool</option><option value="doors">🚪 Doors</option><option value="windows">🪟 Windows</option><option value="fencing">🏡 Fencing</option><option value="flooring">🪵 Flooring</option><option value="garage">🚘 Garage</option><option value="tree_service">🌲 Tree Service</option><option value="hvac">❄️ HVAC</option><option value="pest_control">🐜 Pest Control</option><option value="mold">🧪 Mold Remediation</option><option value="junk_removal">🚛 Junk Removal</option><option value="movers">📦 Moving</option><option value="siding">🏠 Siding</option><option value="bookkeeping">📊 Bookkeeping</option><option value="realtor">🏘️ Real Estate</option><option value="concrete">🧱 Concrete</option><option value="insulation">🏡 Insulation</option><option value="appliance_repair">🛠️ Appliance Repair</option><option value="interior_designer">🛋️ Interior Design</option><option value="cabinets">🪚 Cabinets</option>
+        </select></div>
+        <div class="field"><label class="field-label" for="phone">📱 Your mobile number</label><input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(214) 555-0123" required><div class="hint">U.S. mobile numbers only. We'll send a single example text.</div></div>
+        <div class="field"><label class="field-label" for="demoCode">🔑 Presentation access code</label><input id="demoCode" name="demoCode" type="password" autocomplete="off" placeholder="Enter access code" required><div class="hint">Enter the access code provided by your presenter.</div></div>
+        <label class="consent"><input type="checkbox" id="consent" required><span>I agree to receive a one-time Clubhouse Links SMS featuring a historical service-request example at the number I entered.</span></label>
+        <button type="submit" id="sendBtn">📲 Send My Lead Alert</button>
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+      </form>
+    </section>
+    <p class="note">This experience uses historical service requests. A submitted message is not a new request for service. No subscription or recurring messages.</p>
+    <footer class="footer"><span class="small-dot" aria-hidden="true"></span> Connecting communities with local professionals</footer>
+  </main>
+  <script>
+    (() => {
+      'use strict';
+      const ENDPOINT = 'https://crm-function-app-5d4de511071d.herokuapp.com/server/lead_function/api/demo/sent';
+      const form = document.getElementById('leadForm');
+      const status = document.getElementById('status');
+      const sendBtn = document.getElementById('sendBtn');
+      function notify(message, ok) {
+        status.textContent = message;
+        status.className = 'status show ' + (ok ? 'ok' : 'error');
+      }
+      function normalizeUSPhone(value) {
+        const digits = String(value).replace(/\D/g, '');
+        if (digits.length === 10) return '+1' + digits;
+        if (digits.length === 11 && digits[0] === '1') return '+' + digits;
+        return null;
+      }
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const phone = normalizeUSPhone(document.getElementById('phone').value);
+        const category = document.getElementById('category').value;
+        const demoCode = document.getElementById('demoCode').value.trim();
+        const consent = document.getElementById('consent').checked;
+        if (!category || !phone || !demoCode || !consent) {
+          notify('Please choose a service, enter a valid U.S. phone number and access code, and agree to receive the message.', false);
+          return;
+        }
+        sendBtn.disabled = true;
+        sendBtn.textContent = '📡 Sending your alert...';
+        status.className = 'status';
+        try {
+          const response = await fetch(ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone, category, consent: true, demoCode })
+          });
+          let result = {};
+          try { result = await response.json(); } catch (_) {}
+          if (!response.ok || !result.success) {
+            throw new Error(result.error || `Unable to send alert (HTTP ${response.status}).`);
+          }
+          notify('✅ Your Clubhouse Links lead alert was submitted to Twilio! Check your Messages app. Delivery may take a moment.', true);
+          document.getElementById('demoCode').value = '';
+        } catch (error) {
+          notify(error instanceof TypeError ? 'Could not connect to the server. Check connectivity and server CORS settings.' : (error.message || 'Unable to send alert.'), false);
+        } finally {
+          sendBtn.disabled = false;
+          sendBtn.textContent = '📲 Send My Lead Alert';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

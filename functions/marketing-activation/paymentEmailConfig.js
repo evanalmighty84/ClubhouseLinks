@@ -2,12 +2,13 @@
 const path = require("path");
 
 module.exports = {
-    recipientEmail: "amdrdallas@gmail.com", // Add Antonio's email
-    recipientName: "Antonio",
-    companyName: "Antonio's Mobile Dent Repair",
-    leadCategory: "auto_body",
+    recipientEmail: "omar@cardinalroofingtx.com",
+    recipientName: "Omar",
+    companyName: "Cardinal TX Remodeling and Roofing",
+    leadCategory: "roofer",
 
-    subject: "Antonio's Mobile Dent Repair — Clubhouse Links A.I. Activation",
+    subject:
+        "Cardinal Remodeling and Roofing — Clubhouse Links A.I. Activation",
 
     bodyHtml: `
         <div style="
@@ -18,45 +19,122 @@ module.exports = {
             max-width:650px;
         ">
 
-        
+            <p style="color:#000000;">
+                Hi Omar,
+            </p>
 
             <p style="color:#000000;">
-                It was great connecting with you about
-                <strong>Antonio's Mobile Dent Repair</strong>.
-                I'm excited to help grow your business through
+                It was a pleasure meeting with you today
+                at <strong>Mudleaf Coffee</strong>.
+                I really enjoyed learning more about
+                <strong>Cardinal Remodeling and Roofing</strong>
+                and discussing how Clubhouse Links can
+                connect your company with homeowners
+                actively searching for roofing services.
+            </p>
+
+            <p style="color:#000000;">
+                I'm looking forward to working with you
+                and helping grow your business through
                 Clubhouse Links' A.I.-powered lead generation
-                and customer engagement services.
+                and homeowner engagement platform.
             </p>
 
             <p style="color:#000000;">
-                Once activated, we'll begin identifying
-                customer opportunities for services including
-                mobile dent repair, paintless dent removal,
-                hail damage repair, bumper repair, minor
-                collision damage, and other automotive
-                bodywork.
+                I've attached a report featuring
+                <strong>11 unique roofing-related opportunities</strong>
+                identified over the past 30 days.
+                This provides an example of the homeowner
+                conversations and potential customers
+                our system identifies throughout North Texas.
             </p>
+
+            <p style="color:#000000;">
+                Once activated, we'll begin monitoring
+                for opportunities involving:
+            </p>
+
+            <ul style="color:#000000;">
+                <li>Roof repairs and replacements</li>
+                <li>Roof leaks and storm damage</li>
+                <li>Shingle repairs and inspections</li>
+                <li>Insurance-related roofing projects</li>
+                <li>Roofing and exterior remodeling</li>
+                <li>Homeowners seeking roofing contractor recommendations</li>
+            </ul>
 
             <h3 style="color:#000000;">
-                Monthly A.I. Coverage Pricing
+                Service Terms & Conditions
             </h3>
 
-            <p style="color:#000000;">
-                Your service begins at a
-                <strong>$100 monthly minimum</strong>,
-                with an additional performance-based adjustment
-                equal to <strong>10% of monthly earnings
-                generated through the service</strong>.
-                Your total monthly charge will
-                <strong>never exceed $200</strong>,
-                regardless of how much business is generated.
-            </p>
+            <div style="
+                border:1px solid #dddddd;
+                border-radius:8px;
+                padding:20px;
+                margin:20px 0;
+                background-color:#f8f9fa;
+                color:#000000;
+            ">
 
-            <p style="color:#000000;">
-                This structure ensures predictable costs
-                while aligning our compensation with the
-                results delivered to your business.
-            </p>
+                <p style="margin:0 0 12px;color:#000000;">
+                    <strong>Billing Structure:</strong>
+                    Service is billed monthly.
+                </p>
+
+                <p style="margin:0 0 12px;color:#000000;">
+                    <strong>Minimum Commitment:</strong>
+                    Roofing lead-generation services require
+                    an initial three (3) month minimum commitment.
+                </p>
+
+                <p style="margin:0 0 12px;color:#000000;">
+                    <strong>After the Initial Term:</strong>
+                    Following the initial three-month period,
+                    the service continues month-to-month
+                    unless canceled.
+                </p>
+
+                <p style="margin:0 0 12px;color:#000000;">
+                    <strong>Payment Options:</strong>
+                    Payments may be made through an automatic
+                    PayPal subscription or directly through Zelle.
+                    Zelle payments will be coordinated
+                    on a monthly basis.
+                </p>
+
+                <p style="margin:0 0 12px;color:#000000;">
+                    <strong>Lead Delivery:</strong>
+                    Clubhouse Links identifies relevant
+                    homeowner requests and attempts to
+                    enrich opportunities with actionable
+                    contact information, including
+                    phone numbers when available.
+                </p>
+
+                <p style="margin:0 0 12px;color:#000000;">
+                    <strong>Lead Availability:</strong>
+                    Opportunities depend on actual
+                    homeowner demand and matching activity.
+                    A specific number of leads or
+                    closed projects is not guaranteed.
+                </p>
+
+                <p style="margin:0;color:#000000;">
+                    <strong>Cancellation:</strong>
+                    After completing the initial
+                    three-month commitment, you may
+                    cancel before the next monthly
+                    billing date to avoid renewal.
+                    Any active PayPal subscription
+                    must also be canceled to stop
+                    recurring PayPal charges.
+                </p>
+
+            </div>
+
+            <h3 style="color:#000000;">
+                Activate Your A.I. Roofing Coverage
+            </h3>
 
             <div style="
                 border:1px solid #dddddd;
@@ -67,16 +145,10 @@ module.exports = {
                 background-color:#ffffff;
             ">
 
-                <h3 style="
-                    margin:0 0 12px;
-                    color:#000000;
-                ">
-                    Activate Your A.I. Coverage
-                </h3>
-
                 <p style="color:#000000;">
-                    Choose your preferred payment method below
-                    to complete your activation.
+                    Choose your preferred payment method
+                    below to activate your roofing
+                    lead-generation service.
                 </p>
 
                 <p style="
@@ -84,11 +156,18 @@ module.exports = {
                     color:#000000;
                     margin:20px 0 12px;
                 ">
-                    Option 1: PayPal
+                    Option 1: PayPal Subscription
+                </p>
+
+                <p style="color:#000000;">
+                    Activate automatic monthly billing
+                    through PayPal.
                 </p>
 
                 <a
-                    href="https://www.paypal.com/invoice/p/#INV2-G4WR-DZW6-SYVC-U9LG"
+                    href="https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-0G617750V9950882NNLP5SHI"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     style="
                         display:inline-block;
                         padding:14px 28px;
@@ -99,12 +178,22 @@ module.exports = {
                         font-weight:bold;
                     "
                 >
-                    View & Pay Activation Invoice
+                    Activate Roofing Lead Generation
                 </a>
 
                 <p style="
+                    font-size:13px;
                     color:#000000;
-                    margin:25px 0;
+                    margin:14px 0 0;
+                ">
+                    Your subscription amount will
+                    be displayed in PayPal before
+                    completing activation.
+                </p>
+
+                <p style="
+                    color:#000000;
+                    margin:28px 0;
                     font-weight:bold;
                 ">
                     OR
@@ -119,9 +208,11 @@ module.exports = {
                 </p>
 
                 <p style="color:#000000;">
-                    Open your banking app and scan the
-                    QR code below to send your payment
-                    directly to Clubhouse Links.
+                    If you prefer to pay directly,
+                    you can use Zelle instead
+                    of activating a PayPal subscription.
+                    Simply open your banking app
+                    and scan the QR code below.
                 </p>
 
                 <img
@@ -161,47 +252,72 @@ module.exports = {
                     color:#000000;
                     margin:18px 0 0;
                 ">
-                    Please include your company name
+                    Please include
+                    "Cardinal Remodeling and Roofing"
                     in the payment memo.
+                </p>
+
+                <p style="
+                    font-size:13px;
+                    color:#000000;
+                    margin:14px 0 0;
+                ">
+                    Zelle payments are arranged monthly
+                    and are subject to the same
+                    three-month minimum commitment.
+                    Please confirm the monthly amount
+                    with Clubhouse Links before sending.
                 </p>
 
             </div>
 
             <p style="color:#000000;">
-                Once payment is received, I'll finalize
-                your account activation, configure your
-                automotive service categories, and begin
-                identifying relevant customer opportunities
-                for Antonio's Mobile Dent Repair.
+                By proceeding with activation,
+                you acknowledge the initial
+                three-month service commitment
+                and the monthly billing terms
+                outlined above.
             </p>
 
             <p style="color:#000000;">
-                Looking forward to working together!
+                Once your first payment is confirmed,
+                I'll finalize your account configuration,
+                set up your roofing service categories,
+                and begin identifying and routing
+                matching homeowner opportunities
+                to Cardinal Remodeling and Roofing.
             </p>
 
             <p style="color:#000000;">
-                Best regards,<br>
-                <strong>Evan Ligon</strong><br>
-                Clubhouse Links<br>
-                (214) 548-9175<br>
-                <a
-                    href="mailto:evan.ligon@clubhouselinks.com"
-                    style="color:#000000;"
-                >
-                    evan.ligon@clubhouselinks.com
-                </a><br>
-                <a
-                    href="https://www.clubhouselinks.com"
-                    style="color:#000000;"
-                >
-                    www.clubhouselinks.com
-                </a>
+                Our goal is to help you spend less
+                time searching for potential customers
+                and more time meeting with homeowners
+                who need your expertise.
             </p>
+
+            <p style="color:#000000;">
+                Thanks again for taking the time
+                to meet with me at Mudleaf Coffee.
+                I'm excited about the opportunity
+                to work together and look forward
+                to building a successful relationship.
+            </p>
+
+      
 
         </div>
     `,
 
     attachments: [
+        {
+            filename: "Clubhouse_Links_Roofing_Leads_No_Duplicates.pdf",
+            path: path.join(
+                __dirname,
+                "Clubhouse_Links_Roofing_Leads_No_Duplicates.pdf"
+            ),
+            contentType: "application/pdf",
+            contentDisposition: "attachment"
+        },
         {
             filename: "zelle.png",
             path: path.join(__dirname, "zelle.png"),
