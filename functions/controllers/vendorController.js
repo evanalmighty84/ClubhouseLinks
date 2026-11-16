@@ -1064,7 +1064,8 @@ exports.switchSupportResident = async (req, res) => {
                 `
                     SELECT
                         v.id,
-                        v.company_name
+                        v.company_name,
+                        vd.platform
                     FROM hoa_vendors v
                     INNER JOIN hoa_vendor_devices vd
                         ON vd.vendor_id = v.id
@@ -1148,48 +1149,53 @@ exports.switchSupportResident = async (req, res) => {
          * Temporarily subscribe this support iPhone to the
          * newly selected resident.
          */
-        await client.query(
-            `
-                INSERT INTO hoa_resident_devices
-                (
-                    resident_id,
-                    device_token,
+        // Only real iOS APNs tokens should be registered as resident push devices.
+        // QA Android support identifiers authorize the search/switch workflow but
+        // are NOT FCM/APNs tokens and must never enter hoa_resident_devices.
+        if (supportDeviceResult.rows[0].platform === "ios") {
+            await client.query(
+                `
+                    INSERT INTO hoa_resident_devices
+                    (
+                        resident_id,
+                        device_token,
+                        environment,
+                        active,
+                        is_support_device,
+                        support_vendor_id,
+                        created_at,
+                        updated_at
+                    )
+                    VALUES
+                    (
+                        $1,
+                        $2,
+                        $3,
+                        TRUE,
+                        TRUE,
+                        $4,
+                        NOW(),
+                        NOW()
+                    )
+                    ON CONFLICT
+                        (resident_id, device_token)
+                    DO UPDATE SET
+                        environment =
+                            EXCLUDED.environment,
+                        active = TRUE,
+                        is_support_device = TRUE,
+                        support_vendor_id =
+                            EXCLUDED.support_vendor_id,
+                        updated_at = NOW()
+                `,
+                [
+                    residentId,
+                    deviceToken,
                     environment,
-                    active,
-                    is_support_device,
-                    support_vendor_id,
-                    created_at,
-                    updated_at
-                )
-                VALUES
-                (
-                    $1,
-                    $2,
-                    $3,
-                    TRUE,
-                    TRUE,
-                    $4,
-                    NOW(),
-                    NOW()
-                )
-                ON CONFLICT
-                    (resident_id, device_token)
-                DO UPDATE SET
-                    environment =
-                        EXCLUDED.environment,
-                    active = TRUE,
-                    is_support_device = TRUE,
-                    support_vendor_id =
-                        EXCLUDED.support_vendor_id,
-                    updated_at = NOW()
-            `,
-            [
-                residentId,
-                deviceToken,
-                environment,
-                vendorId
-            ]
-        );
+                    vendorId
+                ]
+            );
+        }
 
         await client.query("COMMIT");
 
