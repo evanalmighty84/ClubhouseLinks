@@ -11,6 +11,8 @@ const {
     approveResident,
     getResidentProfile,
     saveLicensedResidentHouseImage,
+    claimLookAroundHouseJob,
+    reportLookAroundHouseJob,
     getVendors,
     deleteResidentAccount,
     registerResidentDevice,
@@ -71,6 +73,17 @@ router.get(
 router.put(
     "/profile/:residentId/house-image",
     saveLicensedResidentHouseImage
+);
+
+// Internal worker API. Both endpoints require HOUSE_IMAGE_WRITE_KEY.
+// Remain unavailable unless HOUSE_IMAGE_LOOKAROUND_ENABLED=yes.
+router.post(
+    "/internal/house-image-jobs/claim",
+    claimLookAroundHouseJob
+);
+router.post(
+    "/internal/house-image-jobs/:residentId/report",
+    reportLookAroundHouseJob
 );
 router.get(
     "/events/:residentId",
