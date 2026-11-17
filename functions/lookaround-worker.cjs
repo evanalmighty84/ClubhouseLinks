@@ -14,21 +14,22 @@ const { setTimeout: wait } = require('node:timers/promises');
 const { promisify } = require('node:util');
 const exec = promisify(execFile);
 
-async function processOne({ api, capture, upload, discard, onlyResident }) {
+async function processOne({ api, capture, upload, discard, onlyResident, mode }) {
     const response = await api('/internal/house-image-jobs/claim', 'POST',
-        onlyResident ? { resident_id: onlyResident } : {});
+        onlyResident ? { resident_id: onlyResident, mode } : { mode });
     if (!response.ok) throw new Error(`Claim returned HTTP ${response.status}`);
     const { job } = await response.json();
     if (!job) return 'idle';
 
     const id = String(job.resident_id);
     const lease = job.lease_token;
+    if (job.mode !== mode) throw new Error('Job mode does not match requested worker mode');
     if (!/^[1-9]\d{0,17}$/.test(id) || typeof lease !== 'string') {
         throw new Error('Invalid job returned by Heroku');
     }
     async function report(outcome) {
         const result = await api(`/internal/house-image-jobs/${id}/report`, 'POST',
-            { lease_token: lease, outcome });
+            { lease_token: lease, outcome, mode });
         if (result.status === 409) return 'stale';
         if (!result.ok) throw new Error(`Report returned HTTP ${result.status}`);
         const body = await result.json();
@@ -46,8 +47,9 @@ async function processOne({ api, capture, upload, discard, onlyResident }) {
             throw new Error('Cloudinary returned no asset');
         const result = await api(`/profile/${id}/house-image`, 'PUT', {
             image_url: asset.secure_url,
-            source: 'licensed_provider',
-            lease_token: lease
+            source: mode === 'test' ? 'test_placeholder' : 'licensed_provider',
+            lease_token: lease,
+            mode
         });
         if ([409, 400, 403].includes(result.status)) {
             try { await discard(asset.public_id); }
@@ -74,8 +76,15 @@ async function processOne({ api, capture, upload, discard, onlyResident }) {
 async function main() {
     if (process.platform !== 'darwin') throw new Error('Run this worker on macOS.');
     const dryRun = process.argv.includes('--dry-run');
-    if (!dryRun && process.env.LOOKAROUND_PERSISTENT_STORAGE_AUTHORIZED !== 'yes')
-        throw new Error('Permanent Apple Look Around capture is disabled pending express written rights.');
+    const mode = String(process.env.HOUSE_IMAGE_PIPELINE_MODE || 'off').toLowerCase();
+    if (!['off', 'test', 'licensed'].includes(mode))
+        throw new Error('HOUSE_IMAGE_PIPELINE_MODE must be off, test, or licensed.');
+    if (!dryRun && mode === 'off')
+        throw new Error('House-image pipeline is switched off.');
+    if (!dryRun && mode === 'licensed' &&
+        (process.env.LOOKAROUND_PERSISTENT_STORAGE_AUTHORIZED !== 'yes' ||
+         process.env.HOUSE_IMAGE_LICENSED_CAPTURE_AUTHORIZED !== 'yes'))
+        throw new Error('Licensed Look Around mode needs express written rights and both authorization gates.');
 
     if (dryRun) {
         const base = process.env.LOOKAROUND_API_BASE;
@@ -103,6 +112,7 @@ async function main() {
     }
     const {
         LOOKAROUND_API_BASE, LOOKAROUND_SNAPSHOT_BIN = './lookaround-snapshot',
+        HOUSE_TEST_IMAGE_BIN = './house-test-image',
         HOUSE_IMAGE_WRITE_KEY, CLOUDINARY_URL, LOOKAROUND_RESIDENT_ID
     } = process.env;
     if (!LOOKAROUND_API_BASE || !HOUSE_IMAGE_WRITE_KEY || !CLOUDINARY_URL)
@@ -125,9 +135,9 @@ async function main() {
     });
     const capture = async (job, path) => {
         try {
-            await exec(resolve(LOOKAROUND_SNAPSHOT_BIN), [
-                String(job.latitude), String(job.longitude), path
-            ], {
+            const isTest = mode === 'test';
+            await exec(resolve(isTest ? HOUSE_TEST_IMAGE_BIN : LOOKAROUND_SNAPSHOT_BIN),
+                isTest ? [path] : [String(job.latitude), String(job.longitude), path], {
                 timeout: 90000,
                 env: Object.fromEntries(['PATH', 'HOME', 'TMPDIR', 'LANG']
                     .filter(key => process.env[key])
@@ -140,7 +150,7 @@ async function main() {
         }
     };
     const upload = path => cloudinary.uploader.upload(path, {
-        public_id: `resident-lookaround-${randomUUID()}`,
+        public_id: `resident-${mode === 'test' ? 'synthetic-test' : 'lookaround'}-${randomUUID()}`,
         overwrite: false, resource_type: 'image', timeout: 30000
     });
     const discard = id => cloudinary.uploader.destroy(id, {
@@ -150,9 +160,9 @@ async function main() {
     do {
         try {
             const status = await processOne({
-                api, capture, upload, discard, onlyResident: LOOKAROUND_RESIDENT_ID
+                api, capture, upload, discard, onlyResident: LOOKAROUND_RESIDENT_ID, mode
             });
-            if (once || status !== 'idle') console.log(`Look Around: ${status}`);
+            if (once || status !== 'idle') console.log(`House image (${mode}): ${status}`);
             if (once && status !== 'saved') process.exitCode = 1;
         } catch (err) {
             if (/^(Claim|Report) returned HTTP \d{3}$/.test(err.message))
