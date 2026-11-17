@@ -113,10 +113,13 @@ async function main() {
     const {
         LOOKAROUND_API_BASE, LOOKAROUND_SNAPSHOT_BIN = './lookaround-snapshot',
         HOUSE_TEST_IMAGE_BIN = './house-test-image',
-        HOUSE_IMAGE_WRITE_KEY, CLOUDINARY_URL, LOOKAROUND_RESIDENT_ID
+        HOUSE_IMAGE_WRITE_KEY, CLOUDINARY_URL, CLOUDINARY_CLOUD_NAME,
+        CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, LOOKAROUND_RESIDENT_ID
     } = process.env;
-    if (!LOOKAROUND_API_BASE || !HOUSE_IMAGE_WRITE_KEY || !CLOUDINARY_URL)
-        throw new Error('Set LOOKAROUND_API_BASE, HOUSE_IMAGE_WRITE_KEY, and CLOUDINARY_URL.');
+    const hasCloudinaryCredentials = Boolean(CLOUDINARY_URL ||
+        (CLOUDINARY_CLOUD_NAME && CLOUDINARY_API_KEY && CLOUDINARY_API_SECRET));
+    if (!LOOKAROUND_API_BASE || !HOUSE_IMAGE_WRITE_KEY || !hasCloudinaryCredentials)
+        throw new Error('Set LOOKAROUND_API_BASE, HOUSE_IMAGE_WRITE_KEY, and either CLOUDINARY_URL or all three CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET variables.');
     const base = new URL(LOOKAROUND_API_BASE);
     if (base.protocol !== 'https:' || base.username || base.password || base.search || base.hash)
         throw new Error('LOOKAROUND_API_BASE must be a plain HTTPS router base URL.');
@@ -124,6 +127,14 @@ async function main() {
         throw new Error('Invalid LOOKAROUND_RESIDENT_ID.');
     const root = base.href.replace(/\/+$/, '');
     const { v2: cloudinary } = require('cloudinary');
+    if (!CLOUDINARY_URL) {
+        cloudinary.config({
+            cloud_name: CLOUDINARY_CLOUD_NAME,
+            api_key: CLOUDINARY_API_KEY,
+            api_secret: CLOUDINARY_API_SECRET,
+            secure: true
+        });
+    }
     const once = process.argv.includes('--once');
     const drainJob = process.argv.includes('--drain-job');
     const api = (path, method, body) => fetch(root + path, {
