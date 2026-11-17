@@ -34,7 +34,9 @@ workflows:
               ;;
             test)
               echo "TEST MODE: generating synthetic image and exercising claim/upload/save."
-              : "${CLOUDINARY_URL:?Set secure CLOUDINARY_URL in house_image_worker group}"
+              : "${CLOUDINARY_CLOUD_NAME:?Set secure CLOUDINARY_CLOUD_NAME in house_image_worker group}"
+              : "${CLOUDINARY_API_KEY:?Set secure CLOUDINARY_API_KEY in house_image_worker group}"
+              : "${CLOUDINARY_API_SECRET:?Set secure CLOUDINARY_API_SECRET in house_image_worker group}"
               mkdir -p "$CM_BUILD_DIR/.house-worker-deps"
               npm install --prefix "$CM_BUILD_DIR/.house-worker-deps" --no-save --ignore-scripts --no-audit --no-fund cloudinary@2.5.0
               export NODE_PATH="$CM_BUILD_DIR/.house-worker-deps/node_modules"
@@ -42,7 +44,9 @@ workflows:
               ;;
             licensed)
               echo "LICENSED MODE: Apple Look Around capture authorized separately."
-              : "${CLOUDINARY_URL:?Set secure CLOUDINARY_URL in house_image_worker group}"
+              : "${CLOUDINARY_CLOUD_NAME:?Set secure CLOUDINARY_CLOUD_NAME in house_image_worker group}"
+              : "${CLOUDINARY_API_KEY:?Set secure CLOUDINARY_API_KEY in house_image_worker group}"
+              : "${CLOUDINARY_API_SECRET:?Set secure CLOUDINARY_API_SECRET in house_image_worker group}"
               : "${LOOKAROUND_PERSISTENT_STORAGE_AUTHORIZED:?Requires express written Apple permission}"
               : "${HOUSE_IMAGE_LICENSED_CAPTURE_AUTHORIZED:?Requires explicit Heroku/Codemagic approval}"
               test "$LOOKAROUND_PERSISTENT_STORAGE_AUTHORIZED" = yes
