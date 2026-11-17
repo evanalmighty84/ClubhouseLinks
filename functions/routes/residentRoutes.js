@@ -11,6 +11,7 @@ const {
     approveResident,
     getResidentProfile,
     saveLicensedResidentHouseImage,
+    acquireResidentHouseImage,
     getVendors,
     deleteResidentAccount,
     registerResidentDevice,
@@ -71,6 +72,10 @@ router.get(
 router.put(
     "/profile/:residentId/house-image",
     saveLicensedResidentHouseImage
+);
+router.post(
+    "/profile/:residentId/house-image/acquire",
+    acquireResidentHouseImage
 );
 router.get(
     "/events/:residentId",
