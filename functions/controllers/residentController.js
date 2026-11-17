@@ -2,8 +2,6 @@
 const pool = require('../db/db');
 const jwt = require("jsonwebtoken");
 const cloudinary = require("cloudinary").v2;
-const { acquireLicensedHousePhoto, isConfigured: houseImageProviderConfigured } =
-    require("../services/residentHouseImageAcquisition");
 const notificationService =
     require(
         "../services/notificationService"
@@ -861,8 +859,7 @@ exports.signupResident = async (req, res) => {
             last_name,
             phone,
             address,
-            invite_code,
-            house_image_consent
+            invite_code
         } = req.body || {};
 
         const cleanFirstName = String(first_name || "").trim();
@@ -870,7 +867,6 @@ exports.signupResident = async (req, res) => {
         const cleanPhone = normalizePhone(phone);
         const cleanAddress = String(address || "").trim();
         const addressForDb = cleanAddress || null;
-        const houseImageConsent = Boolean(cleanAddress) && house_image_consent === true;
 
         const cleanInviteCode = String(invite_code || "")
             .trim()
@@ -1099,13 +1095,6 @@ exports.signupResident = async (req, res) => {
                                 longitude = $9::numeric,
                                 generated_area_id = $10::integer,
                                 display_area_name = $11::text,
-                                house_image_consent = $14::boolean,
-                                house_image_url = CASE WHEN address IS DISTINCT FROM $3::text OR $14::boolean = FALSE THEN NULL ELSE house_image_url END,
-                                house_image_source = CASE WHEN address IS DISTINCT FROM $3::text OR $14::boolean = FALSE THEN NULL ELSE house_image_source END,
-                                house_image_address = CASE WHEN address IS DISTINCT FROM $3::text OR $14::boolean = FALSE THEN NULL ELSE house_image_address END,
-                                house_image_updated_at = CASE WHEN address IS DISTINCT FROM $3::text OR $14::boolean = FALSE THEN NULL ELSE house_image_updated_at END,
-                                house_image_provider = CASE WHEN address IS DISTINCT FROM $3::text OR $14::boolean = FALSE THEN NULL ELSE house_image_provider END,
-                                house_image_attribution = CASE WHEN address IS DISTINCT FROM $3::text OR $14::boolean = FALSE THEN NULL ELSE house_image_attribution END,
 
                                 board_of_directors =
                                 CASE
@@ -1135,8 +1124,7 @@ exports.signupResident = async (req, res) => {
 
                             grantsBoardAccess,
 
-                            existingResident.id,
-                            houseImageConsent
+                            existingResident.id
                         ]
                     );
 
@@ -1168,8 +1156,7 @@ exports.signupResident = async (req, res) => {
                                 longitude,
                                 generated_area_id,
                                 display_area_name,
-                                board_of_directors,
-                                house_image_consent
+                                board_of_directors
                             )
                             VALUES
                                 (
@@ -1192,8 +1179,7 @@ exports.signupResident = async (req, res) => {
                                     $11,
                                     $12,
                                     $13,
-                                    $14,
-                                    $15
+                                    $14
                                 )
                                 RETURNING *
                         `,
@@ -1212,8 +1198,7 @@ exports.signupResident = async (req, res) => {
                             generatedAreaId,
                             displayAreaName,
 
-                            grantsBoardAccess,
-                            houseImageConsent
+                            grantsBoardAccess
                         ]
                     );
 
@@ -1269,17 +1254,6 @@ exports.signupResident = async (req, res) => {
                 isNewResident
                     ? "Customer profile created successfully."
                     : "Customer profile updated successfully.";
-        }
-
-        // Signup must succeed even when no third-party image exists.
-        // This best-effort acquisition starts only when the resident
-        // actively opted in and an approved provider is configured.
-        if (houseImageConsent && houseImageProviderConfigured()) {
-            setImmediate(() => {
-                acquireLicensedHousePhoto(resident.id).catch(error => {
-                    console.warn("House photo acquisition failed:", error.message);
-                });
-            });
         }
 
         return res.status(200).json({
@@ -1381,18 +1355,6 @@ exports.updateResidentAddress = async (req, res) => {
                     house_image_updated_at = CASE
                         WHEN TRIM(COALESCE(address, '')) = TRIM($1) THEN house_image_updated_at
                         ELSE NULL
-                    END,
-                    house_image_provider = CASE
-                        WHEN TRIM(COALESCE(address, '')) = TRIM($1) THEN house_image_provider
-                        ELSE NULL
-                    END,
-                    house_image_attribution = CASE
-                        WHEN TRIM(COALESCE(address, '')) = TRIM($1) THEN house_image_attribution
-                        ELSE NULL
-                    END,
-                    house_image_consent = CASE
-                        WHEN TRIM(COALESCE(address, '')) = TRIM($1) THEN house_image_consent
-                        ELSE FALSE
                     END,
                     updated_at = NOW()
                 WHERE id = $6
@@ -2269,31 +2231,6 @@ exports.saveLicensedResidentHouseImage = async (req, res) => {
     } catch (err) {
         console.error("saveLicensedResidentHouseImage error:", err.message);
         return res.status(500).json({ error: "Unable to save house image" });
-    }
-};
-
-/**
- * Retry licensed exterior-image acquisition for a resident who opted in.
- * Server-to-server/admin only; never expose the secret to either mobile app.
- */
-exports.acquireResidentHouseImage = async (req, res) => {
-    const crypto = require("crypto");
-    const expected = process.env.HOUSE_IMAGE_WRITE_KEY || "";
-    const supplied = String(req.get("X-House-Image-Write-Key") || "");
-    if (!expected || !supplied ||
-        Buffer.byteLength(expected) !== Buffer.byteLength(supplied) ||
-        !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(supplied))) {
-        return res.status(403).json({error: "Not authorized"});
-    }
-    const residentId = Number(req.params.residentId);
-    if (!Number.isSafeInteger(residentId) || residentId <= 0)
-        return res.status(400).json({error: "Invalid resident ID"});
-    try {
-        const result = await acquireLicensedHousePhoto(residentId);
-        return res.json({success: true, ...result});
-    } catch (error) {
-        console.error("House image acquisition error:", error.message);
-        return res.status(502).json({error: "Licensed image acquisition failed"});
     }
 };
 
