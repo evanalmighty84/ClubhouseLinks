@@ -9,25 +9,51 @@ workflows:
       vars:
         LOOKAROUND_API_BASE: "https://crm-function-app-5d4de511071d.herokuapp.com/server/resident_function/api/residents"
     scripts:
-      - name: Verify macOS and compile native Swift snapshot tool
+      - name: Compile both native macOS image tools
         script: |
           set -euo pipefail
           sw_vers
           xcrun --find swiftc
           mkdir -p "$HOME/.local/bin"
-          xcrun swiftc -parse-as-library \
-            functions/macOSLookAroundSnapshot.swift \
-            -o "$HOME/.local/bin/lookaround-snapshot"
+          xcrun swiftc -parse-as-library functions/macOSLookAroundSnapshot.swift -o "$HOME/.local/bin/lookaround-snapshot"
+          xcrun swiftc functions/generateHouseTestImage.swift -o "$HOME/.local/bin/house-test-image"
           test -x "$HOME/.local/bin/lookaround-snapshot"
-          echo "Swift tool compiled. No street imagery captured."
-      - name: Probe Heroku queue safely without downloading or uploading imagery
+          test -x "$HOME/.local/bin/house-test-image"
+          echo "Both Swift commands compiled. No Maps image captured."
+      - name: Run selected house-image processing mode
         script: |
           set -euo pipefail
-          if [ -z "${HOUSE_IMAGE_WRITE_KEY:-}" ]; then
-            echo "Missing HOUSE_IMAGE_WRITE_KEY in the protected house_image_worker group." >&2
-            exit 1
-          fi
-          node --version
+          : "${HOUSE_IMAGE_WRITE_KEY:?Set secure HOUSE_IMAGE_WRITE_KEY in house_image_worker group}"
           node --check functions/lookaround-worker.cjs
-          node functions/lookaround-worker.cjs --dry-run
-          echo "Codemagic macOS workflow and Heroku queue probe succeeded."
+          export LOOKAROUND_SNAPSHOT_BIN="$HOME/.local/bin/lookaround-snapshot"
+          export HOUSE_TEST_IMAGE_BIN="$HOME/.local/bin/house-test-image"
+          case "${HOUSE_IMAGE_PIPELINE_MODE:-off}" in
+            off)
+              echo "House-image pipeline OFF. Only probing queue."
+              node functions/lookaround-worker.cjs --dry-run
+              ;;
+            test)
+              echo "TEST MODE: generating synthetic image and exercising claim/upload/save."
+              : "${CLOUDINARY_URL:?Set secure CLOUDINARY_URL in house_image_worker group}"
+              mkdir -p "$CM_BUILD_DIR/.house-worker-deps"
+              npm install --prefix "$CM_BUILD_DIR/.house-worker-deps" --no-save --ignore-scripts --no-audit --no-fund cloudinary@2.5.0
+              export NODE_PATH="$CM_BUILD_DIR/.house-worker-deps/node_modules"
+              node functions/lookaround-worker.cjs --once
+              ;;
+            licensed)
+              echo "LICENSED MODE: Apple Look Around capture authorized separately."
+              : "${CLOUDINARY_URL:?Set secure CLOUDINARY_URL in house_image_worker group}"
+              : "${LOOKAROUND_PERSISTENT_STORAGE_AUTHORIZED:?Requires express written Apple permission}"
+              : "${HOUSE_IMAGE_LICENSED_CAPTURE_AUTHORIZED:?Requires explicit Heroku/Codemagic approval}"
+              test "$LOOKAROUND_PERSISTENT_STORAGE_AUTHORIZED" = yes
+              test "$HOUSE_IMAGE_LICENSED_CAPTURE_AUTHORIZED" = yes
+              mkdir -p "$CM_BUILD_DIR/.house-worker-deps"
+              npm install --prefix "$CM_BUILD_DIR/.house-worker-deps" --no-save --ignore-scripts --no-audit --no-fund cloudinary@2.5.0
+              export NODE_PATH="$CM_BUILD_DIR/.house-worker-deps/node_modules"
+              node functions/lookaround-worker.cjs --once
+              ;;
+            *)
+              echo "Invalid HOUSE_IMAGE_PIPELINE_MODE" >&2
+              exit 2
+              ;;
+          esac
