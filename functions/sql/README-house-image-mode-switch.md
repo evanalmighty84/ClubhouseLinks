@@ -32,13 +32,13 @@ Ensure prior SQL migrations (jobs and dispatch) are already applied.
 Application: backend `ClubhouseLinks`, workflow `house-image-macos-debug`.
 In the encrypted `house_image_worker` variable group:
 - `HOUSE_IMAGE_WRITE_KEY`: same secret as Heroku
-- `CLOUDINARY_URL`: Cloudinary API secret URL, available on Heroku if already configured
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`: copy existing Heroku values into Codemagic as encrypted secrets.
 
 The build API supplies `HOUSE_IMAGE_PIPELINE_MODE` and
 `LOOKAROUND_RESIDENT_ID`; do not store a hardcoded mode in the group.
 
 On Heroku:
-- `HOUSE_IMAGE_CLOUDINARY_CLOUD_NAME`: Cloudinary cloud name
+- `CLOUDINARY_CLOUD_NAME`: existing Cloudinary cloud name (the controller also accepts optional `HOUSE_IMAGE_CLOUDINARY_CLOUD_NAME` override)
 - `CODEMAGIC_API_TOKEN`, `CODEMAGIC_HOUSE_IMAGE_APP_ID`: already configured
 - `CODEMAGIC_HOUSE_IMAGE_DISPATCH_ENABLED=yes`: separately enables automatic API dispatch
 - `HOUSE_IMAGE_PIPELINE_MODE`: off/test/licensed
