@@ -1,0 +1,33 @@
+workflows:
+  house-image-macos-debug:
+    name: Clubhouse Links · House Image macOS Debug
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    environment:
+      groups:
+        - house_image_worker
+      vars:
+        LOOKAROUND_API_BASE: "https://crm-function-app-5d4de511071d.herokuapp.com/server/resident_function/api/residents"
+    scripts:
+      - name: Verify macOS and compile native Swift snapshot tool
+        script: |
+          set -euo pipefail
+          sw_vers
+          xcrun --find swiftc
+          mkdir -p "$HOME/.local/bin"
+          xcrun swiftc -parse-as-library \
+            functions/macOSLookAroundSnapshot.swift \
+            -o "$HOME/.local/bin/lookaround-snapshot"
+          test -x "$HOME/.local/bin/lookaround-snapshot"
+          echo "Swift tool compiled. No street imagery captured."
+      - name: Probe Heroku queue safely without downloading or uploading imagery
+        script: |
+          set -euo pipefail
+          if [ -z "${HOUSE_IMAGE_WRITE_KEY:-}" ]; then
+            echo "Missing HOUSE_IMAGE_WRITE_KEY in the protected house_image_worker group." >&2
+            exit 1
+          fi
+          node --version
+          node --check functions/lookaround-worker.cjs
+          node functions/lookaround-worker.cjs --dry-run
+          echo "Codemagic macOS workflow and Heroku queue probe succeeded."
