@@ -142,7 +142,7 @@ module.exports = function createHouseImageHandlers(pool) {
             }
             let parsed;
             try { parsed = new URL(url); } catch {}
-            const cloudName = process.env.HOUSE_IMAGE_CLOUDINARY_CLOUD_NAME;
+            const cloudName = process.env.HOUSE_IMAGE_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME;
             if (!parsed || parsed.protocol !== 'https:' || parsed.hostname !== 'res.cloudinary.com' ||
                 parsed.username || parsed.password || parsed.port ||
                 (worker && (!cloudName || !parsed.pathname.startsWith(`/${cloudName}/image/upload/`)))) {
