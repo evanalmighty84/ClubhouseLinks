@@ -62,13 +62,24 @@ async function dispatchHouseImageBuild(residentId) {
         if (!data.buildId || typeof data.buildId !== 'string')
             throw new Error('Codemagic response did not include buildId');
 
-        // Only write the returned build ID for this same dispatch reservation.
-        await pool.query(
+        // PostgreSQL stores timestamptz with microsecond precision while
+        // node-postgres returns a JS Date with only millisecond precision.
+        // Compare within the same millisecond to avoid silently updating 0 rows.
+        const recorded = await pool.query(
             `UPDATE hoa_lookaround_house_jobs
              SET codemagic_build_id = $2
-             WHERE resident_id = $1 AND codemagic_dispatched_at = $3`,
+             WHERE resident_id = $1
+               AND date_trunc('milliseconds', codemagic_dispatched_at) =
+                   date_trunc('milliseconds', $3::timestamptz)
+               AND codemagic_build_id IS NULL
+             RETURNING resident_id`,
             [residentId, data.buildId, job.codemagic_dispatched_at]
         );
+        if (!recorded.rowCount) {
+            console.error('Codemagic started build but dispatch record was not updated',
+                { residentId, buildId: data.buildId });
+            return { status: 'started_unrecorded', build_id: data.buildId };
+        }
         return { status: 'started', build_id: data.buildId };
     } catch (err) {
         // A timeout might mean Codemagic accepted a build despite no response.
@@ -78,7 +89,9 @@ async function dispatchHouseImageBuild(residentId) {
             await pool.query(
                 `UPDATE hoa_lookaround_house_jobs
                  SET codemagic_dispatched_at = NULL
-                 WHERE resident_id = $1 AND codemagic_dispatched_at = $2
+                 WHERE resident_id = $1
+                   AND date_trunc('milliseconds', codemagic_dispatched_at) =
+                       date_trunc('milliseconds', $2::timestamptz)
                    AND codemagic_build_id IS NULL`,
                 [residentId, job.codemagic_dispatched_at]
             ).catch(() => {});
