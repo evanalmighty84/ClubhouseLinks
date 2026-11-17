@@ -27,6 +27,28 @@ module.exports = function createHouseImageHandlers(pool) {
         return error(res, 500, 'House image operation failed');
     }
 
+    async function probeHouseImageQueue(req, res) {
+        if (!allowed(req, res)) return;
+        const id = req.body?.resident_id ?? null;
+        if (id !== null && !residentId(id))
+            return error(res, 400, 'Invalid resident ID');
+        try {
+            const { rows: [summary] } = await pool.query(
+                `SELECT COUNT(*)::integer AS queued_count
+                 FROM hoa_lookaround_house_jobs
+                 WHERE status = 'queued'
+                   AND ($1::bigint IS NULL OR resident_id = $1)`,
+                [id]
+            );
+            return res.json({
+                success: true,
+                queued_count: summary.queued_count,
+                capture_enabled: enabled(),
+                mode: 'dry_run'
+            });
+        } catch (err) { return failed(res, 'probe', err); }
+    }
+
     async function claimLookAroundHouseJob(req, res) {
         if (!allowed(req, res)) return;
         if (!enabled()) return error(res, 503, 'Look Around worker is disabled');
@@ -183,5 +205,5 @@ module.exports = function createHouseImageHandlers(pool) {
         }
     }
 
-    return { claimLookAroundHouseJob, reportLookAroundHouseJob, saveLicensedResidentHouseImage };
+    return { claimLookAroundHouseJob, reportLookAroundHouseJob, saveLicensedResidentHouseImage, probeHouseImageQueue };
 };
