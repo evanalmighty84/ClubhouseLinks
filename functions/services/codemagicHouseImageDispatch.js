@@ -6,8 +6,9 @@
  * Requires the dispatch SQL migration before enabling this integration.
  */
 const pool = require('../db/db');
+const { mode, processingAllowed } = require('./houseImageMode');
 
-const enabled = () => process.env.CODEMAGIC_HOUSE_IMAGE_DISPATCH_ENABLED === 'yes';
+const enabled = () => process.env.CODEMAGIC_HOUSE_IMAGE_DISPATCH_ENABLED === 'yes' && processingAllowed();
 
 async function dispatchHouseImageBuild(residentId) {
     if (!enabled()) return { status: 'disabled' };
@@ -39,7 +40,10 @@ async function dispatchHouseImageBuild(residentId) {
         workflowId: 'house-image-macos-debug',
         branch: process.env.CODEMAGIC_HOUSE_IMAGE_BRANCH || 'main',
         environment: {
-            variables: { LOOKAROUND_RESIDENT_ID: String(job.resident_id) }
+            variables: {
+                LOOKAROUND_RESIDENT_ID: String(job.resident_id),
+                HOUSE_IMAGE_PIPELINE_MODE: mode()
+            }
         }
     };
     let response;
