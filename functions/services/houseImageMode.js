@@ -13,7 +13,12 @@ function mode() {
 function licensedApproved() {
     return process.env.HOUSE_IMAGE_LICENSED_CAPTURE_AUTHORIZED === 'yes';
 }
-function processingAllowed() {
-    return mode() === 'test' || (mode() === 'licensed' && licensedApproved());
+function testResidentId() {
+    const value = String(process.env.HOUSE_IMAGE_TEST_RESIDENT_ID || '');
+    return /^[1-9]\d{0,17}$/.test(value) ? value : null;
 }
-module.exports = { mode, licensedApproved, processingAllowed };
+function processingAllowed() {
+    return (mode() === 'test' && Boolean(testResidentId())) ||
+        (mode() === 'licensed' && licensedApproved());
+}
+module.exports = { mode, licensedApproved, processingAllowed, testResidentId };
