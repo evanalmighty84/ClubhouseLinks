@@ -41,11 +41,16 @@ The controller saves:
 The existing `GET /residents/profile/:residentId` selects `r.*` and
 therefore automatically includes these fields.
 
-Applications should only display `house_image_url` if nonempty and
-`house_image_address` matches the resident's current address. The account
-settings view should otherwise display the generic house placeholder.
-The iOS app may continue showing a live, native MapKit Look Around view
-separately, within Apple's permitted usage.
+Android Account Settings now displays `house_image_url` via Coil only when
+`house_image_address` matches the current resident address. If the URL is
+missing, stale, or cannot be loaded, it displays the generic home placeholder.
+The iOS Account Settings screen continues to render a live, native MapKit
+Look Around view independently of the saved photo. The existing address-update
+controller clears the saved house-image fields when the address changes.
+Both the address and its `latitude` / `longitude` remain stored in the
+existing `hoa_residents` columns; address updates geocode via Apple Maps.
+The image-save endpoint does not itself obtain an image from street imagery
+providers. It records a licensed Cloudinary image URL after upload.
 
 ## Quick database verification
 
