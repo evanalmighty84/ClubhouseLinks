@@ -38,7 +38,7 @@ workflows:
               mkdir -p "$CM_BUILD_DIR/.house-worker-deps"
               npm install --prefix "$CM_BUILD_DIR/.house-worker-deps" --no-save --ignore-scripts --no-audit --no-fund cloudinary@2.5.0
               export NODE_PATH="$CM_BUILD_DIR/.house-worker-deps/node_modules"
-              node functions/lookaround-worker.cjs --once
+              node functions/lookaround-worker.cjs --drain-job
               ;;
             licensed)
               echo "LICENSED MODE: Apple Look Around capture authorized separately."
@@ -50,7 +50,7 @@ workflows:
               mkdir -p "$CM_BUILD_DIR/.house-worker-deps"
               npm install --prefix "$CM_BUILD_DIR/.house-worker-deps" --no-save --ignore-scripts --no-audit --no-fund cloudinary@2.5.0
               export NODE_PATH="$CM_BUILD_DIR/.house-worker-deps/node_modules"
-              node functions/lookaround-worker.cjs --once
+              node functions/lookaround-worker.cjs --drain-job
               ;;
             *)
               echo "Invalid HOUSE_IMAGE_PIPELINE_MODE" >&2
