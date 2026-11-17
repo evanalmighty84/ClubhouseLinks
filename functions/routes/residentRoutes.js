@@ -13,6 +13,7 @@ const {
     saveLicensedResidentHouseImage,
     claimLookAroundHouseJob,
     reportLookAroundHouseJob,
+    probeHouseImageQueue,
     getVendors,
     deleteResidentAccount,
     registerResidentDevice,
@@ -77,6 +78,10 @@ router.put(
 
 // Internal worker API. Both endpoints require HOUSE_IMAGE_WRITE_KEY.
 // Remain unavailable unless HOUSE_IMAGE_LOOKAROUND_ENABLED=yes.
+router.post(
+    "/internal/house-image-jobs/probe",
+    probeHouseImageQueue
+);
 router.post(
     "/internal/house-image-jobs/claim",
     claimLookAroundHouseJob
