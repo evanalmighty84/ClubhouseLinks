@@ -2,6 +2,7 @@
 const pool = require('../db/db');
 const jwt = require("jsonwebtoken");
 const cloudinary = require("cloudinary").v2;
+const { dispatchHouseImageBuild } = require("../services/codemagicHouseImageDispatch");
 const notificationService =
     require(
         "../services/notificationService"
@@ -1256,6 +1257,13 @@ exports.signupResident = async (req, res) => {
                     : "Customer profile updated successfully.";
         }
 
+        // Never delay signup for a Codemagic build. The database trigger
+        // queues only eligible addresses with valid coordinates.
+        if (process.env.CODEMAGIC_HOUSE_IMAGE_DISPATCH_ENABLED === 'yes') {
+            setImmediate(() => dispatchHouseImageBuild(resident.id).catch(err =>
+                console.warn("House image Codemagic dispatch failed:", err.message)));
+        }
+
         return res.status(200).json({
             success: true,
             resident_id: resident.id,
@@ -1375,6 +1383,11 @@ exports.updateResidentAddress = async (req, res) => {
                 success: false,
                 error: "Resident not found."
             });
+        }
+
+        if (process.env.CODEMAGIC_HOUSE_IMAGE_DISPATCH_ENABLED === 'yes') {
+            setImmediate(() => dispatchHouseImageBuild(residentId).catch(err =>
+                console.warn("House image Codemagic dispatch failed:", err.message)));
         }
 
         return res.status(200).json({
@@ -2172,6 +2185,34 @@ exports.approveResident = async (req, res) => {
  * HOUSE_IMAGE_WRITE_KEY inside an iOS or Android app.
  */
 Object.assign(exports, require('../services/lookaroundHouseImages')(pool));
+
+/**
+ * Admin-only debug trigger for a queued resident house image.
+ * No capture occurs in this endpoint; it only starts a Codemagic Mac build.
+ */
+exports.dispatchHouseImageCodemagicBuild = async (req, res) => {
+    const { timingSafeEqual } = require('node:crypto');
+    const expected = Buffer.from(process.env.HOUSE_IMAGE_WRITE_KEY || '');
+    const given = Buffer.from(req.get('X-House-Image-Write-Key') || '');
+    if (!expected.length || expected.length !== given.length ||
+        !timingSafeEqual(expected, given)) {
+        return res.status(403).json({error: 'Not authorized'});
+    }
+    const id = String(req.params.residentId || '');
+    if (!/^[1-9]\d{0,17}$/.test(id))
+        return res.status(400).json({error: 'Invalid resident ID'});
+    try {
+        const result = await dispatchHouseImageBuild(id);
+        const status = result.status === 'started' ? 202 :
+            result.status === 'disabled' || result.status === 'not_configured' ? 503 : 200;
+        return res.status(status).json(result);
+    } catch (err) {
+        console.error('Codemagic dispatch error:', err.message);
+        return res.status(500).json({error: 'Unable to dispatch house-image build'});
+    }
+};
+
+
 
 exports.getResidentProfile = async (req, res) => {
     try {
