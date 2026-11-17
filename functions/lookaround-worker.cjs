@@ -82,11 +82,11 @@ async function main() {
         const key = process.env.HOUSE_IMAGE_WRITE_KEY;
         const residentId = process.env.LOOKAROUND_RESIDENT_ID;
         if (!base || !key) throw new Error('Dry run requires LOOKAROUND_API_BASE and HOUSE_IMAGE_WRITE_KEY.');
-        if (residentId && !/^[1-9]\\d{0,17}$/.test(residentId)) throw new Error('Invalid resident ID');
+        if (residentId && !/^[1-9]\d{0,17}$/.test(residentId)) throw new Error('Invalid resident ID');
         const url = new URL(base);
         if (url.protocol !== 'https:' || url.username || url.password)
             throw new Error('Invalid LOOKAROUND_API_BASE');
-        const response = await fetch(url.href.replace(/\\/+$/, '') +
+        const response = await fetch(url.href.replace(/\/+$/, '') +
             '/internal/house-image-jobs/probe', {
             method: 'POST', redirect: 'error', signal: AbortSignal.timeout(15000),
             headers: {
