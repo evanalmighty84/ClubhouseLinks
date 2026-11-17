@@ -2146,6 +2146,72 @@ exports.approveResident = async (req, res) => {
     }
 };
 
+/**
+ * Record an independently licensed or resident-supplied house photograph
+ * so both mobile apps can show the same image in Account Settings.
+ *
+ * Apple Look Around imagery is NOT eligible for persistence here.
+ * This is an internal server-side/admin integration only; never ship
+ * HOUSE_IMAGE_WRITE_KEY inside an iOS or Android app.
+ */
+exports.saveLicensedResidentHouseImage = async (req, res) => {
+    const crypto = require("crypto");
+    const configuredKey = process.env.HOUSE_IMAGE_WRITE_KEY || "";
+    const suppliedKey = String(req.get("X-House-Image-Write-Key") || "");
+
+    if (!configuredKey || !suppliedKey ||
+        Buffer.byteLength(configuredKey) !== Buffer.byteLength(suppliedKey) ||
+        !crypto.timingSafeEqual(Buffer.from(configuredKey), Buffer.from(suppliedKey))) {
+        return res.status(403).json({ error: "Not authorized" });
+    }
+
+    const residentId = Number(req.params.residentId);
+    if (!Number.isSafeInteger(residentId) || residentId <= 0) {
+        return res.status(400).json({ error: "Invalid resident ID" });
+    }
+
+    const { image_url: imageUrl, source } = req.body || {};
+    const cleanUrl = typeof imageUrl === "string" ? imageUrl.trim() : "";
+    const clear = imageUrl === null;
+
+    if (!clear) {
+        // Upload owned/licensed photos to the existing Cloudinary account first.
+        // Disallows arbitrary URL hosts and Look Around/MapKit image URLs.
+        if (!["resident_upload", "licensed_provider"].includes(source)) {
+            return res.status(400).json({ error: "Unsupported image source" });
+        }
+        let parsed;
+        try { parsed = new URL(cleanUrl); } catch (_) {}
+        if (!parsed || parsed.protocol !== "https:" ||
+            parsed.hostname !== "res.cloudinary.com" ||
+            !parsed.pathname.startsWith("/")) {
+            return res.status(400).json({
+                error: "Expected an HTTPS Cloudinary URL for an independently licensed photo"
+            });
+        }
+    }
+
+    try {
+        const result = await pool.query(
+            `UPDATE hoa_residents
+             SET house_image_url = $2,
+                 house_image_source = $3,
+                 house_image_address = CASE WHEN $2 IS NULL THEN NULL ELSE address END,
+                 house_image_updated_at = NOW()
+             WHERE id = $1
+             RETURNING id, house_image_url, house_image_source, house_image_updated_at`,
+            [residentId, clear ? null : cleanUrl, clear ? null : source]
+        );
+        if (!result.rowCount) {
+            return res.status(404).json({ error: "Resident not found" });
+        }
+        return res.json({ success: true, resident: result.rows[0] });
+    } catch (err) {
+        console.error("saveLicensedResidentHouseImage error:", err.message);
+        return res.status(500).json({ error: "Unable to save house image" });
+    }
+};
+
 exports.getResidentProfile = async (req, res) => {
     try {
         const { residentId } = req.params;
