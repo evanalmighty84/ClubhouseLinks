@@ -125,6 +125,7 @@ async function main() {
     const root = base.href.replace(/\/+$/, '');
     const { v2: cloudinary } = require('cloudinary');
     const once = process.argv.includes('--once');
+    const drainJob = process.argv.includes('--drain-job');
     const api = (path, method, body) => fetch(root + path, {
         method, body: JSON.stringify(body), redirect: 'error',
         signal: AbortSignal.timeout(25000),
@@ -157,21 +158,42 @@ async function main() {
         resource_type: 'image', invalidate: true, timeout: 10000
     });
 
+    // Codemagic jobs are short-lived. A retry is delayed in PostgreSQL by
+    // 2 minutes * attempts; keep the same Mac build alive long enough for
+    // the scheduled retry instead of spending on a fresh cloud Mac build.
+    let retryCount = 0;
     do {
+        let status = 'idle';
         try {
-            const status = await processOne({
+            status = await processOne({
                 api, capture, upload, discard, onlyResident: LOOKAROUND_RESIDENT_ID, mode
             });
-            if (once || status !== 'idle') console.log(`House image (${mode}): ${status}`);
-            if (once && status !== 'saved') process.exitCode = 1;
+            if (once || drainJob || status !== 'idle')
+                console.log(`House image (${mode}): ${status}`);
         } catch (err) {
             if (/^(Claim|Report) returned HTTP \d{3}$/.test(err.message))
                 console.error(err.message);
-            else console.error('Look Around worker could not complete the request.');
-            if (once) process.exitCode = 1;
+            else console.error('House image worker request failed.');
+            if (once || drainJob) {
+                process.exitCode = 1;
+                break;
+            }
         }
-        if (!once) await wait(15000);
-    } while (!once);
+
+        if (drainJob && status === 'queued' && retryCount < 3) {
+            retryCount++;
+            const delay = retryCount * 2 * 60 * 1000 + 5000;
+            console.log(`House image scheduled retry #${retryCount} within this build`);
+            await wait(delay);
+            continue;
+        }
+
+        if (drainJob || once) {
+            if (status !== 'saved') process.exitCode = 1;
+            break;
+        }
+        await wait(15000);
+    } while (true);
 }
 
 module.exports = { processOne };
