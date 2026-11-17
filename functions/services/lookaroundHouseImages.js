@@ -4,6 +4,7 @@
 // imagery owner explicitly authorizes permanent storage and redistribution.
 // These handlers alone never fetch Apple Maps imagery.
 const { randomUUID, timingSafeEqual } = require('node:crypto');
+const { mode, processingAllowed } = require('./houseImageMode');
 const maxAttempts = 4;
 const residentId = value => /^[1-9]\d{0,17}$/.test(String(value ?? ''));
 const leaseId = value => typeof value === 'string' &&
@@ -11,7 +12,7 @@ const leaseId = value => typeof value === 'string' &&
 
 module.exports = function createHouseImageHandlers(pool) {
     const error = (res, status, message) => res.status(status).json({ error: message });
-    const enabled = () => process.env.HOUSE_IMAGE_LOOKAROUND_ENABLED === 'yes';
+    const enabled = processingAllowed;
     function allowed(req, res) {
         const configured = Buffer.from(process.env.HOUSE_IMAGE_WRITE_KEY || '');
         const supplied = Buffer.from(req.get('X-House-Image-Write-Key') || '');
@@ -44,14 +45,15 @@ module.exports = function createHouseImageHandlers(pool) {
                 success: true,
                 queued_count: summary.queued_count,
                 capture_enabled: enabled(),
-                mode: 'dry_run'
+                mode: mode()
             });
         } catch (err) { return failed(res, 'probe', err); }
     }
 
     async function claimLookAroundHouseJob(req, res) {
         if (!allowed(req, res)) return;
-        if (!enabled()) return error(res, 503, 'Look Around worker is disabled');
+        if (!enabled()) return error(res, 503, 'House image worker is disabled');
+        if (req.body?.mode !== mode()) return error(res, 409, 'Worker mode does not match server mode');
         const id = req.body?.resident_id ?? null;
         if (id !== null && !residentId(id)) return error(res, 400, 'Invalid resident ID');
         try {
@@ -79,13 +81,14 @@ module.exports = function createHouseImageHandlers(pool) {
                 RETURNING j.resident_id, j.latitude, j.longitude, j.lease_token`,
                 [id, randomUUID(), maxAttempts]
             );
-            return res.json({ job: job || null });
+            return res.json({ job: job ? { ...job, mode: mode() } : null });
         } catch (err) { return failed(res, 'claim', err); }
     }
 
     async function reportLookAroundHouseJob(req, res) {
         if (!allowed(req, res)) return;
-        if (!enabled()) return error(res, 503, 'Look Around worker is disabled');
+        if (!enabled()) return error(res, 503, 'House image worker is disabled');
+        if (req.body?.mode !== mode()) return error(res, 409, 'Worker mode does not match server mode');
         const id = req.params.residentId;
         const { lease_token: lease, outcome } = req.body || {};
         if (!residentId(id) || !leaseId(lease) || !['retry', 'no_coverage'].includes(outcome)) {
@@ -116,16 +119,19 @@ module.exports = function createHouseImageHandlers(pool) {
         const clear = image === null;
         const worker = lease !== undefined;
         const url = typeof image === 'string' ? image.trim() : '';
-        if (worker && !enabled()) return error(res, 503, 'Look Around worker is disabled');
-        if (worker && (!leaseId(lease) || clear || source !== 'licensed_provider')) {
-            return error(res, 400, 'Invalid Look Around save');
+        if (worker && !enabled()) return error(res, 503, 'House image worker is disabled');
+        if (worker && (!leaseId(lease) || clear ||
+            req.body?.mode !== mode() ||
+            source !== (mode() === 'test' ? 'test_placeholder' : 'licensed_provider'))) {
+            return error(res, 400, 'Invalid house image worker save/mode');
         }
         if (!worker && !clear && expected !== undefined &&
             (typeof expected !== 'string' || !expected.trim())) {
             return error(res, 400, 'Invalid expected_address');
         }
         if (!clear) {
-            if (!['resident_upload', 'licensed_provider'].includes(source)) {
+            if (!['resident_upload', 'licensed_provider', 'test_placeholder'].includes(source) ||
+                (!worker && source === 'test_placeholder')) {
                 return error(res, 400, 'Unsupported image source');
             }
             let parsed;
@@ -180,11 +186,12 @@ module.exports = function createHouseImageHandlers(pool) {
             }
             const { rows: [row] } = await client.query(
                 `UPDATE hoa_residents SET house_image_url = $2,
-                    house_image_source = 'licensed_provider', house_image_address = address,
+                    house_image_source = $6, house_image_address = address,
                     house_image_updated_at = NOW()
-                 WHERE id = $1 AND address = $3 AND house_image_url IS NULL
+                 WHERE id = $1 AND address = $3
+                   AND (house_image_url IS NULL OR house_image_source = 'test_placeholder')
                    AND latitude::double precision = $4 AND longitude::double precision = $5
-                 ${returning}`, [id, url, job.expected_address, job.latitude, job.longitude]
+                 ${returning}`, [id, url, job.expected_address, job.latitude, job.longitude, source]
             );
             if (row) {
                 await client.query(
