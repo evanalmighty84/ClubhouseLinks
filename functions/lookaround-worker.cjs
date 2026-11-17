@@ -73,8 +73,34 @@ async function processOne({ api, capture, upload, discard, onlyResident }) {
 
 async function main() {
     if (process.platform !== 'darwin') throw new Error('Run this worker on macOS.');
-    if (process.env.LOOKAROUND_PERSISTENT_STORAGE_AUTHORIZED !== 'yes')
+    const dryRun = process.argv.includes('--dry-run');
+    if (!dryRun && process.env.LOOKAROUND_PERSISTENT_STORAGE_AUTHORIZED !== 'yes')
         throw new Error('Permanent Apple Look Around capture is disabled pending express written rights.');
+
+    if (dryRun) {
+        const base = process.env.LOOKAROUND_API_BASE;
+        const key = process.env.HOUSE_IMAGE_WRITE_KEY;
+        const residentId = process.env.LOOKAROUND_RESIDENT_ID;
+        if (!base || !key) throw new Error('Dry run requires LOOKAROUND_API_BASE and HOUSE_IMAGE_WRITE_KEY.');
+        if (residentId && !/^[1-9]\\d{0,17}$/.test(residentId)) throw new Error('Invalid resident ID');
+        const url = new URL(base);
+        if (url.protocol !== 'https:' || url.username || url.password)
+            throw new Error('Invalid LOOKAROUND_API_BASE');
+        const response = await fetch(url.href.replace(/\\/+$/, '') +
+            '/internal/house-image-jobs/probe', {
+            method: 'POST', redirect: 'error', signal: AbortSignal.timeout(15000),
+            headers: {
+                'Content-Type': 'application/json',
+                'X-House-Image-Write-Key': key
+            },
+            body: JSON.stringify(residentId ? {resident_id: residentId} : {})
+        });
+        if (!response.ok) throw new Error(`Dry-run probe HTTP ${response.status}`);
+        const result = await response.json();
+        if (!result.success) throw new Error('Dry-run probe unsuccessful');
+        console.log('Codemagic macOS + Heroku dry-run OK; queued jobs:', result.queued_count);
+        return;
+    }
     const {
         LOOKAROUND_API_BASE, LOOKAROUND_SNAPSHOT_BIN = './lookaround-snapshot',
         HOUSE_IMAGE_WRITE_KEY, CLOUDINARY_URL, LOOKAROUND_RESIDENT_ID
