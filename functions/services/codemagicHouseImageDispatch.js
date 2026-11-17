@@ -6,7 +6,7 @@
  * Requires the dispatch SQL migration before enabling this integration.
  */
 const pool = require('../db/db');
-const { mode, processingAllowed } = require('./houseImageMode');
+const { mode, processingAllowed, testResidentId } = require('./houseImageMode');
 
 const enabled = () => process.env.CODEMAGIC_HOUSE_IMAGE_DISPATCH_ENABLED === 'yes' && processingAllowed();
 
@@ -14,6 +14,8 @@ async function dispatchHouseImageBuild(residentId) {
     if (!enabled()) return { status: 'disabled' };
     if (!/^[1-9]\d{0,17}$/.test(String(residentId)))
         return { status: 'invalid_resident_id' };
+    if (mode() === 'test' && String(residentId) !== testResidentId())
+        return { status: 'not_designated_test_resident' };
 
     const token = process.env.CODEMAGIC_API_TOKEN;
     const appId = process.env.CODEMAGIC_HOUSE_IMAGE_APP_ID;
