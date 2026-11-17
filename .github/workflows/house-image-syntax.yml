@@ -1,0 +1,30 @@
+name: House Image API Syntax
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'functions/lookaround-worker.cjs'
+      - 'functions/services/lookaroundHouseImages.js'
+      - 'functions/services/codemagicHouseImageDispatch.js'
+      - 'functions/controllers/residentController.js'
+      - 'functions/routes/residentRoutes.js'
+      - 'codemagic.yaml'
+      - '.github/workflows/house-image-syntax.yml'
+  workflow_dispatch:
+
+jobs:
+  node-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate Node source syntax
+        run: |
+          node --check functions/lookaround-worker.cjs
+          node --check functions/services/lookaroundHouseImages.js
+          node --check functions/services/codemagicHouseImageDispatch.js
+          node --check functions/controllers/residentController.js
+          node --check functions/routes/residentRoutes.js
