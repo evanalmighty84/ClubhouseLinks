@@ -14,6 +14,7 @@ const {
     claimLookAroundHouseJob,
     reportLookAroundHouseJob,
     probeHouseImageQueue,
+    dispatchHouseImageCodemagicBuild,
     getVendors,
     deleteResidentAccount,
     registerResidentDevice,
@@ -81,6 +82,10 @@ router.put(
 router.post(
     "/internal/house-image-jobs/probe",
     probeHouseImageQueue
+);
+router.post(
+    "/internal/house-image-jobs/:residentId/dispatch-codemagic",
+    dispatchHouseImageCodemagicBuild
 );
 router.post(
     "/internal/house-image-jobs/claim",
