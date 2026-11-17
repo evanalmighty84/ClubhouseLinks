@@ -1339,6 +1339,23 @@ exports.updateResidentAddress = async (req, res) => {
                     longitude = $3,
                     generated_area_id = $4,
                     display_area_name = $5,
+                    -- Never display a previous address's house photograph after a move.
+                    house_image_url = CASE
+                        WHEN TRIM(COALESCE(address, '')) = TRIM($1) THEN house_image_url
+                        ELSE NULL
+                    END,
+                    house_image_source = CASE
+                        WHEN TRIM(COALESCE(address, '')) = TRIM($1) THEN house_image_source
+                        ELSE NULL
+                    END,
+                    house_image_address = CASE
+                        WHEN TRIM(COALESCE(address, '')) = TRIM($1) THEN house_image_address
+                        ELSE NULL
+                    END,
+                    house_image_updated_at = CASE
+                        WHEN TRIM(COALESCE(address, '')) = TRIM($1) THEN house_image_updated_at
+                        ELSE NULL
+                    END,
                     updated_at = NOW()
                 WHERE id = $6
                 RETURNING *
@@ -2199,11 +2216,16 @@ exports.saveLicensedResidentHouseImage = async (req, res) => {
                  house_image_address = CASE WHEN $2 IS NULL THEN NULL ELSE address END,
                  house_image_updated_at = NOW()
              WHERE id = $1
-             RETURNING id, house_image_url, house_image_source, house_image_updated_at`,
+               AND ($2 IS NULL OR NULLIF(TRIM(address), '') IS NOT NULL)
+             RETURNING id, address, latitude, longitude,
+                       house_image_url, house_image_source,
+                       house_image_address, house_image_updated_at`,
             [residentId, clear ? null : cleanUrl, clear ? null : source]
         );
         if (!result.rowCount) {
-            return res.status(404).json({ error: "Resident not found" });
+            return res.status(404).json({
+                error: "Resident not found or address missing; add an address before saving a house image"
+            });
         }
         return res.json({ success: true, resident: result.rows[0] });
     } catch (err) {
