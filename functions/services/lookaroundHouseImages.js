@@ -4,7 +4,7 @@
 // imagery owner explicitly authorizes permanent storage and redistribution.
 // These handlers alone never fetch Apple Maps imagery.
 const { randomUUID, timingSafeEqual } = require('node:crypto');
-const { mode, processingAllowed } = require('./houseImageMode');
+const { mode, processingAllowed, testResidentId } = require('./houseImageMode');
 const maxAttempts = 4;
 const residentId = value => /^[1-9]\d{0,17}$/.test(String(value ?? ''));
 const leaseId = value => typeof value === 'string' &&
@@ -56,6 +56,8 @@ module.exports = function createHouseImageHandlers(pool) {
         if (req.body?.mode !== mode()) return error(res, 409, 'Worker mode does not match server mode');
         const id = req.body?.resident_id ?? null;
         if (id !== null && !residentId(id)) return error(res, 400, 'Invalid resident ID');
+        if (mode() === 'test' && String(id) !== testResidentId())
+            return error(res, 403, 'Test mode is restricted to the configured pilot resident');
         try {
             await pool.query(
                 `UPDATE hoa_lookaround_house_jobs
@@ -90,6 +92,8 @@ module.exports = function createHouseImageHandlers(pool) {
         if (!enabled()) return error(res, 503, 'House image worker is disabled');
         if (req.body?.mode !== mode()) return error(res, 409, 'Worker mode does not match server mode');
         const id = req.params.residentId;
+        if (mode() === 'test' && String(id) !== testResidentId())
+            return error(res, 403, 'Test mode is restricted to the configured pilot resident');
         const { lease_token: lease, outcome } = req.body || {};
         if (!residentId(id) || !leaseId(lease) || !['retry', 'no_coverage'].includes(outcome)) {
             return error(res, 400, 'Invalid job result');
@@ -120,6 +124,8 @@ module.exports = function createHouseImageHandlers(pool) {
         const worker = lease !== undefined;
         const url = typeof image === 'string' ? image.trim() : '';
         if (worker && !enabled()) return error(res, 503, 'House image worker is disabled');
+        if (worker && mode() === 'test' && String(id) !== testResidentId())
+            return error(res, 403, 'Test mode is restricted to the configured pilot resident');
         if (worker && (!leaseId(lease) || clear ||
             req.body?.mode !== mode() ||
             source !== (mode() === 'test' ? 'test_placeholder' : 'licensed_provider'))) {
