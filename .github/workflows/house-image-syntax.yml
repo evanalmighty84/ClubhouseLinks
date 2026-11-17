@@ -6,6 +6,9 @@ on:
     paths:
       - 'functions/lookaround-worker.cjs'
       - 'functions/services/lookaroundHouseImages.js'
+      - 'functions/services/houseImageMode.js'
+      - 'functions/tests/houseImageMode.test.cjs'
+      - 'functions/generateHouseTestImage.swift'
       - 'functions/services/codemagicHouseImageDispatch.js'
       - 'functions/controllers/residentController.js'
       - 'functions/routes/residentRoutes.js'
@@ -25,6 +28,8 @@ jobs:
         run: |
           node --check functions/lookaround-worker.cjs
           node --check functions/services/lookaroundHouseImages.js
+          node --check functions/services/houseImageMode.js
+          node --test functions/tests/houseImageMode.test.cjs
           node --check functions/services/codemagicHouseImageDispatch.js
           node --check functions/controllers/residentController.js
           node --check functions/routes/residentRoutes.js
