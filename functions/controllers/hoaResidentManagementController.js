@@ -8,7 +8,7 @@ const twilio = require('twilio');
 
 const isId = value => /^[1-9]\d{0,17}$/.test(String(value ?? ''));
 const secret = () => {
-    const key = process.env.BOARD_RESIDENT_SESSION_SECRET || '';
+    const key = process.env.JWT_SECRET || '';
     return key.length >= 32 ? key : null;
 };
 const service = () => process.env.TWILIO_VERIFY_SERVICE_SID;
