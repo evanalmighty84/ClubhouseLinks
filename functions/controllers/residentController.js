@@ -1494,6 +1494,9 @@ exports.getVendors = async (req, res) => {
             }
         }
 
+        // HOA residents use their community; unassigned residents use a 7-mile radius.
+        const radiusMiles = 7;
+
         const vendorsResult = await pool.query(
             `
             WITH area_residents AS (
@@ -1533,8 +1536,20 @@ exports.getVendors = async (req, res) => {
 
                 FROM hoa_residents r
 
-WHERE $1::int IS NOT NULL
-                  AND r.neighborhood_id = $1
+WHERE
+    ($1::int IS NOT NULL AND r.neighborhood_id = $1)
+    OR (
+        $1::int IS NULL
+        AND $2::numeric IS NOT NULL
+        AND $3::numeric IS NOT NULL
+        AND r.latitude IS NOT NULL
+        AND r.longitude IS NOT NULL
+        AND 3959 * acos(LEAST(1, GREATEST(-1,
+            cos(radians($2::numeric)) * cos(radians(r.latitude::numeric)) *
+            cos(radians(r.longitude::numeric) - radians($3::numeric)) +
+            sin(radians($2::numeric)) * sin(radians(r.latitude::numeric))
+        ))) <= $4::numeric
+    )
 
             ),
 
@@ -1745,13 +1760,20 @@ WHERE $1::int IS NOT NULL
             'approved',
             'pending_review'
             )
-            AND $1::int IS NOT NULL
-            AND r.neighborhood_id = $1
+            AND (
+                ($1::int IS NOT NULL AND r.neighborhood_id = $1)
+                OR ($1::int IS NULL AND $2::numeric IS NOT NULL
+                    AND $3::numeric IS NOT NULL
+                    AND r.latitude IS NOT NULL AND r.longitude IS NOT NULL
+                    AND 3959 * acos(LEAST(1, GREATEST(-1,
+                        cos(radians($2::numeric)) * cos(radians(r.latitude::numeric)) *
+                        cos(radians(r.longitude::numeric) - radians($3::numeric)) +
+                        sin(radians($2::numeric)) * sin(radians(r.latitude::numeric))
+                    ))) <= $4::numeric)
+            )
             ) ranked
 
             WHERE ranked.row_num <= 5
-              AND $1::int IS NOT NULL
-              AND ranked.neighborhood_id = $1::int
 
             GROUP BY ranked.vendor_id
             ),
@@ -1860,8 +1882,16 @@ WHERE $1::int IS NOT NULL
 
             WHERE
                 v.active = TRUE
-                AND $1::int IS NOT NULL
                 AND (
+                    -- Residents without an HOA see vendors with nearby project activity,
+                    -- not every globally registered vendor.
+                    ($1::int IS NULL AND EXISTS (
+                        SELECT 1
+                        FROM vendor_residents vr_local
+                        JOIN area_residents ar_local ON ar_local.id = vr_local.resident_id
+                        WHERE vr_local.vendor_id = v.id
+                    ))
+                    OR ($1::int IS NOT NULL AND (
                     -- Assigned directly to this HOA.
                     v.neighborhood_id = $1
 
@@ -1899,6 +1929,7 @@ WHERE $1::int IS NOT NULL
                           AND sfv.neighborhood_id = $1
                           AND sfv.active = TRUE
                     )
+                    ))
                 )
                 GROUP BY
                     v.id,
@@ -1943,7 +1974,8 @@ WHERE $1::int IS NOT NULL
             [
                 resident.neighborhood_id || null,
                 resident.latitude || null,
-                resident.longitude || null
+                resident.longitude || null,
+                radiusMiles
             ]
         );
 
