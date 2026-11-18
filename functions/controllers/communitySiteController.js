@@ -5,12 +5,11 @@
 // unpublished event drafts, device tokens, or vendor contact information.
 const pool = require('../db/db');
 
-// Confirmed from hoa_neighborhoods in the user's database on 2026-11-18.
-// The association website is branded Cottonwood Creek; the existing row is
-// "Cottonwood Park". Bind the ID AND name to avoid returning another HOA's data
-// if records are ever renumbered. Do not rename the row in this read-only feed.
+// Cottonwood Creek Community Association uses hoa_neighborhoods.id = 68.
+// Match both the verified ID and canonical neighborhood name to prevent
+// accidentally exposing another neighborhood's public records.
 const COTTONWOOD_NEIGHBORHOOD_ID = 68;
-const COTTONWOOD_DB_NAME = 'cottonwood park';
+const COTTONWOOD_DB_NAME = 'cottonwood creek';
 
 async function announcementFeed(neighborhoodId) {
     // Database deployments may use a different announcement table name.
