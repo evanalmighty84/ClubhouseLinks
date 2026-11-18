@@ -971,58 +971,40 @@ exports.signupResident = async (req, res) => {
         let displayAreaName = null;
 
         /*
-         * Address is optional.
-         * Only create/generated area when the user supplied an address.
+         * Geocode every supplied residence, including verified HOA residents.
+         * Previously, only contractor/generated-area signups were geocoded,
+         * leaving HOA residents with an address but no coordinates and
+         * preventing the house-image location trigger from queuing a job.
+         *
+         * Only non-HOA residents need a generated area. Keep verified HOA
+         * neighborhood membership unchanged.
          */
-        if (!neighborhoodId && cleanAddress) {
+        if (cleanAddress) {
             try {
-                const {
-                    geo,
-                    generatedArea
-                } = await getOrCreateGeneratedAreaForAddress(
-                    cleanAddress
-                );
+                const { geo, generatedArea } = neighborhoodId
+                    ? { geo: await geocodeAddressWithAppleMaps(cleanAddress), generatedArea: null }
+                    : await getOrCreateGeneratedAreaForAddress(cleanAddress);
 
-                console.log(
-                    "GENERATED AREA SIGNUP DEBUG:",
-                    {
-                        address: cleanAddress,
-                        geo,
-                        generatedArea
-                    }
-                );
+                const lat = geo?.lat;
+                const lng = geo?.lng;
+                if (Number.isFinite(lat) && Number.isFinite(lng) &&
+                    lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                    latitude = lat;
+                    longitude = lng;
+                }
 
-                latitude =
-                    geo?.lat ?? null;
-
-                longitude =
-                    geo?.lng ?? null;
-
-                generatedAreaId =
-                    generatedArea?.id ?? null;
-
-                displayAreaName =
+                generatedAreaId = neighborhoodId ? null : generatedArea?.id ?? null;
+                displayAreaName = neighborhoodId ? null :
                     generatedArea?.area_name ||
                     geo?.display_area_name ||
-                    buildDisplayAreaName(
-                        geo?.city,
-                        geo?.state
-                    ) ||
-                    null;
+                    buildDisplayAreaName(geo?.city, geo?.state) ||
+                    getDisplayAreaFromAddressFallback(cleanAddress);
             } catch (geoErr) {
-                console.error(
-                    "Generated area lookup failed:",
-                    geoErr
-                );
-
-                latitude = null;
-                longitude = null;
-                generatedAreaId = null;
-
-                displayAreaName =
-                    getDisplayAreaFromAddressFallback(
-                        cleanAddress
-                    );
+                console.warn('Resident signup address geocoding failed:',
+                    geoErr?.code || geoErr?.message || 'Unknown error');
+                if (!neighborhoodId) {
+                    displayAreaName = getDisplayAreaFromAddressFallback(cleanAddress);
+                }
             }
         }
 
@@ -1260,8 +1242,10 @@ exports.signupResident = async (req, res) => {
         // Never delay signup for a Codemagic build. The database trigger
         // queues only eligible addresses with valid coordinates.
         if (process.env.CODEMAGIC_HOUSE_IMAGE_DISPATCH_ENABLED === 'yes') {
-            setImmediate(() => dispatchHouseImageBuild(resident.id).catch(err =>
-                console.warn("House image Codemagic dispatch failed:", err.message)));
+            setImmediate(() => dispatchHouseImageBuild(resident.id)
+                .then(result => console.info('Signup house-image dispatch:',
+                    { resident_id: resident.id, status: result.status, build_id: result.build_id || null }))
+                .catch(err => console.warn("House image Codemagic dispatch failed:", err.message)));
         }
 
         return res.status(200).json({
