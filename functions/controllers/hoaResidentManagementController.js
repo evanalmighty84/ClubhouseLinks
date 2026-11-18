@@ -106,7 +106,7 @@ async function listResidents(req, res) {
                        AND ic.active = TRUE
                        AND ic.code_type = 'resident'
                        AND COALESCE(ic.grants_board_access, FALSE) = FALSE
-                     ORDER BY CASE WHEN UPPER(REGEXP_REPLACE(n.name, '[^a-zA-Z0-9]', '', 'g')) LIKE UPPER(ic.code) || '%' THEN 0 ELSE 1 END, LENGTH(ic.code) DESC, ic.id DESC LIMIT 1) AS invite_code
+                     ORDER BY CASE WHEN UPPER(ic.code) = UPPER(REGEXP_REPLACE(n.name, '[^a-zA-Z0-9]', '', 'g')) THEN 0 WHEN UPPER(ic.code) LIKE UPPER(REGEXP_REPLACE(n.name, '[^a-zA-Z0-9]', '', 'g')) || '%' THEN 1 ELSE 2 END, ic.id DESC LIMIT 1) AS invite_code
              FROM hoa_neighborhoods n WHERE n.id = $1 LIMIT 1`,
             [req.boardNeighborhoodId]);
         if (!community) return err(res, 404, 'Board community not found');
@@ -197,10 +197,14 @@ async function createResident(req, res) {
              WHERE neighborhood_id = $1 AND active = TRUE
                AND code_type = 'resident'
                AND COALESCE(grants_board_access, FALSE) = FALSE
-             ORDER BY CASE WHEN UPPER(REGEXP_REPLACE(
-                 (SELECT name FROM hoa_neighborhoods WHERE id = $1),
-                 '[^a-zA-Z0-9]', '', 'g')) LIKE UPPER(code) || '%'
-                 THEN 0 ELSE 1 END, LENGTH(code) DESC, id DESC LIMIT 1`,
+             ORDER BY CASE
+                 WHEN UPPER(code) = UPPER(REGEXP_REPLACE(
+                     (SELECT name FROM hoa_neighborhoods WHERE id = $1),
+                     '[^a-zA-Z0-9]', '', 'g')) THEN 0
+                 WHEN UPPER(code) LIKE UPPER(REGEXP_REPLACE(
+                     (SELECT name FROM hoa_neighborhoods WHERE id = $1),
+                     '[^a-zA-Z0-9]', '', 'g')) || '%' THEN 1
+                 ELSE 2 END, id DESC LIMIT 1`,
             [req.boardNeighborhoodId]);
         if (!invite) {
             await client.query('ROLLBACK');
