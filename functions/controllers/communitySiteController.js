@@ -75,11 +75,20 @@ exports.getCottonwoodCreekPublicContent = async (req, res) => {
                  ORDER BY starts_at DESC LIMIT 30`, [n.id]
             ),
             pool.query(
-                `SELECT company_name AS title, category,
-                        description, logo_url, website AS url
-                 FROM hoa_vendors
-                 WHERE neighborhood_id=$1 AND active=TRUE
-                 ORDER BY company_name LIMIT 60`, [n.id]
+                `SELECT v.company_name AS title, v.category,
+                        v.description, v.logo_url, v.website AS url
+                 FROM hoa_vendors v
+                 WHERE v.active = TRUE
+                   AND (
+                     v.neighborhood_id = $1
+                     OR EXISTS (
+                       SELECT 1 FROM hoa_community_vendors cv
+                       WHERE cv.vendor_id = v.id
+                         AND cv.neighborhood_id = $1
+                         AND cv.active = TRUE
+                     )
+                   )
+                 ORDER BY v.company_name LIMIT 60`, [n.id]
             )
         ]);
         res.set('Cache-Control', 'public, max-age=60, s-maxage=60');
