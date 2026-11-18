@@ -1876,6 +1876,16 @@ WHERE $1::int IS NOT NULL
                           AND neighbor.neighborhood_id = $1
                     )
 
+                    -- Shared community assignment keeps the vendor's canonical
+                    -- account and history while allowing multiple HOAs.
+                    OR EXISTS (
+                        SELECT 1
+                        FROM hoa_community_vendors cv
+                        WHERE cv.vendor_id = v.id
+                          AND cv.neighborhood_id = $1
+                          AND cv.active = TRUE
+                    )
+
                     -- Explicitly designated in this community through an invite.
                     OR EXISTS (
                         SELECT 1 FROM hoa_invite_codes ic
