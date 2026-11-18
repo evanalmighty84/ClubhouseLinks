@@ -437,10 +437,33 @@ exports.checkPhoneVerification = async (req, res)=> {
             });
         }
 
+        // A board credential is issued as part of the existing SMS verification.
+        // The board roster middleware still checks role and neighborhood per request.
+        let boardAccessToken = null;
+        const boardSecret = process.env.BOARD_RESIDENT_SESSION_SECRET || '';
+        if (boardSecret.length >= 32) {
+            const digits = phone.replace(/\D/g, '').slice(-10);
+            const boardResult = await pool.query(
+                `SELECT id, neighborhood_id FROM hoa_residents
+                 WHERE board_of_directors = TRUE AND approval_status = 'approved'
+                   AND RIGHT(REGEXP_REPLACE(COALESCE(phone, ''), '[^0-9]', '', 'g'), 10) = $1
+                 LIMIT 1`, [digits]);
+            if (boardResult.rows.length) {
+                const board = boardResult.rows[0];
+                boardAccessToken = jwt.sign(
+                    {scope: 'hoa:roster', neighborhood_id: board.neighborhood_id},
+                    boardSecret,
+                    {subject: String(board.id), algorithm: 'HS256',
+                     expiresIn: '7d', issuer: 'clubhouse-links-board',
+                     audience: 'hoa-roster'}
+                );
+            }
+        }
         return res.status(200).json({
             success: true,
             verified: true,
-            phone
+            phone,
+            ...(boardAccessToken ? {board_access_token: boardAccessToken} : {})
         });
     } catch (error) {
         console.error("CHECK PHONE VERIFICATION ERROR:", error);
