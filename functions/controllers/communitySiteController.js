@@ -40,6 +40,8 @@ async function announcementFeed(neighborhoodId) {
                 COALESCE(to_jsonb(a)->>'title', to_jsonb(a)->>'headline', 'Community update') AS title,
                 COALESCE(to_jsonb(a)->>'description', to_jsonb(a)->>'body',
                          to_jsonb(a)->>'message', '') AS description,
+                COALESCE(to_jsonb(a)->>'body', to_jsonb(a)->>'description',
+                         to_jsonb(a)->>'message', '') AS body,
                 COALESCE(to_jsonb(a)->>'published_at', to_jsonb(a)->>'created_at') AS published_at,
                 to_jsonb(a)->>'image_url' AS image_url
              FROM public.${table} a
