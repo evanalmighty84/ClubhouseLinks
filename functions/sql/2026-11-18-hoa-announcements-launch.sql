@@ -66,6 +66,8 @@ SELECT id, neighborhood_id, slug, title, status, published_at, image_url
 FROM public.hoa_announcements
 WHERE neighborhood_id = 68 AND slug = 'clubhouse-links-community-launch';
 
--- Review above then run COMMIT; in the same session.
--- COMMIT;
--- ROLLBACK;
+COMMIT;
+
+-- The public website reads this record automatically.
+-- Android/iOS read it through GET /residents/announcements/:residentId
+-- once the updated backend route has been deployed.
