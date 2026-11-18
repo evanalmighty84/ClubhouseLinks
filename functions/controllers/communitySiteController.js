@@ -5,11 +5,12 @@
 // unpublished event drafts, device tokens, or vendor contact information.
 const pool = require('../db/db');
 
-const ALLOWED_NAMES = [
-    'Cottonwood Creek',
-    'Cottonwood Creek Estates',
-    'Cottonwood Creek Community Association'
-];
+// Confirmed from hoa_neighborhoods in the user's database on 2026-11-18.
+// The association website is branded Cottonwood Creek; the existing row is
+// "Cottonwood Park". Bind the ID AND name to avoid returning another HOA's data
+// if records are ever renumbered. Do not rename the row in this read-only feed.
+const COTTONWOOD_NEIGHBORHOOD_ID = 68;
+const COTTONWOOD_DB_NAME = 'cottonwood park';
 
 async function announcementFeed(neighborhoodId) {
     // Database deployments may use a different announcement table name.
@@ -56,10 +57,11 @@ exports.getCottonwoodCreekPublicContent = async (req, res) => {
         const community = await pool.query(
             `SELECT id, name, city, state
              FROM hoa_neighborhoods
-             WHERE LOWER(BTRIM(name)) = ANY($1::text[])
-             ORDER BY id LIMIT 2`, [ALLOWED_NAMES.map(n => n.toLowerCase())]);
+             WHERE id = $1 AND LOWER(BTRIM(name)) = $2
+             LIMIT 1`,
+            [COTTONWOOD_NEIGHBORHOOD_ID, COTTONWOOD_DB_NAME]);
         if (community.rows.length !== 1) {
-            return res.status(community.rows.length ? 409 : 404).json({
+            return res.status(404).json({
                 error: 'Cottonwood Creek neighborhood mapping needs verification'
             });
         }
