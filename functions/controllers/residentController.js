@@ -1535,38 +1535,9 @@ exports.getVendors = async (req, res) => {
 
                 FROM hoa_residents r
 
-WHERE
-    (
-            $1::int IS NOT NULL
-            AND r.neighborhood_id = $1
-            )
+WHERE $1::int IS NOT NULL
+                  AND r.neighborhood_id = $1
 
-            OR
-
-            (
-            $2::numeric IS NOT NULL
-            AND $3::numeric IS NOT NULL
-            AND r.latitude IS NOT NULL
-            AND r.longitude IS NOT NULL
-            AND (
-            3959 * acos(
-            LEAST(
-            1,
-            GREATEST(
-            -1,
-            cos(radians($2::numeric)) *
-            cos(radians(r.latitude::numeric)) *
-            cos(
-            radians(r.longitude::numeric) -
-            radians($3::numeric)
-            ) +
-            sin(radians($2::numeric)) *
-            sin(radians(r.latitude::numeric))
-            )
-            )
-            )
-            ) <= $4::numeric
-            )
             ),
 
             /*
@@ -1779,11 +1750,8 @@ WHERE
             ) ranked
 
             WHERE ranked.row_num <= 5
-              AND (
-                  ($1::int IS NOT NULL AND ranked.neighborhood_id = $1::int)
-                  OR ($2::numeric IS NOT NULL AND $3::numeric IS NOT NULL
-                      AND ranked.distance_miles <= $4::numeric)
-              )
+              AND $1::int IS NOT NULL
+              AND ranked.neighborhood_id = $1::int
 
             GROUP BY ranked.vendor_id
             ),
@@ -1890,37 +1858,37 @@ WHERE
                     ON nvp.vendor_id = v.id
 
             WHERE
-            v.active = TRUE
-            AND (
-            /*
-             * Existing behavior:
-             * global vendors or vendors assigned
-             * directly to this resident's neighborhood.
-             */
-            $1::int IS NULL
-            OR v.neighborhood_id = $1
-            OR v.neighborhood_id IS NULL
+                v.active = TRUE
+                AND $1::int IS NOT NULL
+                AND (
+                    -- Assigned directly to this HOA.
+                    v.neighborhood_id = $1
 
-            /*
-             * Street Fair exception:
-             * the vendor may belong to a different
-             * neighborhood normally, but has been
-             * explicitly invited to this neighborhood's
-             * active Street Fair.
-             */
-            OR EXISTS (
-            SELECT 1
-            FROM hoa_street_fair_vendors sfv
+                    -- Uploaded/used by a resident who belongs to this HOA.
+                    OR EXISTS (
+                        SELECT 1
+                        FROM hoa_resident_contractors used
+                        JOIN hoa_residents neighbor ON neighbor.id = used.resident_id
+                        WHERE used.vendor_id = v.id
+                          AND neighbor.neighborhood_id = $1
+                    )
 
-            INNER JOIN hoa_neighborhoods n
-            ON n.id = sfv.neighborhood_id
+                    -- Explicitly designated in this community through an invite.
+                    OR EXISTS (
+                        SELECT 1 FROM hoa_invite_codes ic
+                        WHERE ic.vendor_id = v.id
+                          AND ic.neighborhood_id = $1
+                          AND ic.active = TRUE
+                    )
 
-            WHERE sfv.vendor_id = v.id
-            AND sfv.neighborhood_id = $1
-            AND sfv.active = TRUE
-            AND n.resident_home_mode = 'street_fair'
-            )
-            )
+                    -- Explicitly selected for this community's Street Fair.
+                    OR EXISTS (
+                        SELECT 1 FROM hoa_street_fair_vendors sfv
+                        WHERE sfv.vendor_id = v.id
+                          AND sfv.neighborhood_id = $1
+                          AND sfv.active = TRUE
+                    )
+                )
                 GROUP BY
                     v.id,
                     v.neighborhood_id,
