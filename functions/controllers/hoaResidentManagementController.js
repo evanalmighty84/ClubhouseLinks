@@ -164,4 +164,87 @@ async function updateResident(req, res) {
         return err(res, 500, 'Unable to update resident');
     }
 }
-module.exports = {beginSession, verifySession, requireBoardSession, listResidents, updateResident};
+
+/**
+ * A verified board member may register a resident only in their own HOA.
+ * Approval is immediate, but this does not verify ownership of the resident's
+ * phone number. The resident must complete SMS verification in the normal app.
+ */
+async function createResident(req, res) {
+    const input = req.body || {};
+    const allowed = ['first_name', 'last_name', 'phone', 'address'];
+    if (Object.keys(input).some(k => !allowed.includes(k)))
+        return err(res, 400, 'Only resident name, phone and address may be supplied');
+
+    const first = typeof input.first_name === 'string' ? input.first_name.trim() : '';
+    const last = typeof input.last_name === 'string' ? input.last_name.trim() : '';
+    const phone = phoneE164(input.phone);
+    const address = typeof input.address === 'string' ? input.address.trim() : '';
+    if (!first || first.length > 80 || !last || last.length > 80)
+        return err(res, 400, 'First and last name are required (maximum 80 characters each)');
+    if (!phone) return err(res, 400, 'A valid US mobile number is required');
+    if (!address || address.length > 500)
+        return err(res, 400, 'A home address is required (maximum 500 characters)');
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        // Lock the community/phone pair to avoid two simultaneous duplicate imports.
+        await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',
+            [String(req.boardNeighborhoodId) + ':' + phone]);
+        const {rows: [invite]} = await client.query(
+            `SELECT code FROM hoa_invite_codes
+             WHERE neighborhood_id = $1 AND active = TRUE
+               AND code_type = 'resident'
+               AND COALESCE(grants_board_access, FALSE) = FALSE
+             ORDER BY CASE WHEN UPPER(REGEXP_REPLACE(
+                 (SELECT name FROM hoa_neighborhoods WHERE id = $1),
+                 '[^a-zA-Z0-9]', '', 'g')) LIKE UPPER(code) || '%'
+                 THEN 0 ELSE 1 END, LENGTH(code) DESC, id DESC LIMIT 1`,
+            [req.boardNeighborhoodId]);
+        if (!invite) {
+            await client.query('ROLLBACK');
+            return err(res, 409, 'No active resident invite code for this community');
+        }
+        const normalizedDigits = phone.slice(2);
+        const {rows: [existing]} = await client.query(
+            `SELECT id FROM hoa_residents
+             WHERE neighborhood_id = $1
+               AND RIGHT(REGEXP_REPLACE(COALESCE(phone, ''), '[^0-9]', '', 'g'), 10) = $2
+             LIMIT 1`,
+            [req.boardNeighborhoodId, normalizedDigits]);
+        if (existing) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({
+                error: 'A resident with this phone already exists in this community',
+                resident_id: existing.id
+            });
+        }
+        const {rows: [resident]} = await client.query(
+            `INSERT INTO hoa_residents
+                (first_name, last_name, phone, address, neighborhood_id,
+                 approval_status, sms_verified, approved_at, access_level,
+                 invite_code_used, board_of_directors)
+             VALUES ($1, $2, $3, $4, $5, 'approved', FALSE, NOW(),
+                     'verified_neighborhood', $6, FALSE)
+             RETURNING id, first_name, last_name, phone, address,
+                       neighborhood_id, approval_status, sms_verified,
+                       invite_code_used, board_of_directors`,
+            [first, last, normalizedDigits, address, req.boardNeighborhoodId, invite.code]);
+        await client.query('UPDATE hoa_invite_codes SET used_count = COALESCE(used_count, 0) + 1 WHERE code = $1',
+            [invite.code]);
+        await client.query('COMMIT');
+        return res.status(201).json({
+            success: true, resident,
+            message: 'Resident approved. Phone verification is required at first sign-in.'
+        });
+    } catch (e) {
+        await client.query('ROLLBACK').catch(() => {});
+        console.error('Board resident creation failed:', e?.code || e?.name);
+        return err(res, 500, 'Unable to create resident');
+    } finally {
+        client.release();
+    }
+}
+
+module.exports = {beginSession, verifySession, requireBoardSession, listResidents, updateResident, createResident};
