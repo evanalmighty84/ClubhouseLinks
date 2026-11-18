@@ -317,7 +317,7 @@ async function extractDirectory(req, res) {
                 method: 'POST',
                 headers: {'Authorization':'Bearer ' + process.env.PERPLEXITY_API_KEY,
                           'Content-Type':'application/json'},
-                body: JSON.stringify({model: 'openai/gpt-5.6', input: [{role:'user', content:userContent}]}),
+                body: JSON.stringify({model: 'perplexity/sonar', input: [{role:'user', content:userContent}]}),
                 signal: controller.signal
             });
         } finally {clearTimeout(timer)}
