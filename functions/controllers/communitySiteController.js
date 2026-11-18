@@ -73,6 +73,7 @@ async function announcementFeed(neighborhoodId) {
         // The two table names and community columns above are fixed whitelists.
         const result = await pool.query(
             `SELECT
+                COALESCE((to_jsonb(a)->>'id')::int, 0) AS id,
                 COALESCE(to_jsonb(a)->>'title', to_jsonb(a)->>'headline', 'Community update') AS title,
                 COALESCE(to_jsonb(a)->>'description', to_jsonb(a)->>'body',
                          to_jsonb(a)->>'message', '') AS description,
