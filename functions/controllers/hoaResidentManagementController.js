@@ -97,6 +97,19 @@ async function requireBoardSession(req, res, next) {
 }
 async function listResidents(req, res) {
     try {
+        // Resolve the invite code from the verified board member's neighborhood,
+        // never from a client-provided neighborhood ID or hardcoded HOA name.
+        const {rows: [community]} = await pool.query(
+            `SELECT n.id AS neighborhood_id, n.name AS neighborhood_name,
+                    (SELECT ic.code FROM hoa_invite_codes ic
+                     WHERE ic.neighborhood_id = n.id
+                       AND ic.active = TRUE
+                       AND ic.code_type = 'resident'
+                       AND COALESCE(ic.grants_board_access, FALSE) = FALSE
+                     ORDER BY ic.id LIMIT 1) AS invite_code
+             FROM hoa_neighborhoods n WHERE n.id = $1 LIMIT 1`,
+            [req.boardNeighborhoodId]);
+        if (!community) return err(res, 404, 'Board community not found');
         const {rows} = await pool.query(
             `SELECT id, first_name, last_name, approval_status, board_of_directors,
                 created_at
@@ -104,7 +117,7 @@ async function listResidents(req, res) {
              WHERE neighborhood_id = $1
              ORDER BY last_name NULLS LAST, first_name NULLS LAST, id
              LIMIT 500`, [req.boardNeighborhoodId]);
-        return res.json({success: true, residents: rows});
+        return res.json({success: true, community, residents: rows});
     } catch (e) {
         console.error('Board resident listing failed:', e?.code || e?.name);
         return err(res, 500, 'Unable to load residents');
