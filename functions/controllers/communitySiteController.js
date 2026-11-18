@@ -11,43 +11,6 @@ const pool = require('../db/db');
 const COTTONWOOD_NEIGHBORHOOD_ID = 68;
 const COTTONWOOD_DB_NAME = 'cottonwood creek';
 
-const APP_DOWNLOAD_URL = 'https://evanalmighty84.github.io/CottonwoodCreekCommunity/#app';
-const QR_IMAGE_URL = 'https://api.qrserver.com/v1/create-qr-code/?size=480x480&margin=20&data='
-    + encodeURIComponent(APP_DOWNLOAD_URL);
-
-// Official launch update shared by the public website and both resident apps.
-// Keep this in one place so all three surfaces display the same announcement.
-const APP_LAUNCH_ANNOUNCEMENT = Object.freeze({
-    id: 680001,
-    neighborhood_id: COTTONWOOD_NEIGHBORHOOD_ID,
-    title: 'Cottonwood Creek, Your Neighborhood Is Now Connected!',
-    body: 'Meet Clubhouse Links — your new community platform!\n\n'
-        + 'NEIGHBOR TO NEIGHBOR: Explore the neighborhood directory and connect with the people who make Cottonwood Creek home.\n\n'
-        + 'WHO MY NEIGHBORS ARE USING: Discover local service providers recommended through neighbors\' real projects.\n\n'
-        + 'SHOW OFF YOUR WORK: Share completed home improvements and photos so others can see the results.\n\n'
-        + 'STAY IN THE KNOW: Follow community news, upcoming get-togethers, game nights, cigar nights, wine nights, and other neighborhood activities as they are announced.\n\n'
-        + 'SCAN THE QR CODE to find the app download links. Available on iPhone; Google Play coming soon!',
-    image_url: QR_IMAGE_URL,
-    url: APP_DOWNLOAD_URL,
-    published_at: '2026-11-18T22:00:00.000Z'
-});
-
-function combinedAnnouncements(neighborhoodId, existing) {
-    const items = existing.map(item => ({
-        ...item,
-        body: item.body || item.description || '',
-        description: item.description || item.body || ''
-    }));
-    if (neighborhoodId === COTTONWOOD_NEIGHBORHOOD_ID) {
-        return [{
-            ...APP_LAUNCH_ANNOUNCEMENT,
-            description: APP_LAUNCH_ANNOUNCEMENT.body
-        }, ...items.filter(item => Number(item.id) !== APP_LAUNCH_ANNOUNCEMENT.id)];
-    }
-    return items;
-}
-
-
 async function announcementFeed(neighborhoodId) {
     // Database deployments may use a different announcement table name.
     // Never publish unknown rows without a positive published flag.
@@ -103,7 +66,7 @@ exports.getCottonwoodCreekPublicContent = async (req, res) => {
             });
         }
         const n = community.rows[0];
-        const [storedAnnouncements, events, vendors] = await Promise.all([
+        const [announcements, events, vendors] = await Promise.all([
             announcementFeed(n.id),
             pool.query(
                 `SELECT title, description, address, starts_at, ends_at,
@@ -132,7 +95,7 @@ exports.getCottonwoodCreekPublicContent = async (req, res) => {
         res.set('Cache-Control', 'public, max-age=60, s-maxage=60');
         return res.json({
             neighborhood: { name: n.name, city: n.city, state: n.state },
-            announcements: combinedAnnouncements(n.id, storedAnnouncements),
+            announcements,
             events: events.rows,
             vendors: vendors.rows
         });
@@ -163,7 +126,7 @@ exports.getResidentAnnouncements = async (req, res) => {
         res.set('Cache-Control', 'private, no-store');
         return res.json({
             success: true,
-            announcements: combinedAnnouncements(neighborhoodId, announcements)
+            announcements
         });
     } catch (err) {
         console.error('Resident announcements query failed:', err?.code || err?.message);
