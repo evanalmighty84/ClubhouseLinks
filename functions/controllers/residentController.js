@@ -2226,7 +2226,7 @@ exports.getResidentProfile = async (req, res) => {
                     n.city AS neighborhood_city,
                     n.state AS neighborhood_state
                 FROM hoa_residents r
-                         JOIN hoa_neighborhoods n
+                         LEFT JOIN hoa_neighborhoods n
                               ON n.id = r.neighborhood_id
                 WHERE r.id = $1
                     LIMIT 1
