@@ -2,6 +2,12 @@
 const express = require("express");
 
 const router = express.Router();
+const { getCottonwoodCreekPublicContent } =
+    require('../controllers/communitySiteController');
+
+// Public published-only feed for the Cottonwood Creek GitHub Pages site.
+router.get('/community-sites/cottonwood-creek', getCottonwoodCreekPublicContent);
+
 
 const {
     validateInviteCode,
