@@ -1747,6 +1747,8 @@ WHERE $1::int IS NOT NULL
             'approved',
             'pending_review'
             )
+            AND $1::int IS NOT NULL
+            AND r.neighborhood_id = $1
             ) ranked
 
             WHERE ranked.row_num <= 5
