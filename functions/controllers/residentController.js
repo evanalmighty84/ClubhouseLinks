@@ -2082,7 +2082,8 @@ exports.loginResident = async (req, res) => {
             FROM hoa_residents r
             JOIN hoa_neighborhoods n
                 ON n.id = r.neighborhood_id
-            WHERE r.phone = $1
+            WHERE RIGHT(REGEXP_REPLACE(COALESCE(r.phone, ''), '[^0-9]', '', 'g'), 10)
+                  = RIGHT(REGEXP_REPLACE(COALESCE($1::text, ''), '[^0-9]', '', 'g'), 10)
             LIMIT 1
             `,
             [phone]
