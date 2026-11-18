@@ -1769,6 +1769,11 @@ WHERE
             ) ranked
 
             WHERE ranked.row_num <= 5
+              AND (
+                  ($1::int IS NOT NULL AND ranked.neighborhood_id = $1::int)
+                  OR ($2::numeric IS NOT NULL AND $3::numeric IS NOT NULL
+                      AND ranked.distance_miles <= $4::numeric)
+              )
 
             GROUP BY ranked.vendor_id
             ),
