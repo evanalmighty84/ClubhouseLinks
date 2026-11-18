@@ -260,7 +260,7 @@ function normalizedImportRow(row) {
     return Object.fromEntries(importFields.map(key => [key, value(key)]));
 }
 function extractJson(text) {
-    const plain = String(text || '').replace(/^\`\`\`(?:json)?\\s*/i, '').replace(/\`\`\`\\s*$/, '');
+    const plain = String(text || '').replace(/^\`\`\`(?:json)?\s*/i, '').replace(/\`\`\`\s*$/, '');
     const start = plain.indexOf('{');
     const end = plain.lastIndexOf('}');
     if (start < 0 || end < start) throw new Error('Document extraction did not return JSON');
@@ -274,7 +274,7 @@ async function extractDirectory(req, res) {
     const {filename, mime_type, data_base64} = req.body || {};
     if (typeof filename !== 'string' || filename.length > 150 ||
         typeof data_base64 !== 'string' || data_base64.length > 8500000 ||
-        !/^[A-Za-z0-9+/=\\r\\n]+$/.test(data_base64))
+        !/^[A-Za-z0-9+/=\r\n]+$/.test(data_base64))
         return err(res, 400, 'Invalid or oversized upload (maximum 6 MB)');
     const extension = filename.toLowerCase().split('.').pop();
     if (!['csv', 'xlsx', 'pdf', 'png', 'jpg', 'jpeg'].includes(extension))
@@ -328,7 +328,7 @@ async function extractDirectory(req, res) {
         const output = await reply.json();
         const text = (output.output || []).filter(item => item.type === 'message')
             .flatMap(item => item.content || []).filter(item => item.type === 'output_text')
-            .map(item => item.text).join('\\n');
+            .map(item => item.text).join('\n');
         const rows = extractJson(text).slice(0, 100).map(normalizedImportRow);
         return res.json({success:true, residents: rows, total_extracted:rows.length,
             message:'Review all extracted residents before importing; no records were saved.'});
