@@ -82,6 +82,7 @@ const otpThrottle = rateLimit({
 router.post('/:boardId/resident-roster/session/start', otpThrottle, roster.beginSession);
 router.post('/:boardId/resident-roster/session/verify', otpThrottle, roster.verifySession);
 router.get('/:boardId/resident-roster', roster.requireBoardSession, roster.listResidents);
+router.post('/:boardId/resident-roster', roster.requireBoardSession, roster.createResident);
 router.patch('/:boardId/resident-roster/:targetId',
     roster.requireBoardSession, roster.updateResident);
 
