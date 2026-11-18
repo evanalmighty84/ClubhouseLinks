@@ -440,7 +440,7 @@ exports.checkPhoneVerification = async (req, res)=> {
         // A board credential is issued as part of the existing SMS verification.
         // The board roster middleware still checks role and neighborhood per request.
         let boardAccessToken = null;
-        const boardSecret = process.env.BOARD_RESIDENT_SESSION_SECRET || '';
+        const boardSecret = process.env.JWT_SECRET || '';
         if (boardSecret.length >= 32) {
             const digits = phone.replace(/\D/g, '').slice(-10);
             const boardResult = await pool.query(
