@@ -69,4 +69,20 @@ router.post(
 );
 
 
+// Privileged roster operations require a fresh SMS-verified board session.
+// A board ID in the URL is NOT authorization; middleware validates bearer token,
+// board role, and neighborhood at request time.
+const roster = require('../controllers/hoaResidentManagementController');
+const {rateLimit} = require('express-rate-limit');
+const otpThrottle = rateLimit({
+    windowMs: 15 * 60 * 1000, limit: 5,
+    standardHeaders: 'draft-8', legacyHeaders: false,
+    message: {error: 'Too many verification requests. Try later.'}
+});
+router.post('/:boardId/resident-roster/session/start', otpThrottle, roster.beginSession);
+router.post('/:boardId/resident-roster/session/verify', otpThrottle, roster.verifySession);
+router.get('/:boardId/resident-roster', roster.requireBoardSession, roster.listResidents);
+router.patch('/:boardId/resident-roster/:targetId',
+    roster.requireBoardSession, roster.updateResident);
+
 module.exports = router;
