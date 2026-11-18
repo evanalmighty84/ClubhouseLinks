@@ -106,7 +106,7 @@ async function listResidents(req, res) {
                        AND ic.active = TRUE
                        AND ic.code_type = 'resident'
                        AND COALESCE(ic.grants_board_access, FALSE) = FALSE
-                     ORDER BY CASE WHEN UPPER(ic.code) = UPPER(REGEXP_REPLACE(n.name, '[^a-zA-Z0-9]', '', 'g')) THEN 0 ELSE 1 END, ic.id DESC LIMIT 1) AS invite_code
+                     ORDER BY CASE WHEN UPPER(REGEXP_REPLACE(n.name, '[^a-zA-Z0-9]', '', 'g')) LIKE UPPER(ic.code) || '%' THEN 0 ELSE 1 END, LENGTH(ic.code) DESC, ic.id DESC LIMIT 1) AS invite_code
              FROM hoa_neighborhoods n WHERE n.id = $1 LIMIT 1`,
             [req.boardNeighborhoodId]);
         if (!community) return err(res, 404, 'Board community not found');
