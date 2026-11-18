@@ -1291,35 +1291,38 @@ exports.updateResidentAddress = async (req, res) => {
         let generatedAreaId = null;
         let displayAreaName = null;
 
+        // HOA residents keep their existing neighborhood membership; only
+        // contractor/generated-area residents require area creation.
+        const existing = await pool.query(
+            'SELECT neighborhood_id FROM hoa_residents WHERE id = $1',
+            [residentId]
+        );
+        if (!existing.rows.length) {
+            return res.status(404).json({ success: false, error: 'Resident not found.' });
+        }
+        const hasHoaNeighborhood = existing.rows[0].neighborhood_id != null;
         try {
-            const {
-                geo,
-                generatedArea
-            } = await getOrCreateGeneratedAreaForAddress(
-                cleanAddress
-            );
-
-            latitude = geo?.lat ?? null;
-            longitude = geo?.lng ?? null;
-            generatedAreaId = generatedArea?.id ?? null;
-
-            displayAreaName =
+            const { geo, generatedArea } = hasHoaNeighborhood
+                ? { geo: await geocodeAddressWithAppleMaps(cleanAddress), generatedArea: null }
+                : await getOrCreateGeneratedAreaForAddress(cleanAddress);
+            const lat = geo?.lat, lng = geo?.lng;
+            if (Number.isFinite(lat) && Number.isFinite(lng) &&
+                lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                latitude = lat;
+                longitude = lng;
+            }
+            generatedAreaId = hasHoaNeighborhood ? null : generatedArea?.id ?? null;
+            displayAreaName = hasHoaNeighborhood ? null :
                 generatedArea?.area_name ||
                 geo?.display_area_name ||
-                buildDisplayAreaName(
-                    geo?.city,
-                    geo?.state
-                ) ||
-                null;
+                buildDisplayAreaName(geo?.city, geo?.state) ||
+                getDisplayAreaFromAddressFallback(cleanAddress);
         } catch (geoErr) {
-            console.error(
-                "updateResidentAddress generated area lookup failed:",
-                geoErr
-            );
-
-            displayAreaName =
-                getDisplayAreaFromAddressFallback(cleanAddress) ||
-                null;
+            console.warn('Resident address geocoding failed:',
+                geoErr?.code || geoErr?.message || 'Unknown error');
+            if (!hasHoaNeighborhood) {
+                displayAreaName = getDisplayAreaFromAddressFallback(cleanAddress);
+            }
         }
 
         const result = await pool.query(
