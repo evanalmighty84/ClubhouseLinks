@@ -1494,8 +1494,6 @@ exports.getVendors = async (req, res) => {
             }
         }
 
-        const radiusMiles = 7;
-
         const vendorsResult = await pool.query(
             `
             WITH area_residents AS (
@@ -1945,8 +1943,7 @@ WHERE $1::int IS NOT NULL
             [
                 resident.neighborhood_id || null,
                 resident.latitude || null,
-                resident.longitude || null,
-                radiusMiles
+                resident.longitude || null
             ]
         );
 
