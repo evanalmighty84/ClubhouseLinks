@@ -1778,7 +1778,8 @@ WHERE $1::int IS NOT NULL
                      * This remains our star / reputation count.
                      */
                     COUNT(
-                        DISTINCT vr.resident_id
+                        DISTINCT CASE WHEN ar.id IS NOT NULL
+                            THEN vr.resident_id END
                     )::int AS signup_count,
 
                     /*
