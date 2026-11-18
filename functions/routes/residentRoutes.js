@@ -2,11 +2,14 @@
 const express = require("express");
 
 const router = express.Router();
-const { getCottonwoodCreekPublicContent } =
+const { getCottonwoodCreekPublicContent, getResidentAnnouncements } =
     require('../controllers/communitySiteController');
 
 // Public published-only feed for the Cottonwood Creek GitHub Pages site.
 router.get('/community-sites/cottonwood-creek', getCottonwoodCreekPublicContent);
+
+// Published HOA announcements for iOS and Android resident home screens.
+router.get('/announcements/:residentId', getResidentAnnouncements);
 
 
 const {
