@@ -4,7 +4,14 @@ const app = express();
 // ⭐ ADD THESE TWO LINES BEFORE ANY ROUTES ⭐
 // Needed for resident completed-project photo uploads.
 // Base64 images are larger than the original photo.
-app.use(express.json({ limit: '35mb' }));
+app.use(express.json({
+    limit: '35mb',
+    verify(req, res, buf) {
+        if (req.path === '/server/crm_function/api/webhooks/zoho-mail') {
+            req.zohoRawBody = Buffer.from(buf);
+        }
+    }
+}));
 app.use(express.urlencoded({ extended: true, limit: '35mb' }));
 
 // Clean JSON error instead of raw HTML when payload is too large.
