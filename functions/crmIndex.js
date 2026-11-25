@@ -103,6 +103,9 @@ app.use('/api/nextdoor', nextDoorRoutes);
 
 app.use('/api/ftn', ftnRoutes);
 
+// Sales prospect pipeline (disabled until storage is provisioned).
+app.use('/api', require('./routes/salesProspectRoutes'));
+
 
 app.use('/api/test', (req, res) => {
     res.send('✅ CRM app is responding');
