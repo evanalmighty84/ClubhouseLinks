@@ -39,7 +39,8 @@ app.use(cors()); // Enable CORS
 
 // Global logging middleware
 app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+    const safeUrl = req.path === '/api/webhooks/zoho-mail' ? req.originalUrl.split('?')[0] : req.originalUrl;
+    console.log(`[${new Date().toISOString()}] ${req.method} ${safeUrl}`);
     next(); // Pass control to the next middleware or route handler
 });
 
