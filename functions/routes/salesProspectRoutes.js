@@ -46,7 +46,67 @@ function webhook(provider, env) {
   })];
 }
 router.post('/webhooks/zeptomail', ...webhook('zeptomail','ZEPTOMAIL_WEBHOOK_SECRET'));
-router.post('/webhooks/zoho-mail', ...webhook('zoho-mail','ZOHO_MAIL_WEBHOOK_SECRET'));
+// Zoho Mail supplies its own signing key on the first request. Enrollment
+// is authorized by a separate URL token and can never overwrite a saved key.
+const zohoRegistrationProvider = 'zoho-mail-registration';
+const zohoRegistrationKey = 'signing-key-v1';
+function equalSecret(a,b) {
+  const hash = v => crypto.createHash('sha256').update(v).digest();
+  return crypto.timingSafeEqual(hash(a),hash(b));
+}
+function zohoSignatureValid(key,raw,signature) {
+  return Buffer.isBuffer(raw) && typeof signature === 'string' &&
+    equalSecret(crypto.createHmac('sha256',key).update(raw).digest('base64'),signature);
+}
+function zohoEncryptionKey(token) {
+  return crypto.createHash('sha256').update('zoho-mail-signing-key-v1:'+token).digest();
+}
+function sealZohoKey(key,token) {
+  const iv=crypto.randomBytes(12);
+  const cipher=crypto.createCipheriv('aes-256-gcm',zohoEncryptionKey(token),iv);
+  const data=Buffer.concat([cipher.update(key,'utf8'),cipher.final()]);
+  return {iv:iv.toString('base64'),tag:cipher.getAuthTag().toString('base64'),data:data.toString('base64')};
+}
+function openZohoKey(payload,token) {
+  const decipher=crypto.createDecipheriv('aes-256-gcm',zohoEncryptionKey(token),Buffer.from(payload.iv,'base64'));
+  decipher.setAuthTag(Buffer.from(payload.tag,'base64'));
+  return Buffer.concat([decipher.update(Buffer.from(payload.data,'base64')),decipher.final()]).toString('utf8');
+}
+router.post('/webhooks/zoho-mail', wrap(async(req,res)=>{
+  const token=process.env.ZOHO_MAIL_WEBHOOK_SECRET;
+  if (!token) return res.status(503).json({error:'Integration not configured'});
+  const proposed=req.get('x-hook-secret');
+  const signature=req.get('x-hook-signature');
+  const raw=req.zohoRawBody;
+  const configured=process.env.ZOHO_MAIL_SIGNING_SECRET;
+  const saved=await pool.query('SELECT payload FROM sales_prospect_webhook_events WHERE provider=$1 AND event_key=$2',[zohoRegistrationProvider,zohoRegistrationKey]);
+  let signingKey=configured || (saved.rows.length ? openZohoKey(saved.rows[0].payload,token) : null);
+  if (proposed) {
+    if (signingKey) {
+      // Permit only a retry of the original enrollment, never replacement.
+      if (typeof req.query.enroll !== 'string' || !equalSecret(req.query.enroll,token) ||
+          !equalSecret(proposed,signingKey) || (signature && !zohoSignatureValid(signingKey,raw,signature)))
+        return res.status(401).json({error:'Unauthorized'});
+    } else {
+      if (typeof req.query.enroll !== 'string' || !equalSecret(req.query.enroll,token) ||
+          proposed.length > 4096 || (signature && !zohoSignatureValid(proposed,raw,signature)))
+        return res.status(401).json({error:'Unauthorized'});
+      const encrypted=sealZohoKey(proposed,token);
+      await pool.query("INSERT INTO sales_prospect_webhook_events (provider,event_key,payload,processing_status) VALUES ($1,$2,$3::jsonb,'ignored') ON CONFLICT (provider,event_key) DO NOTHING",[zohoRegistrationProvider,zohoRegistrationKey,JSON.stringify(encrypted)]);
+      const persisted=await pool.query('SELECT payload FROM sales_prospect_webhook_events WHERE provider=$1 AND event_key=$2',[zohoRegistrationProvider,zohoRegistrationKey]);
+      signingKey=openZohoKey(persisted.rows[0].payload,token);
+      if (!equalSecret(proposed,signingKey)) return res.status(401).json({error:'Unauthorized'});
+    }
+    res.set('x-hook-secret',proposed);
+    return res.status(200).json({received:true});
+  }
+  if (!signingKey || !zohoSignatureValid(signingKey,raw,signature)) return res.status(401).json({error:'Unauthorized'});
+  // Preserve the original JSON text, including large numeric message IDs.
+  if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) return res.status(400).json({error:'JSON object required'});
+  const key=crypto.createHash('sha256').update('zoho-mail:').update(raw).digest('hex');
+  await pool.query('INSERT INTO sales_prospect_webhook_events (provider,event_key,payload) VALUES ($1,$2,$3::jsonb) ON CONFLICT (provider,event_key) DO NOTHING',['zoho-mail',key,raw.toString('utf8')]);
+  return res.status(200).json({received:true});
+}));
 router.use('/prospects', admin);
 router.get('/prospects/followups',wrap(async(req,res)=>{
   const {rows}=await pool.query("SELECT * FROM sales_prospects WHERE next_followup_at IS NOT NULL AND status NOT IN ('won','lost','closed') ORDER BY next_followup_at,id LIMIT 500");
