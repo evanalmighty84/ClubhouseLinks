@@ -35,17 +35,79 @@ function body(req,res,next) {
   if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) return res.status(400).json({error:'JSON object required'});
   next();
 }
-function webhook(provider, env) {
-  return [secret(env,'X-Webhook-Secret'),body,wrap(async(req,res)=>{
-    // Keep the original payload for later normalization; deduplicate exact retries.
-    const canonical = v => Array.isArray(v) ? v.map(canonical) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])) : v;
-    const payload = JSON.stringify(canonical(req.body));
-    const key = crypto.createHash('sha256').update(provider+':'+payload).digest('hex');
-    await pool.query('INSERT INTO sales_prospect_webhook_events (provider,event_key,payload) VALUES ($1,$2,$3::jsonb) ON CONFLICT (provider,event_key) DO NOTHING',[provider,key,payload]);
-    res.status(200).json({received:true});
-  })];
+// Only explicitly registered outreach recipients qualify for email storage.
+function normalizeEmail(value) {
+  if (typeof value !== 'string') return null;
+  const email=value.trim().toLowerCase();
+  return email.length <= 254 && /^[^\s@<>;,]+@[^\s@<>;,]+\.[^\s@<>;,]+$/.test(email) ? email : null;
 }
-router.post('/webhooks/zeptomail', ...webhook('zeptomail','ZEPTOMAIL_WEBHOOK_SECRET'));
+async function verifiedRecipients(emails) {
+  const normalized=[...new Set(emails.map(normalizeEmail).filter(Boolean))];
+  if (!normalized.length) return new Map();
+  const {rows}=await pool.query('SELECT email,prospect_id FROM sales_prospect_verified_recipients WHERE is_active=true AND email=ANY($1::text[])',[normalized]);
+  return new Map(rows.map(row=>[row.email,row]));
+}
+function array(value) { return Array.isArray(value) ? value : []; }
+function string(value) { return typeof value === 'string' ? value : null; }
+function eventTime(value,fallback) {
+  if (typeof value !== 'string' && typeof value !== 'number') return fallback;
+  const date=new Date(value);
+  return Number.isFinite(date.getTime()) ? date.toISOString() : fallback;
+}
+async function storeVerifiedEvent(client, event) {
+  // Only normalized, allowlisted fields are retained, never the original batch.
+  const {provider,email,prospect_id,type,sender,subject,message_id,payload}=event;
+  const serialized=JSON.stringify(payload);
+  const key=crypto.createHash('sha256').update(provider+':'+email+':'+serialized).digest('hex');
+  const result=await client.query('INSERT INTO sales_prospect_webhook_events (provider,event_key,payload,prospect_id,event_type,recipient_email,sender_email,subject,message_id) VALUES ($1,$2,$3::jsonb,$4,$5,$6,$7,$8,$9) ON CONFLICT (provider,event_key) DO NOTHING',[provider,key,serialized,prospect_id,type,provider==='zeptomail'?email:null,sender,subject,message_id]);
+  return result.rowCount;
+}
+function explicitEventRecipient(detail) {
+  return normalizeEmail(detail.bounced_recipient || detail.delivered_recipient ||
+    detail.recipient_email || detail.recipient_address || detail.recipient ||
+    detail.email_address?.address || detail.email_address);
+}
+router.post('/webhooks/zeptomail',secret('ZEPTOMAIL_WEBHOOK_SECRET','X-Webhook-Secret'),body,wrap(async(req,res)=>{
+  const candidates=[];
+  for (const msg of array(req.body.event_message)) {
+    const info=msg?.email_info;
+    if (!info || typeof info !== 'object') continue;
+    const sender=normalizeEmail(info.from?.address);
+    // Exclude verification fixtures; only SMTP traffic can be our scripts.
+    if (sender==='webhooktest@zylker.com' || info.subject==='webhook test email' || info.is_smtp_trigger!==true) continue;
+    const allAddresses=[...array(info.to),...array(info.cc),...array(info.bcc)].map(x=>normalizeEmail(x?.email_address?.address));
+    const recipients=[...new Set(allAddresses.filter(Boolean))];
+    for (const data of array(msg.event_data)) {
+      if (!data || typeof data.object!=='string') continue;
+      for (const detail of array(data.details)) {
+        if (!detail || typeof detail!=='object') continue;
+        const explicit=explicitEventRecipient(detail);
+        // Do not guess which recipient opened or clicked a multi-address email.
+        const email=explicit || (recipients.length===1 && allAddresses.every(Boolean) ? recipients[0] : null);
+        if (!email || !recipients.includes(email)) continue;
+        const message_id=string(info.email_reference)||string(msg.request_id);
+        if (!message_id) continue;
+        const type=data.object;
+        candidates.push({provider:'zeptomail',email,type,sender,subject:string(info.subject),message_id,
+          payload:{event_name:[type],message_id,recipient_email:email,event_time:eventTime(detail.time,eventTime(info.processed_time,null)),
+            reason:string(detail.reason),diagnostic_message:string(detail.diagnostic_message)}});
+      }
+    }
+  }
+  const verified=await verifiedRecipients(candidates.map(e=>e.email));
+  let inserted=0;
+  const client=await pool.connect();
+  try {
+    await client.query('BEGIN');
+    for (const event of candidates) {
+      if (!verified.has(event.email)) continue;
+      inserted+=await storeVerifiedEvent(client,{...event,prospect_id:verified.get(event.email).prospect_id});
+    }
+    await client.query('COMMIT');
+  } catch(err) { await client.query('ROLLBACK'); throw err; }
+  finally { client.release(); }
+  return res.status(200).json({received:true,inserted});
+}));
 // Zoho Mail supplies its own signing key on the first request. Enrollment
 // is authorized by a separate URL token and can never overwrite a saved key.
 const zohoRegistrationProvider = 'zoho-mail-registration';
@@ -103,11 +165,54 @@ router.post('/webhooks/zoho-mail', wrap(async(req,res)=>{
   if (!signingKey || !zohoSignatureValid(signingKey,raw,signature)) return res.status(401).json({error:'Unauthorized'});
   // Preserve the original JSON text, including large numeric message IDs.
   if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) return res.status(400).json({error:'JSON object required'});
-  const key=crypto.createHash('sha256').update('zoho-mail:').update(raw).digest('hex');
-  await pool.query('INSERT INTO sales_prospect_webhook_events (provider,event_key,payload) VALUES ($1,$2,$3::jsonb) ON CONFLICT (provider,event_key) DO NOTHING',['zoho-mail',key,raw.toString('utf8')]);
-  return res.status(200).json({received:true});
+  const email=normalizeEmail(req.body.fromAddress);
+  const verified=await verifiedRecipients([email]);
+  if (!verified.has(email)) return res.status(200).json({received:true,inserted:0});
+  // Parse the numeric message ID from the original JSON to avoid JS precision loss.
+  // Only accept the documented top-level sender field for authorization.
+  const idResult=await pool.query("SELECT ($1::jsonb)->>'messageId' AS id",[raw.toString('utf8')]);
+  const message_id=idResult.rows[0].id;
+  if (!message_id) return res.status(200).json({received:true,inserted:0});
+  const payload={message_id,fromAddress:email,sender:string(req.body.sender),subject:string(req.body.subject),
+    receivedTime:eventTime(req.body.receivedTime,null),sentDateInGMT:eventTime(req.body.sentDateInGMT,null),
+    summary:string(req.body.summary),html:string(req.body.html)};
+  // Use the provider's stable message ID, not mutable summary/body content.
+  const key=crypto.createHash('sha256').update('zoho-mail:'+email+':'+message_id).digest('hex');
+  const result=await pool.query('INSERT INTO sales_prospect_webhook_events (provider,event_key,payload,prospect_id,event_type,sender_email,subject,message_id) VALUES ($1,$2,$3::jsonb,$4,$5,$6,$7,$8) ON CONFLICT (provider,event_key) DO NOTHING',['zoho-mail',key,JSON.stringify(payload),verified.get(email).prospect_id,'incoming_email',email,payload.subject,message_id]);
+  return res.status(200).json({received:true,inserted:result.rowCount});
 }));
 router.use('/prospects', admin);
+router.post('/prospects/emails/register-recipient',body,wrap(async(req,res)=>{
+  const email=normalizeEmail(req.body.email);
+  const name=req.body.recipient_name;
+  const messageId=req.body.message_id;
+  const prospectId=req.body.prospect_id ?? null;
+  if (!email || email.endsWith('@zylker.com') || typeof messageId!=='string' || !messageId.trim() || messageId.length>1000 ||
+      (name!=null && (typeof name!=='string'||name.length>500)) ||
+      (prospectId!==null && !/^[1-9][0-9]{0,17}$/.test(String(prospectId))))
+    return res.status(400).json({error:'Valid email and SMTP message_id required'});
+  // Trusted caller attests successful SMTP submission. Do not reactivate
+  // disabled recipients or accept arbitrary verification sources from clients.
+  const {rows}=await pool.query(`INSERT INTO sales_prospect_verified_recipients
+    (email,recipient_name,prospect_id,verified_source,last_message_id)
+    VALUES ($1,$2,$3,'zepto_script',$4)
+    ON CONFLICT (email) DO UPDATE SET
+      recipient_name=COALESCE(EXCLUDED.recipient_name,sales_prospect_verified_recipients.recipient_name),
+      prospect_id=COALESCE(EXCLUDED.prospect_id,sales_prospect_verified_recipients.prospect_id),
+      last_sent_at=CASE WHEN sales_prospect_verified_recipients.last_message_id IS DISTINCT FROM EXCLUDED.last_message_id THEN NOW() ELSE sales_prospect_verified_recipients.last_sent_at END,
+      total_emails_sent=sales_prospect_verified_recipients.total_emails_sent+
+        CASE WHEN sales_prospect_verified_recipients.last_message_id IS DISTINCT FROM EXCLUDED.last_message_id THEN 1 ELSE 0 END,
+      last_message_id=EXCLUDED.last_message_id,updated_at=NOW()
+    RETURNING id,email,recipient_name,prospect_id,is_active,first_sent_at,last_sent_at,total_emails_sent`,[email,name||null,prospectId,messageId.trim()]);
+  res.status(200).json(rows[0]);
+}));
+router.get('/prospects/emails/verified-recipients',wrap(async(req,res)=>{
+  const after=String(req.query.after_id||'0');
+  if (!/^[0-9]{1,18}$/.test(after)) return res.status(400).json({error:'Invalid cursor'});
+  const {rows}=await pool.query('SELECT id,email,recipient_name,prospect_id,verified_source,is_active,first_sent_at,last_sent_at,total_emails_sent FROM sales_prospect_verified_recipients WHERE id>$1 ORDER BY id LIMIT 500',[after]);
+  res.json(rows);
+}));
+
 router.get('/prospects/followups',wrap(async(req,res)=>{
   const {rows}=await pool.query("SELECT * FROM sales_prospects WHERE next_followup_at IS NOT NULL AND status NOT IN ('won','lost','closed') ORDER BY next_followup_at,id LIMIT 500");
   res.json(rows);
