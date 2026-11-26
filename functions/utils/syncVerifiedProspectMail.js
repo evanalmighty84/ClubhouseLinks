@@ -32,20 +32,20 @@ async function syncVerifiedMail({since='2026-11-01',limit=100,dryRun=true}={}) {
   if(process.env.PROSPECT_PIPELINE_ENABLED!=='true') throw new Error('Prospect storage not enabled');
   if(typeof since!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(since)||!Number.isFinite(Date.parse(since))) throw new Error('Invalid since date');
   if(!Number.isInteger(limit)||limit<1||limit>500) throw new Error('Limit must be 1-500');
-  const user=process.env.ZOHO_IMAP_USER||process.env.ZOHO_IMAP_EMAIL||process.env.IMAP_USER;
-  const password=process.env.ZOHO_IMAP_PASSWORD||process.env.IMAP_PASSWORD;
-  const host=process.env.ZOHO_IMAP_HOST||process.env.IMAP_HOST;
-  if(!user||!password||!host) throw new Error('IMAP host, user and password must be configured');
+  const user=process.env.PROSPECT_IMAP_USER;
+  const password=process.env.PROSPECT_IMAP_PASSWORD;
+  const host=process.env.PROSPECT_IMAP_HOST;
+  if(!user||!password||!host) throw new Error('PROSPECT_IMAP_HOST, PROSPECT_IMAP_USER and PROSPECT_IMAP_PASSWORD must be configured');
   const {rows}=await pool.query('SELECT email,prospect_id FROM sales_prospect_verified_recipients WHERE is_active=true ORDER BY email');
   const registry=new Map(rows.map(row=>[normalize(row.email),row.prospect_id]));
   const result={dryRun,since,verifiedRecipients:registry.size,matched:0,inserted:0,duplicates:0,skipped:0,folders:[],truncated:false};
   if(!registry.size)return result;
-  const imap=new Imap({user,password,host,port:Number(process.env.ZOHO_IMAP_PORT||process.env.IMAP_PORT||993),tls:true,tlsOptions:{rejectUnauthorized:true},connTimeout:15000,authTimeout:15000,socketTimeout:30000});
+  const imap=new Imap({user,password,host,port:Number(process.env.PROSPECT_IMAP_PORT||993),tls:true,tlsOptions:{rejectUnauthorized:true},connTimeout:15000,authTimeout:15000,socketTimeout:30000});
   // Prevent asynchronous connection errors from becoming unhandled exceptions.
   imap.on('error',()=>{});
   try {
     await new Promise((resolve,reject)=>{imap.once('ready',resolve);imap.once('error',reject);imap.connect();});
-    const folders=[{name:'INBOX',direction:'incoming'},{name:process.env.ZOHO_IMAP_SENT_FOLDER||'Sent',direction:'outgoing'}];
+    const folders=[{name:'INBOX',direction:'incoming'},{name:process.env.PROSPECT_IMAP_SENT_FOLDER||'Sent',direction:'outgoing'}];
     for(const folder of folders){
       const report={name:folder.name,direction:folder.direction,candidates:0,scanned:0};result.folders.push(report);
       await call(imap,'openBox',folder.name,true);
